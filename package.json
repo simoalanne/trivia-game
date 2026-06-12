@@ -1,0 +1,20 @@
+{
+	"name": "trivia-game",
+	"private": true,
+	"type": "module",
+	"description": "Turn-based multiplayer trivia game in a TypeScript monorepo.",
+	"packageManager": "pnpm@11.5.2",
+	"scripts": {
+		"dev:frontend": "pnpm --filter frontend dev",
+		"dev:backend": "pnpm --filter backend start",
+		"typecheck": "pnpm -r --parallel --no-bail typecheck",
+		"test": "pnpm -r --parallel --no-bail --if-present test",
+		"lint": "biome check --write",
+		"lint:unsafe": "biome check --write --unsafe ."
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.11",
+		"lefthook": "2.1.5",
+		"typescript": "^6.0.3"
+	}
+}

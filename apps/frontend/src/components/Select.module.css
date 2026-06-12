@@ -1,0 +1,30 @@
+.control {
+	display: block;
+	width: 100%;
+	min-height: 2.5rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background:
+		linear-gradient(45deg, transparent 50%, var(--color-text-muted) 50%)
+		calc(100% - 1rem) 50% / 0.32rem 0.32rem no-repeat,
+		linear-gradient(135deg, var(--color-text-muted) 50%, transparent 50%)
+		calc(100% - 0.7rem) 50% / 0.32rem 0.32rem no-repeat,
+		var(--color-surface);
+	color: var(--color-text);
+	padding: 0 var(--space-6) 0 var(--space-3);
+	appearance: none;
+	transition:
+		background-color 140ms ease,
+		border-color 140ms ease,
+		box-shadow 140ms ease;
+}
+
+.control:disabled {
+	background-color: var(--color-surface-muted);
+	color: var(--color-text-muted);
+	cursor: not-allowed;
+}
+
+.controlInvalid {
+	border-color: var(--color-danger);
+}

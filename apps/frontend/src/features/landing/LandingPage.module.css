@@ -1,0 +1,114 @@
+.page {
+	padding: clamp(var(--space-5), 6vw, var(--space-7));
+}
+
+.hero {
+	display: grid;
+	grid-template-columns: minmax(0, 1.05fr) minmax(18rem, 0.95fr);
+	gap: clamp(var(--space-5), 5vw, var(--space-7));
+	align-items: center;
+	max-width: 68rem;
+	margin: 0 auto;
+}
+
+.heroCopy {
+	display: grid;
+	gap: var(--space-4);
+}
+
+.kicker {
+	margin: 0;
+	color: var(--color-accent);
+	font-weight: 750;
+}
+
+.hero h1 {
+	max-width: 11ch;
+	margin: 0;
+	font-size: clamp(3rem, 8vw, 5.8rem);
+	line-height: 0.95;
+}
+
+.summary {
+	max-width: 42rem;
+	margin: 0;
+	color: var(--color-text-muted);
+	font-size: 1.125rem;
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+	align-items: center;
+}
+
+.primaryLink {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.5rem;
+	border-radius: var(--radius-md);
+	background: var(--color-accent);
+	padding: 0 var(--space-4);
+	color: var(--color-accent-contrast);
+	font-weight: 650;
+	text-decoration: none;
+}
+
+.primaryLink:hover {
+	background: var(--color-accent-hover);
+}
+
+.preview {
+	display: grid;
+	gap: var(--space-5);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	padding: var(--space-5);
+	box-shadow: 0 1rem 3rem color-mix(in srgb, var(--color-text) 10%, transparent);
+}
+
+.previewHeader {
+	display: flex;
+	justify-content: space-between;
+	gap: var(--space-3);
+	color: var(--color-text-muted);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.questionBlock {
+	display: grid;
+	gap: var(--space-4);
+}
+
+.questionBlock p {
+	margin: 0;
+	font-size: 1.5rem;
+	font-weight: 750;
+	line-height: 1.2;
+}
+
+.answerRows {
+	display: grid;
+	gap: var(--space-2);
+}
+
+.answerRows span {
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	padding: var(--space-3);
+}
+
+@media (max-width: 760px) {
+	.hero {
+		grid-template-columns: 1fr;
+	}
+
+	.hero h1 {
+		max-width: 12ch;
+		font-size: clamp(2.6rem, 14vw, 4rem);
+	}
+}

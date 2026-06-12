@@ -1,0 +1,9 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+allowBuilds:
+  "@prisma/engines": true
+  lefthook: true
+  prisma: true
+  sharp: true
+minimumReleaseAge: 0

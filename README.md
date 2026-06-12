@@ -1,78 +1,49 @@
-# Trivia Game/App (WIP)
+# Trivia Game
 
-A realtime, turn-based multiplayer trivia game built with **ASP.NET Core**, **SignalR**, and a **React + TypeScript** client.
+Turn-based multiplayer trivia game built as a TypeScript monorepo with:
 
-This project is a **work in progress** and is shared early to showcase the architecture and core game loop rather than a finished product.
+- `apps/frontend`: Next.js frontend
+- `apps/backend`: Express + WebSocket backend
+- `packages/contracts`: shared contract-first API abstraction using https://www.npmjs.com/package/@contract-first-api/** packages
 
-The goal is to create not just Yet Another Basic Trivia Game but a polished product that's actually fun to play. 
+## Features
 
----
+- create a game
+- join a game
+- persist the current player session in a browser cookie
+- ready up in the lobby
+- start a game when players are ready
+- play turn-based trivia rounds over WebSockets
+- load trivia cards from Postgres through Prisma
 
-## Status
+## Run Locally
 
-⚠️ **Under active development — not feature complete**
+Install dependencies from the repo root:
 
-The realtime game loop is implemented and verified, but UI, persistence, and polish are still evolving.
+```bash
+pnpm install
+```
 
----
+Start Postgres:
 
-## What Exists Already
+```bash
+docker compose -f apps/backend/docker-compose.yml up -d db
+```
 
-### Backend
-- ASP.NET Core Minimal APIs
-- SignalR hub for realtime gameplay
-- In-memory game store shared between REST and SignalR
-- Server-authoritative, turn-based game loop
-- Trivia questions sourced from a postgres database
-- Validation for player turns, host-only actions, and answer submission
+Seed the database:
 
-**REST**
-- Create game
-- Join game
-- List active games
-- CRUD for questions
+```bash
+pnpm --filter backend exec prisma db seed
+```
 
-**SignalR**
-- Join game session
-- Start game
-- Submit answers
-- Broadcast live game state updates
+Run the backend:
 
-### Frontend
-- React + TypeScript
-- SignalR client
-- Minimal UI used to verify the realtime game loop
+```bash
+pnpm --filter backend start
+```
 
----
+Run the frontend:
 
-## 🧠 Architecture
-
-- REST API for basic request/response workflows
-- SignalR (WebSockets) for realtime state synchronization
-- Game state managed exclusively on the server
-- Clients act as views; all rules are enforced server-side
-
-## Why signal?
-- SignalR is used instead of raw WebSockets because it offers many helpful abstractions for common features like reconnecting, group messaging and compatability. Most clients including web and native mobile have existing libraries for SignalR clients and I don't expect the app to have features that would need customization of raw WebSockets.
-
-
----
-
-## Planned work not in any particular order or priority
-
-- Improved UI and gameplay presentation
-- More polished implementation for gameplay eg. reconnecting, persistence etc.
-- MCP (Model Context Protocol) to make adding questions to database easier via Agentic AI
-- More features for the game to set it apart from every other trivia game implementation.
-
----
-
-## 🎯 Learning goals
-- Building a server-authoritative game backend in C#/.NET
-- Using WebSockets (via SignalR) for realtime multiplayer state
-- Designing clean boundaries between REST and realtime APIs
-
-## Running locally
-
-Documentation for running the project locally will be added as the project stabilizes.
-For now project requires separate commands for setting up database, compiling backend and building frontend so there's no simple tutorial to provide.
+```bash
+pnpm --filter frontend dev
+```

@@ -1,0 +1,345 @@
+[
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "EASY",
+    "tags": ["History", "Chronology"],
+    "data": {
+      "prompt": "Order these historical events from earliest to latest:",
+      "entries": [
+        { "text": "American Declaration of Independence", "answer": 1 },
+        { "text": "French Revolution", "answer": 2 },
+        { "text": "Industrial Revolution begins", "answer": 3 },
+        { "text": "World War I begins", "answer": 4 },
+        { "text": "World War II begins", "answer": 5 },
+        { "text": "Moon Landing", "answer": 6 },
+        { "text": "Fall of the Berlin Wall", "answer": 7 },
+        { "text": "Human genome project completed", "answer": 8 }
+      ]
+    }
+  },
+  {
+    "format": "TRUE_OR_FALSE",
+    "difficulty": "MEDIUM",
+    "tags": ["Science", "Astronomy", "Solar System", "Moons"],
+    "data": {
+      "prompt": "Which of the following statements about rare moons in the Solar System are true?",
+      "entries": [
+        { "text": "Mimas is a moon of Saturn.", "answer": true },
+        { "text": "Io is known for its active volcanoes.", "answer": true },
+        { "text": "Triton orbits Jupiter.", "answer": false },
+        { "text": "Phobos is a moon of Mars.", "answer": true },
+        { "text": "Europa is smaller than Mercury.", "answer": false },
+        { "text": "Titan is the largest moon of Saturn.", "answer": true },
+        { "text": "Callisto orbits Neptune.", "answer": false },
+        { "text": "Ganymede is the largest moon in the Solar System.", "answer": true }
+      ]
+    }
+  },
+  {
+    "format": "OPEN_ENDED",
+    "difficulty": "EASY",
+    "tags": ["Awards", "Nobel Prize", "Laureates"],
+    "data": {
+      "prompt": "Match these Nobel Prize winners to their field:",
+      "entries": [
+        { "text": "Albert Einstein", "answer": ["Physics"] },
+        { "text": "Marie Curie", "answer": ["Chemistry"] },
+        { "text": "Martin Luther King Jr.", "answer": ["Peace"] },
+        { "text": "Erwin Schrödinger", "answer": ["Physics"] },
+        { "text": "Alfred Nobel", "answer": ["Chemistry"] },
+        { "text": "Malala Yousafzai", "answer": ["Peace"] },
+        { "text": "Niels Bohr", "answer": ["Physics"] },
+        { "text": "Linus Pauling", "answer": ["Chemistry"] }
+      ]
+    }
+  },
+  {
+    "format": "MULTIPLE_CHOICE",
+    "difficulty": "EASY",
+    "tags": ["Sports", "Athletes", "Sport Identification"],
+    "data": {
+      "prompt": "Which sport does the following athlete play: Football, Basketball, or Tennis?",
+      "choices": ["Football", "Basketball", "Tennis"],
+      "entries": [
+        { "text": "Lionel Messi", "answer": "Football" },
+        { "text": "LeBron James", "answer": "Basketball" },
+        { "text": "Roger Federer", "answer": "Tennis" },
+        { "text": "Cristiano Ronaldo", "answer": "Football" },
+        { "text": "Rafael Nadal", "answer": "Tennis" },
+        { "text": "Stephen Curry", "answer": "Basketball" },
+        { "text": "Neymar Jr.", "answer": "Football" },
+        { "text": "Serena Williams", "answer": "Tennis" }
+      ]
+    }
+  },
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "EASY",
+    "tags": ["Awards", "Nobel Prize", "History"],
+    "data": {
+      "prompt": "Order these Nobel Prizes based on their year of first award:",
+      "entries": [
+        { "text": "Peace", "answer": 1 },
+        { "text": "Physics", "answer": 2 },
+        { "text": "Chemistry", "answer": 3 },
+        { "text": "Medicine", "answer": 4 },
+        { "text": "Literature", "answer": 5 },
+        { "text": "Economic Sciences", "answer": 6 }
+      ]
+    }
+  },
+  {
+    "format": "TRUE_OR_FALSE",
+    "difficulty": "EASY",
+    "tags": ["Science", "Astronomy", "Solar System"],
+    "data": {
+      "prompt": "Which of the following statements about the Solar System are true?",
+      "entries": [
+        { "text": "The Sun is a star.", "answer": true },
+        { "text": "Jupiter is the smallest planet.", "answer": false },
+        { "text": "Saturn has rings.", "answer": true },
+        { "text": "Mercury has more moons than Earth.", "answer": false },
+        { "text": "Venus rotates clockwise.", "answer": true },
+        { "text": "Pluto is still classified as a planet.", "answer": false },
+        { "text": "Mars is known as the Red Planet.", "answer": true },
+        { "text": "Neptune is farther from the Sun than Uranus.", "answer": true }
+      ]
+    }
+  },
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "EASY",
+    "tags": ["Technology", "Inventions", "Chronology"],
+    "data": {
+      "prompt": "Order these technological inventions from earliest to latest:",
+      "entries": [
+        { "text": "Printing press", "answer": 1 },
+        { "text": "Steam engine", "answer": 2 },
+        { "text": "Telephone", "answer": 3 },
+        { "text": "Light bulb", "answer": 4 },
+        { "text": "Radio", "answer": 5 },
+        { "text": "Television", "answer": 6 },
+        { "text": "Personal computer", "answer": 7 },
+        { "text": "Internet", "answer": 8 }
+      ]
+    }
+  },
+  {
+    "format": "MULTIPLE_CHOICE",
+    "difficulty": "EASY",
+    "tags": ["Music", "Classical Music", "Composers"],
+    "data": {
+      "prompt": "Which of the following composers created these pieces: Mozart, Beethoven, or Chopin?",
+      "choices": ["Mozart", "Beethoven", "Chopin"],
+      "entries": [
+        { "text": "Symphony No. 40", "answer": "Mozart" },
+        { "text": "Fur Elise", "answer": "Beethoven" },
+        { "text": "Nocturne in E-flat Major", "answer": "Chopin" },
+        { "text": "Piano Sonata No. 14", "answer": "Beethoven" },
+        { "text": "The Magic Flute", "answer": "Mozart" },
+        { "text": "Ballade No. 1", "answer": "Chopin" },
+        { "text": "Requiem", "answer": "Mozart" },
+        { "text": "Moonlight Sonata", "answer": "Beethoven" }
+      ]
+    }
+  },
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "MEDIUM",
+    "tags": ["Technology", "Programming", "Programming Languages", "History"],
+    "data": {
+      "prompt": "Order these programming languages by year of first release (earliest to latest):",
+      "entries": [
+        { "text": "Fortran", "answer": 1 },
+        { "text": "Lisp", "answer": 2 },
+        { "text": "C", "answer": 3 },
+        { "text": "Python", "answer": 4 },
+        { "text": "Java", "answer": 5 },
+        { "text": "JavaScript", "answer": 6 },
+        { "text": "C#", "answer": 7 },
+        { "text": "Go", "answer": 8 }
+      ]
+    }
+  },
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "MEDIUM",
+    "tags": ["Sports", "Football", "FIFA World Cup", "History"],
+    "data": {
+      "prompt": "Order these countries by year of their first FIFA World Cup win (earliest → latest).",
+      "entries": [
+        { "text": "Uruguay", "answer": 1, "explanation": "First win: 1930" },
+        { "text": "Italy", "answer": 2, "explanation": "First win: 1934" },
+        { "text": "Brazil", "answer": 3, "explanation": "First win: 1958" },
+        { "text": "England", "answer": 4, "explanation": "First win: 1966" },
+        { "text": "Argentina", "answer": 5, "explanation": "First win: 1978" }
+      ]
+    }
+  },
+  {
+    "format": "OPEN_ENDED",
+    "difficulty": "EASY",
+    "tags": ["Sports", "Football", "National Teams"],
+    "data": {
+      "prompt": "Which nation does this footballer represent?",
+      "entries": [
+        { "text": "Wilfried Zaha", "answer": ["Ivory Coast"] },
+        { "text": "Sergej Milinković-Savić", "answer": ["Serbia"] },
+        { "text": "Hakim Ziyech", "answer": ["Morocco"] },
+        { "text": "Josip Iličić", "answer": ["Slovenia"] },
+        { "text": "Takumi Minamino", "answer": ["Japan"] },
+        { "text": "Andrej Kramarić", "answer": ["Croatia"] },
+        { "text": "Quincy Promes", "answer": ["Netherlands"] },
+        { "text": "Matheus Cunha", "answer": ["Brazil"] }
+      ]
+    }
+  },
+  {
+    "format": "OPEN_ENDED",
+    "difficulty": "EASY",
+    "tags": ["Sports", "Tennis", "National Teams"],
+    "data": {
+      "prompt": "Which nation does this tennis player represent?",
+      "entries": [
+        { "text": "Alex de Minaur", "answer": ["Australia"] },
+        { "text": "Hubert Hurkacz", "answer": ["Poland"] },
+        { "text": "Dusan Lajovic", "answer": ["Serbia"] },
+        { "text": "Karen Khachanov", "answer": ["Russia"] },
+        { "text": "Pablo Carreño Busta", "answer": ["Spain"] },
+        { "text": "Borna Ćorić", "answer": ["Croatia"] },
+        { "text": "Frances Tiafoe", "answer": ["USA"] },
+        { "text": "Yoshihito Nishioka", "answer": ["Japan"] }
+      ]
+    }
+  },
+  {
+    "format": "OPEN_ENDED",
+    "difficulty": "EASY",
+    "tags": ["Sports", "Ice Hockey", "National Teams"],
+    "data": {
+      "prompt": "Which nation does this ice hockey player represent?",
+      "entries": [
+        { "text": "Mikko Rantanen", "answer": ["Finland"] },
+        { "text": "Roman Josi", "answer": ["Switzerland"] },
+        { "text": "Elias Pettersson", "answer": ["Sweden"] },
+        { "text": "David Pastrňák", "answer": ["Czech Republic"] },
+        { "text": "Leon Draisaitl", "answer": ["Germany"] },
+        { "text": "Mats Zuccarello", "answer": ["Norway"] },
+        { "text": "Mark Stone", "answer": ["Canada"] },
+        { "text": "Kevin Fiala", "answer": ["Switzerland"] }
+      ]
+    }
+  },
+  {
+    "format": "OPEN_ENDED",
+    "difficulty": "EASY",
+    "tags": ["Sports", "Basketball", "National Teams"],
+    "data": {
+      "prompt": "Which nation does this basketball player represent?",
+      "entries": [
+        { "text": "Bojan Bogdanović", "answer": ["Croatia"] },
+        { "text": "Patty Mills", "answer": ["Australia"] },
+        { "text": "Tomas Satoransky", "answer": ["Czech Republic"] },
+        { "text": "Dennis Schröder", "answer": ["Germany"] },
+        { "text": "Facundo Campazzo", "answer": ["Argentina"] },
+        { "text": "Rudy Gobert", "answer": ["France"] },
+        { "text": "Raul Neto", "answer": ["Brazil"] },
+        { "text": "Sviatoslav Mykhailiuk", "answer": ["Ukraine"] }
+      ]
+    }
+  },
+  {
+    "format": "MULTIPLE_CHOICE",
+    "difficulty": "EASY",
+    "tags": ["Entertainment", "Film", "Actors"],
+    "data": {
+      "prompt": "Which actor stars in each of these movies? Choose from: Emily Blunt, Oscar Isaac, Adam Driver.",
+      "choices": ["Emily Blunt", "Oscar Isaac", "Adam Driver"],
+      "entries": [
+        { "text": "Edge of Tomorrow", "answer": "Emily Blunt" },
+        { "text": "Ex Machina", "answer": "Oscar Isaac" },
+        { "text": "Marriage Story", "answer": "Adam Driver" },
+        { "text": "A Quiet Place", "answer": "Emily Blunt" },
+        { "text": "Inside Llewyn Davis", "answer": "Oscar Isaac" },
+        { "text": "Paterson", "answer": "Adam Driver" }
+      ]
+    }
+  },
+  {
+    "format": "MULTIPLE_CHOICE",
+    "difficulty": "EASY",
+    "tags": ["Entertainment", "Film", "Actors"],
+    "data": {
+      "prompt": "Which actor stars in each of these movies? Choose from: Tom Hanks, Leonardo DiCaprio, Brad Pitt.",
+      "choices": ["Tom Hanks", "Leonardo DiCaprio", "Brad Pitt"],
+      "entries": [
+        { "text": "Forrest Gump", "answer": "Tom Hanks" },
+        { "text": "Titanic", "answer": "Leonardo DiCaprio" },
+        { "text": "Fight Club", "answer": "Brad Pitt" },
+        { "text": "Saving Private Ryan", "answer": "Tom Hanks" },
+        { "text": "Inception", "answer": "Leonardo DiCaprio" },
+        { "text": "Ocean's Eleven", "answer": "Brad Pitt" }
+      ]
+    }
+  },
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "MEDIUM",
+    "tags": ["Sports", "Football", "Premier League", "Manchester United"],
+    "data": {
+      "prompt": "Order these Manchester United captains from earliest to latest.",
+      "entries": [
+        { "text": "Bryan Robson", "answer": 1 },
+        { "text": "Steve Bruce", "answer": 2 },
+        { "text": "Eric Cantona", "answer": 3 },
+        { "text": "Roy Keane", "answer": 4 },
+        { "text": "Gary Neville", "answer": 5 },
+        { "text": "Nemanja Vidić", "answer": 6 },
+        { "text": "Wayne Rooney", "answer": 7 },
+        { "text": "Michael Carrick", "answer": 8 },
+        { "text": "Antonio Valencia", "answer": 9 },
+        { "text": "Ashley Young", "answer": 10 }
+      ]
+    }
+  },
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "MEDIUM",
+    "tags": ["Sports", "Football", "Premier League", "Liverpool"],
+    "data": {
+      "prompt": "Order these Liverpool FC captains from earliest to latest.",
+      "entries": [
+        { "text": "Phil Thompson", "answer": 1 },
+        { "text": "Graeme Souness", "answer": 2 },
+        { "text": "Alan Hansen", "answer": 3 },
+        { "text": "Steve McMahon", "answer": 4 },
+        { "text": "Ian Rush", "answer": 5 },
+        { "text": "John Barnes", "answer": 6 },
+        { "text": "Jamie Redknapp", "answer": 7 },
+        { "text": "Sami Hyypiä", "answer": 8 },
+        { "text": "Steven Gerrard", "answer": 9 },
+        { "text": "Jordan Henderson", "answer": 10 }
+      ]
+    }
+  },
+  {
+    "format": "ORDER_ITEMS",
+    "difficulty": "MEDIUM",
+    "tags": ["Sports", "Football", "Career Statistics", "Goals"],
+    "data": {
+      "prompt": "Order these footballers by total career goals, from most to least.",
+      "entries": [
+        { "text": "Erwin Helmchen", "answer": 1, "explanation": "Career total: 989+ goals" },
+        { "text": "Cristiano Ronaldo", "answer": 2, "explanation": "Career total: 956 goals" },
+        { "text": "Josef Bican", "answer": 3, "explanation": "Career total: 950+ goals" },
+        { "text": "Ronnie Rooke", "answer": 4, "explanation": "Career total: 934+ goals" },
+        { "text": "Lionel Messi", "answer": 5, "explanation": "Career total: 901 goals" },
+        { "text": "Jimmy Jones", "answer": 6, "explanation": "Career total: 840+ goals" },
+        { "text": "Ferenc Puskás", "answer": 7, "explanation": "Career total: 802 goals" },
+        { "text": "Ferenc Deák", "answer": 8, "explanation": "Career total: 795+ goals" },
+        { "text": "Abe Lenstra", "answer": 9, "explanation": "Career total: 790+ goals" },
+        { "text": "Romário", "answer": 10, "explanation": "Career total: 785 goals" }
+      ]
+    }
+  }
+]

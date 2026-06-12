@@ -1,0 +1,154 @@
+.page {
+	padding: clamp(var(--space-4), 5vw, var(--space-7));
+}
+
+.lobby {
+	display: grid;
+	gap: var(--space-5);
+	max-width: 52rem;
+	margin: 0 auto;
+}
+
+.header {
+	display: flex;
+	align-items: start;
+	justify-content: space-between;
+	gap: var(--space-4);
+}
+
+.kicker {
+	margin: 0 0 var(--space-2);
+	color: var(--color-accent);
+	font-weight: 750;
+}
+
+.header h1 {
+	margin: 0;
+	font-size: clamp(2.25rem, 8vw, 4.5rem);
+	line-height: 1;
+}
+
+.codeBlock {
+	display: grid;
+	gap: var(--space-1);
+	min-width: 9rem;
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	padding: var(--space-4);
+	text-align: right;
+}
+
+.codeBlock span {
+	color: var(--color-text-muted);
+	font-size: 0.875rem;
+	font-weight: 700;
+}
+
+.codeBlock strong {
+	font-family: var(--font-mono);
+	font-size: 1.5rem;
+	letter-spacing: 0;
+}
+
+.statusBar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-2);
+	color: var(--color-text-muted);
+	font-weight: 650;
+}
+
+.statusBar span {
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	padding: var(--space-2) var(--space-3);
+}
+
+.playerList {
+	display: grid;
+	gap: var(--space-2);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.playerRow {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	padding: var(--space-4);
+}
+
+.currentPlayer {
+	border-color: var(--color-accent);
+	box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+
+.playerRow div {
+	display: grid;
+	gap: var(--space-1);
+}
+
+.playerRow strong {
+	font-size: 1.125rem;
+}
+
+.playerRow div span {
+	color: var(--color-text-muted);
+	font-family: var(--font-mono);
+	font-size: 0.875rem;
+}
+
+.readyBadge,
+.waitingBadge {
+	border-radius: var(--radius-md);
+	padding: var(--space-2) var(--space-3);
+	font-weight: 750;
+}
+
+.readyBadge {
+	background: color-mix(in srgb, var(--color-accent) 12%, var(--color-surface));
+	color: var(--color-accent);
+}
+
+.waitingBadge {
+	background: var(--color-surface-muted);
+	color: var(--color-text-muted);
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+}
+
+.errorMessage {
+	margin: 0;
+	border: 1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+	border-radius: var(--radius-md);
+	background: color-mix(in srgb, var(--color-danger) 8%, var(--color-surface));
+	padding: var(--space-3) var(--space-4);
+	color: var(--color-danger);
+	font-weight: 650;
+}
+
+@media (max-width: 640px) {
+	.header {
+		display: grid;
+	}
+
+	.codeBlock {
+		text-align: left;
+	}
+
+	.playerRow {
+		align-items: start;
+		flex-direction: column;
+	}
+}
