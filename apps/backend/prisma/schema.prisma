@@ -1,0 +1,42 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+generator json {
+  provider  = "prisma-json-types-generator"
+  namespace = "PrismaJson"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TriviaCardFormat {
+  MULTIPLE_CHOICE
+  TRUE_OR_FALSE
+  OPEN_ENDED
+  ORDER_ITEMS
+}
+
+enum TriviaCardDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model TriviaCard {
+  id         Int          @id @default(autoincrement())
+  format     TriviaCardFormat
+  difficulty TriviaCardDifficulty
+  /// [TriviaCardData]
+  data       Json
+  tags       String[]
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+}

@@ -1,0 +1,82 @@
+.page {
+	display: grid;
+	place-items: start center;
+	min-height: calc(100vh - 4rem);
+	padding: clamp(var(--space-4), 5vw, var(--space-7));
+}
+
+.panel {
+	display: grid;
+	gap: var(--space-5);
+	width: min(100%, 34rem);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: var(--color-surface);
+	padding: clamp(var(--space-4), 4vw, var(--space-6));
+}
+
+.header {
+	display: grid;
+	gap: var(--space-2);
+}
+
+.kicker {
+	margin: 0;
+	color: var(--color-accent);
+	font-weight: 750;
+}
+
+.header h1 {
+	margin: 0;
+	font-size: clamp(2rem, 7vw, 3.5rem);
+	line-height: 1;
+}
+
+.header p:not(.kicker) {
+	margin: 0;
+	color: var(--color-text-muted);
+}
+
+.tabs {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: var(--space-1);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+	background: var(--color-surface-muted);
+	padding: var(--space-1);
+}
+
+.tab {
+	min-height: 2.5rem;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: var(--color-text-muted);
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.tab[aria-selected="true"] {
+	background: var(--color-surface);
+	color: var(--color-text);
+	box-shadow: 0 1px 2px color-mix(in srgb, var(--color-text) 12%, transparent);
+}
+
+.form {
+	display: grid;
+	gap: var(--space-4);
+}
+
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--space-3);
+	align-items: center;
+}
+
+.errorMessage {
+	margin: 0;
+	color: var(--color-danger);
+	font-weight: 650;
+}

@@ -1,5 +1,0 @@
-<Solution>
-  <Project Path="McpServer/McpServer.csproj" />
-  <Project Path="Server/Server.csproj" />
-  <Project Path="Shared/Shared.csproj" />
-</Solution>

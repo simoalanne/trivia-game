@@ -1,0 +1,79 @@
+.button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--space-2);
+	min-height: 2.5rem;
+	border: 1px solid transparent;
+	border-radius: var(--radius-md);
+	padding: 0 var(--space-4);
+	font-weight: 650;
+	line-height: 1;
+	text-decoration: none;
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		background-color 140ms ease,
+		border-color 140ms ease,
+		color 140ms ease,
+		box-shadow 140ms ease;
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+	cursor: not-allowed;
+	opacity: 0.58;
+}
+
+.buttonPrimary {
+	background: var(--color-accent);
+	color: var(--color-accent-contrast);
+}
+
+.buttonPrimary:not(:disabled):hover {
+	background: var(--color-accent-hover);
+}
+
+.buttonSecondary {
+	border-color: var(--color-border);
+	background: var(--color-surface);
+	color: var(--color-text);
+}
+
+.buttonSecondary:not(:disabled):hover {
+	background: var(--color-surface-muted);
+}
+
+.buttonGhost {
+	background: transparent;
+	color: var(--color-text);
+}
+
+.buttonGhost:not(:disabled):hover {
+	background: var(--color-surface-muted);
+}
+
+.buttonDanger {
+	background: var(--color-danger);
+	color: var(--color-danger-contrast);
+}
+
+.buttonDanger:not(:disabled):hover {
+	background: var(--color-danger-hover);
+}
+
+.buttonSmall {
+	min-height: 2rem;
+	padding: 0 var(--space-3);
+	font-size: 0.875rem;
+}
+
+.buttonMedium {
+	min-height: 2.5rem;
+}
+
+.buttonLarge {
+	min-height: 3rem;
+	padding: 0 var(--space-5);
+	font-size: 1.0625rem;
+}
