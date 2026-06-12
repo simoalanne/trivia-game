@@ -230,9 +230,16 @@ class InMemoryGameSessionManager implements GameSessionManager {
 			throw new Error("Entry already answered");
 		}
 		const hasMultipleAnswers = Array.isArray(entry.answer);
-		const isCorrect = hasMultipleAnswers
-			? (entry.answer as string[]).includes(answer as string)
-			: entry.answer === answer;
+		const normalizedAnswer = answer.toString().trim().toLowerCase();
+		const normalizedEntryAnswer = hasMultipleAnswers
+			? (entry.answer as string[]).map((ans) =>
+					ans.toString().trim().toLowerCase(),
+				)
+			: entry.answer.toString().trim().toLowerCase();
+		const isCorrect =
+			normalizedAnswer === normalizedEntryAnswer ||
+			(hasMultipleAnswers &&
+				(normalizedEntryAnswer as string[]).includes(normalizedAnswer));
 		entry.state = isCorrect ? "correct" : "incorrect";
 		if (isCorrect) {
 			this.gameSession.scores[playerId] += 1;
@@ -268,6 +275,15 @@ class InMemoryGameSessionManager implements GameSessionManager {
 		return this.loadedCards;
 	}
 
+	private shuffleArray<T>(array: T[]) {
+		const shuffled = [...array];
+		for (let i = shuffled.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+		}
+		return shuffled;
+	}
+
 	private async pickRandomCard(excludeIds: number[]) {
 		const cards = await this.getLoadedCards();
 		const availableCards = cards.filter(
@@ -278,12 +294,13 @@ class InMemoryGameSessionManager implements GameSessionManager {
 		}
 		const randomIndex = Math.floor(Math.random() * availableCards.length);
 		const drawnCard = availableCards[randomIndex];
+		const shuffledEntries = this.shuffleArray(drawnCard.data.entries);
 		return {
 			id: drawnCard.id,
 			prompt: drawnCard.data.prompt,
 			format: drawnCard.format,
 			choices: drawnCard.data.choices,
-			entries: drawnCard.data.entries.map((entry) => ({
+			entries: shuffledEntries.map((entry) => ({
 				...entry,
 				state: "unanswered" as const,
 			})),

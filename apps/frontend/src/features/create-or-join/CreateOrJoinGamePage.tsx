@@ -79,8 +79,8 @@ export default function CreateOrJoinGamePage() {
 					<p className={styles.kicker}>Setup</p>
 					<h1 id="create-join-title">Create or join a game</h1>
 					<p>
-						Placeholder flow for styling only. The next pass can replace the
-						submit handlers with contract-backed calls.
+						Start playing either by creating your own game lobby or joining an
+						existing one with a game code from your friend.
 					</p>
 				</div>
 
@@ -119,27 +119,23 @@ export default function CreateOrJoinGamePage() {
 							id="playerName"
 							maxLength={20}
 							onChange={(event) => setPlayerName(event.target.value)}
-							placeholder="Ada"
+							placeholder="Your nickname"
 							type="text"
 							value={playerName}
 						/>
 					</Field>
 
-					{mode === "join" ? (
-						<Field
-							description="Use the room code shared by the host."
-							htmlFor="gameCode"
-							label="Game code"
-						>
+					{mode === "join" && (
+						<Field htmlFor="gameCode" label="Game code">
 							<TextInput
 								id="gameCode"
 								onChange={(event) => setGameCode(event.target.value)}
-								placeholder="QZ82K"
+								placeholder="Code from host"
 								type="text"
 								value={gameCode}
 							/>
 						</Field>
-					) : null}
+					)}
 
 					{activeError ? (
 						<p className={styles.errorMessage}>{activeError.message}</p>
@@ -147,17 +143,7 @@ export default function CreateOrJoinGamePage() {
 
 					<div className={styles.actions}>
 						<Button disabled={isSubmitting} type="submit">
-							{mode === "create" ? "Create placeholder lobby" : "Join lobby"}
-						</Button>
-						<Button
-							disabled={isSubmitting}
-							onClick={() => {
-								setPlayerName("");
-								setGameCode("");
-							}}
-							variant="ghost"
-						>
-							Reset
+							{mode === "create" ? "Create new lobby" : "Join lobby"}
 						</Button>
 					</div>
 				</form>

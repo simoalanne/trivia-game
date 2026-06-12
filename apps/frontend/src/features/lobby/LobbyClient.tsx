@@ -18,8 +18,7 @@ export default function LobbyClient({ gameCode }: LobbyClientProps) {
 	const currentPlayer = gameState?.players.find(
 		(player) => player.id === playerId,
 	);
-	const readyCount =
-		gameState?.players.filter((player) => player.isReady).length ?? 0;
+
 	const allReady =
 		Boolean(gameState?.players.length) &&
 		gameState?.players.every((player) => player.isReady);
@@ -44,13 +43,6 @@ export default function LobbyClient({ gameCode }: LobbyClientProps) {
 						<strong>{gameCode.toUpperCase()}</strong>
 					</div>
 				</div>
-
-				<div className={styles.statusBar}>
-					<span>{gameState?.players.length ?? 0} players</span>
-					<span>{readyCount} ready</span>
-					<span>{connectionState}</span>
-				</div>
-
 				{error ? <p className={styles.errorMessage}>{error}</p> : null}
 
 				<ul className={styles.playerList} aria-label="Players in lobby">

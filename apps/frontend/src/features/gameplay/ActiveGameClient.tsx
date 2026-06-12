@@ -142,23 +142,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 					<h1 id="active-game-title">
 						{currentCard ? `Round ${gameState?.round ?? 1}` : "Gameplay"}
 					</h1>
-					<p>
-						{turnPlayer
-							? `${turnPlayer.name}'s turn`
-							: connectionState === "open"
-								? "Waiting for the first round"
-								: "Connecting to gameplay"}
-					</p>
 				</div>
-
-				<div className={styles.statusBar}>
-					<span>{connectionState}</span>
-					<span>{gameState?.gameState ?? "loading"}</span>
-					<span>
-						{currentPlayer ? `${currentPlayer.name} - you` : "joining"}
-					</span>
-				</div>
-
 				{error ? <p className={styles.errorMessage}>{error}</p> : null}
 
 				<aside className={styles.scoreboard} aria-label="Scoreboard">
@@ -169,7 +153,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 							} ${player.id === turnPlayer?.id ? styles.currentTurn : ""}`}
 							key={player.id}
 						>
-							<strong>{player.name}</strong>
+							<strong>{player.id === playerId ? "You" : player.name}</strong>
 							<span>
 								{String(gameState?.scores[player.id] ?? 0).padStart(3, "0")}
 							</span>
