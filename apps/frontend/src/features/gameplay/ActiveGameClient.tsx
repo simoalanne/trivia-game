@@ -1,11 +1,11 @@
 "use client";
 
+import type { GameplayCurrentCard, GameplaySession } from "@packages/contracts";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import type { GameplayCurrentCard, GameplaySession } from "@packages/contracts";
 import { Button, Select, TextInput } from "@/components";
-import { useGameplaySocket } from "./useGameplaySocket";
 import styles from "./ActiveGamePage.module.css";
+import { useGameplaySocket } from "./useGameplaySocket";
 
 type ActiveGameClientProps = {
 	gameCode: string;
@@ -34,7 +34,10 @@ const getEntryOptions = (
 		case "ORDER_ITEMS": {
 			const usedOrders = new Set(
 				card.entries
-					.filter((entry, index) => entry.state !== "unanswered" && index !== entryIndex)
+					.filter(
+						(entry, index) =>
+							entry.state !== "unanswered" && index !== entryIndex,
+					)
 					.map((entry) => String(entry.answer)),
 			);
 			return card.entries
@@ -75,7 +78,9 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 	const [activeEntryIndex, setActiveEntryIndex] = useState<number | null>(null);
 	const gameCodePath = gameCode.toLowerCase();
 	const currentCard = gameState?.currentCard ?? null;
-	const currentPlayer = gameState?.players.find((player) => player.id === playerId);
+	const currentPlayer = gameState?.players.find(
+		(player) => player.id === playerId,
+	);
 	const turnPlayer = getCurrentTurnPlayer(gameState);
 	const isCurrentTurn = Boolean(turnPlayer && turnPlayer.id === playerId);
 	const canSend = connectionState === "open" && Boolean(currentPlayer);
@@ -149,7 +154,9 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 				<div className={styles.statusBar}>
 					<span>{connectionState}</span>
 					<span>{gameState?.gameState ?? "loading"}</span>
-					<span>{currentPlayer ? `${currentPlayer.name} - you` : "joining"}</span>
+					<span>
+						{currentPlayer ? `${currentPlayer.name} - you` : "joining"}
+					</span>
 				</div>
 
 				{error ? <p className={styles.errorMessage}>{error}</p> : null}
@@ -163,7 +170,9 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 							key={player.id}
 						>
 							<strong>{player.name}</strong>
-							<span>{String(gameState?.scores[player.id] ?? 0).padStart(3, "0")}</span>
+							<span>
+								{String(gameState?.scores[player.id] ?? 0).padStart(3, "0")}
+							</span>
 						</div>
 					))}
 				</aside>
@@ -185,7 +194,8 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 									!canSend ||
 									!isCurrentTurn ||
 									answered ||
-									(activeEntryIndex !== null && activeEntryIndex !== entryIndex);
+									(activeEntryIndex !== null &&
+										activeEntryIndex !== entryIndex);
 								const selectedAnswer = answers[entryIndex] ?? "";
 								const options = getEntryOptions(currentCard, entryIndex);
 
@@ -194,7 +204,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 										className={`${styles.entryCard} ${
 											answered ? styles.answeredEntry : ""
 										}`}
-										key={`${entry.text}-${entryIndex}`}
+										key={`${entry.text}`}
 									>
 										<h3>{entry.text}</h3>
 

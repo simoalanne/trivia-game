@@ -75,7 +75,8 @@
 }
 
 .currentTurn {
-	box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-accent) 45%, transparent);
+	box-shadow: inset 0 0 0 2px
+		color-mix(in srgb, var(--color-accent) 45%, transparent);
 }
 
 .notice,

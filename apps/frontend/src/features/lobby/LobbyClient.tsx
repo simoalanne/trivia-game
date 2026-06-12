@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { Button } from "@/components";
 import { useGameplaySocket } from "@/features/gameplay/useGameplaySocket";
 import styles from "./LobbyPage.module.css";
@@ -15,7 +15,9 @@ export default function LobbyClient({ gameCode }: LobbyClientProps) {
 	const { connectionState, error, gameState, playerId, send } =
 		useGameplaySocket(gameCode);
 	const gameCodePath = gameCode.toLowerCase();
-	const currentPlayer = gameState?.players.find((player) => player.id === playerId);
+	const currentPlayer = gameState?.players.find(
+		(player) => player.id === playerId,
+	);
 	const readyCount =
 		gameState?.players.filter((player) => player.isReady).length ?? 0;
 	const allReady =

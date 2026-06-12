@@ -1,7 +1,7 @@
-import {
-	type ContractApiRequest,
-	type ContractApiResponse,
-	type DotPaths,
+import type {
+	ContractApiRequest,
+	ContractApiResponse,
+	DotPaths,
 } from "@contract-first-api/core";
 import gameplay from "./gameplay.ts";
 

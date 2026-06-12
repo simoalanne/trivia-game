@@ -105,9 +105,10 @@ export default defineService("gameplay", {
 							message.data.answer,
 						);
 						const updatedSession = await gameSession.getCurrentGameSession();
-						const allEntriesAnswered = updatedSession.currentCard?.entries.every(
-							(entry) => entry.state !== "unanswered",
-						);
+						const allEntriesAnswered =
+							updatedSession.currentCard?.entries.every(
+								(entry) => entry.state !== "unanswered",
+							);
 						if (allEntriesAnswered) {
 							await gameSession.endRound();
 						} else {

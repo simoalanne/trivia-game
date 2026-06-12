@@ -1,6 +1,9 @@
 "use client";
 
-import type { GameplayClientMessage, GameplaySession } from "@packages/contracts";
+import type {
+	GameplayClientMessage,
+	GameplaySession,
+} from "@packages/contracts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
 
