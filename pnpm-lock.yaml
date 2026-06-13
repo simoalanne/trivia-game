@@ -57,6 +57,9 @@ importers:
       add:
         specifier: ^2.0.6
         version: 2.0.6
+      countries-list:
+        specifier: ^3.3.0
+        version: 3.3.0
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
@@ -752,6 +755,9 @@ packages:
   cookie@0.7.2:
     resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
     engines: {node: '>= 0.6'}
+
+  countries-list@3.3.0:
+    resolution: {integrity: sha512-XRUjS+dcZuNh/fg3+mka3bXgcg4TbQZ1gaK5IJqO6qulerBANl1bmrd20P2dgmPkBpP+5FnejiSF1gd7bgAg+g==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -1989,6 +1995,8 @@ snapshots:
   cookie-signature@1.2.2: {}
 
   cookie@0.7.2: {}
+
+  countries-list@3.3.0: {}
 
   cross-spawn@7.0.6:
     dependencies:

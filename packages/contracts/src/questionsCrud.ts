@@ -19,6 +19,7 @@ export const triviaCardFormatSchema = z.enum([
 	"OPEN_ENDED",
 	"ORDER_ITEMS",
 ]);
+export const triviaCardUiHintSchema = z.enum(["country"]);
 
 export const triviaTagSchema = nonEmptyTrimmedStringSchema;
 export const triviaCardIdSchema = z.coerce.number().int().positive();
@@ -83,6 +84,7 @@ const trueOrFalseQuestionCardInputSchema = baseCardSchema.extend({
 
 const openEndedQuestionCardInputSchema = baseCardSchema.extend({
 	format: z.literal("OPEN_ENDED"),
+	uiHint: triviaCardUiHintSchema.optional(),
 	entries: z.array(openEndedEntryInputSchema).min(2).max(10),
 });
 

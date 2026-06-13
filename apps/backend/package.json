@@ -25,6 +25,7 @@
 		"@types/node": "^25.9.2",
 		"@types/ws": "^8.18.1",
 		"add": "^2.0.6",
+		"countries-list": "^3.3.0",
 		"dotenv": "^17.4.2",
 		"pnpm": "^11.5.3",
 		"prisma": "^7.8.0",

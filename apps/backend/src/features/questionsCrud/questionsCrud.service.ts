@@ -26,6 +26,7 @@ const toQuestionCard = (
 				difficulty: card.difficulty,
 				tags: card.tags,
 				prompt: card.data.prompt,
+				uiHint: card.data.uiHint,
 				entries: card.data.entries as Extract<
 					QuestionCard,
 					{ format: "OPEN_ENDED" }
@@ -66,6 +67,9 @@ const toTriviaCardCreateData = (card: QuestionCardInput) => ({
 	tags: card.tags,
 	data: {
 		prompt: card.prompt,
+		...(card.format === "OPEN_ENDED" && card.uiHint
+			? { uiHint: card.uiHint }
+			: {}),
 		entries: card.entries,
 		...(card.format === "MULTIPLE_CHOICE" ? { choices: card.choices } : {}),
 	},

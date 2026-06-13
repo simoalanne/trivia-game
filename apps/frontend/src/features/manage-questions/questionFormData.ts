@@ -25,6 +25,9 @@ const getSharedCardState = (card: QuestionCardInput | QuestionCard) => ({
 	prompt: card.prompt,
 	difficulty: card.difficulty,
 	tags: [...card.tags],
+	...(card.format === "OPEN_ENDED" && card.uiHint
+		? { uiHint: card.uiHint }
+		: {}),
 });
 
 const getSharedEntryState = (
@@ -63,6 +66,7 @@ export const createEmptyQuestionCard = (
 			return {
 				...baseCard,
 				format,
+				uiHint: undefined,
 				entries: Array.from({ length: entryCount }, () => ({
 					text: "",
 					answer: [""],
@@ -112,6 +116,7 @@ export const changeQuestionCardFormat = (
 			return {
 				...sharedCard,
 				format,
+				uiHint: card.format === "OPEN_ENDED" ? card.uiHint : undefined,
 				entries: Array.from({ length: entryCount }, (_, index) => ({
 					...getSharedEntryState(card, index),
 					answer: [""],
@@ -163,6 +168,7 @@ export const toQuestionCardInput = (card: QuestionCard): QuestionCardInput => {
 				difficulty: card.difficulty,
 				tags: [...card.tags],
 				format: card.format,
+				uiHint: card.uiHint,
 				entries: card.entries.map((entry) => ({
 					text: entry.text,
 					answer: [...entry.answer],

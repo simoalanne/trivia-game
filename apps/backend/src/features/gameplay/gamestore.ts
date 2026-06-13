@@ -364,6 +364,7 @@ class InMemoryGameSessionManager implements GameSessionManager {
 		return {
 			id: drawnCard.id,
 			prompt: drawnCard.data.prompt,
+			uiHint: drawnCard.data.uiHint,
 			format: drawnCard.format,
 			choices: drawnCard.data.choices,
 			entries: shuffledEntries.map((entry) => ({

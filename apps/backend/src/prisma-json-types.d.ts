@@ -10,8 +10,11 @@ declare global {
 
 		type TriviaCardData = {
 			prompt: string;
+			uiHint?: "country";
 			entries: TriviaEntry[];
 			choices?: string[];
 		};
+
+		type LocalizedString = Record<string, string>;
 	}
 }

@@ -3,7 +3,7 @@
 import type { GameplayCurrentCard, GameplaySession } from "@packages/contracts";
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Button, Select, TextInput } from "@/components";
+import { Button, CountryPicker, Select, TextInput } from "@/components";
 import styles from "./ActiveGamePage.module.css";
 import { useGameplaySocket } from "./useGameplaySocket";
 
@@ -13,8 +13,52 @@ type ActiveGameClientProps = {
 
 type SubmittedAnswer = string | boolean | number;
 
-const formatAnswer = (answer: string | string[] | boolean | number) =>
-	Array.isArray(answer) ? answer.join(", ") : String(answer);
+const getBrowserLocales = () => {
+	if (typeof navigator === "undefined") {
+		return ["en"];
+	}
+
+	return navigator.languages.length > 0 ? navigator.languages : ["en"];
+};
+
+const getFlagEmoji = (countryCode: string) => {
+	const normalizedCode = countryCode.trim().toUpperCase();
+	if (!/^[A-Z]{2}$/.test(normalizedCode)) {
+		return "";
+	}
+
+	return Array.from(normalizedCode)
+		.map((character) => String.fromCodePoint(127397 + character.charCodeAt(0)))
+		.join("");
+};
+
+const formatAnswerValue = (
+	value: string,
+	uiHint: GameplayCurrentCard["uiHint"],
+	displayNames: Intl.DisplayNames,
+) => {
+	if (uiHint !== "country") {
+		return value;
+	}
+
+	const normalizedCode = value.toUpperCase();
+	const label = displayNames.of(normalizedCode) ?? normalizedCode;
+	const flagEmoji = getFlagEmoji(normalizedCode);
+	return `${flagEmoji ? `${flagEmoji} ` : ""}${label}`;
+};
+
+const formatAnswer = (
+	answer: string | string[] | boolean | number,
+	uiHint: GameplayCurrentCard["uiHint"],
+	displayNames: Intl.DisplayNames,
+) =>
+	Array.isArray(answer)
+		? answer
+				.map((value) => formatAnswerValue(value, uiHint, displayNames))
+				.join(", ")
+		: typeof answer === "string"
+			? formatAnswerValue(answer, uiHint, displayNames)
+			: String(answer);
 
 const getEntryOptions = (
 	card: GameplayCurrentCard,
@@ -88,6 +132,11 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		? (gameState?.roundScores[currentPlayer.id] ?? 0)
 		: 0;
 	const canSend = connectionState === "open" && Boolean(currentPlayer);
+	const locales = getBrowserLocales();
+	const displayNames = useMemo(
+		() => new Intl.DisplayNames(locales, { type: "region" }),
+		[locales],
+	);
 
 	const sortedPlayers = useMemo(
 		() =>
@@ -239,7 +288,13 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 
 										{answered ? (
 											<div className={styles.answerSummary}>
-												<span>{formatAnswer(entry.answer)}</span>
+												<span>
+													{formatAnswer(
+														entry.answer,
+														currentCard.uiHint,
+														displayNames,
+													)}
+												</span>
 												<strong
 													className={
 														entry.state === "correct"
@@ -252,14 +307,23 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 												{entry.explanation ? <p>{entry.explanation}</p> : null}
 											</div>
 										) : currentCard.format === "OPEN_ENDED" ? (
-											<TextInput
-												disabled={inputDisabled}
-												onChange={(event) =>
-													setAnswer(entryIndex, event.target.value)
-												}
-												placeholder="Your answer"
-												value={selectedAnswer}
-											/>
+											currentCard.uiHint === "country" ? (
+												<CountryPicker
+													disabled={inputDisabled}
+													onChange={(value) => setAnswer(entryIndex, value)}
+													placeholder="Select country"
+													value={selectedAnswer}
+												/>
+											) : (
+												<TextInput
+													disabled={inputDisabled}
+													onChange={(event) =>
+														setAnswer(entryIndex, event.target.value)
+													}
+													placeholder="Your answer"
+													value={selectedAnswer}
+												/>
+											)
 										) : (
 											<Select
 												disabled={inputDisabled}

@@ -3,6 +3,7 @@ import type {
 	ContractApiResponse,
 	DotPaths,
 } from "@contract-first-api/core";
+import countries from "./countries.ts";
 import gameplay from "./gameplay.ts";
 import questionsCrud from "./questionsCrud.ts";
 
@@ -25,11 +26,13 @@ export {
 	triviaCardDifficultySchema,
 	triviaCardFormatSchema,
 	triviaCardIdSchema,
+	triviaCardUiHintSchema,
 } from "./questionsCrud.ts";
 
 export const contracts = {
 	...gameplay,
 	...questionsCrud,
+	...countries,
 };
 
 type AppContracts = typeof contracts;

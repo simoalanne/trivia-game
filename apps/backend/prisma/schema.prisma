@@ -31,12 +31,17 @@ enum TriviaCardDifficulty {
 }
 
 model TriviaCard {
-  id         Int          @id @default(autoincrement())
+  id         Int                  @id @default(autoincrement())
   format     TriviaCardFormat
   difficulty TriviaCardDifficulty
   /// [TriviaCardData]
   data       Json
   tags       String[]
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+}
+
+model Country {
+  id           Int    @id @default(autoincrement())
+  country_code String @unique @db.VarChar(2)
 }

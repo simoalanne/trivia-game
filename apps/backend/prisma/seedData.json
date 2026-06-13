@@ -187,16 +187,17 @@
 		"difficulty": "EASY",
 		"tags": ["Sports", "Football", "National Teams"],
 		"data": {
+			"uiHint": "country",
 			"prompt": "Which nation does this footballer represent?",
 			"entries": [
-				{ "text": "Wilfried Zaha", "answer": ["Ivory Coast"] },
-				{ "text": "Sergej Milinković-Savić", "answer": ["Serbia"] },
-				{ "text": "Hakim Ziyech", "answer": ["Morocco"] },
-				{ "text": "Josip Iličić", "answer": ["Slovenia"] },
-				{ "text": "Takumi Minamino", "answer": ["Japan"] },
-				{ "text": "Andrej Kramarić", "answer": ["Croatia"] },
-				{ "text": "Quincy Promes", "answer": ["Netherlands"] },
-				{ "text": "Matheus Cunha", "answer": ["Brazil"] }
+				{ "text": "Wilfried Zaha", "answer": ["CI"] },
+				{ "text": "Sergej Milinković-Savić", "answer": ["RS"] },
+				{ "text": "Hakim Ziyech", "answer": ["MA"] },
+				{ "text": "Josip Iličić", "answer": ["SI"] },
+				{ "text": "Takumi Minamino", "answer": ["JP"] },
+				{ "text": "Andrej Kramarić", "answer": ["HR"] },
+				{ "text": "Quincy Promes", "answer": ["NL"] },
+				{ "text": "Matheus Cunha", "answer": ["BR"] }
 			]
 		}
 	},
@@ -205,16 +206,17 @@
 		"difficulty": "EASY",
 		"tags": ["Sports", "Tennis", "National Teams"],
 		"data": {
+			"uiHint": "country",
 			"prompt": "Which nation does this tennis player represent?",
 			"entries": [
-				{ "text": "Alex de Minaur", "answer": ["Australia"] },
-				{ "text": "Hubert Hurkacz", "answer": ["Poland"] },
-				{ "text": "Dusan Lajovic", "answer": ["Serbia"] },
-				{ "text": "Karen Khachanov", "answer": ["Russia"] },
-				{ "text": "Pablo Carreño Busta", "answer": ["Spain"] },
-				{ "text": "Borna Ćorić", "answer": ["Croatia"] },
-				{ "text": "Frances Tiafoe", "answer": ["USA"] },
-				{ "text": "Yoshihito Nishioka", "answer": ["Japan"] }
+				{ "text": "Alex de Minaur", "answer": ["AU"] },
+				{ "text": "Hubert Hurkacz", "answer": ["PL"] },
+				{ "text": "Dusan Lajovic", "answer": ["RS"] },
+				{ "text": "Karen Khachanov", "answer": ["RU"] },
+				{ "text": "Pablo Carreño Busta", "answer": ["ES"] },
+				{ "text": "Borna Ćorić", "answer": ["HR"] },
+				{ "text": "Frances Tiafoe", "answer": ["US"] },
+				{ "text": "Yoshihito Nishioka", "answer": ["JP"] }
 			]
 		}
 	},
@@ -223,16 +225,17 @@
 		"difficulty": "EASY",
 		"tags": ["Sports", "Ice Hockey", "National Teams"],
 		"data": {
+			"uiHint": "country",
 			"prompt": "Which nation does this ice hockey player represent?",
 			"entries": [
-				{ "text": "Mikko Rantanen", "answer": ["Finland"] },
-				{ "text": "Roman Josi", "answer": ["Switzerland"] },
-				{ "text": "Elias Pettersson", "answer": ["Sweden"] },
-				{ "text": "David Pastrňák", "answer": ["Czech Republic"] },
-				{ "text": "Leon Draisaitl", "answer": ["Germany"] },
-				{ "text": "Mats Zuccarello", "answer": ["Norway"] },
-				{ "text": "Mark Stone", "answer": ["Canada"] },
-				{ "text": "Kevin Fiala", "answer": ["Switzerland"] }
+				{ "text": "Mikko Rantanen", "answer": ["FI"] },
+				{ "text": "Roman Josi", "answer": ["CH"] },
+				{ "text": "Elias Pettersson", "answer": ["SE"] },
+				{ "text": "David Pastrňák", "answer": ["CZ"] },
+				{ "text": "Leon Draisaitl", "answer": ["DE"] },
+				{ "text": "Mats Zuccarello", "answer": ["NO"] },
+				{ "text": "Mark Stone", "answer": ["CA"] },
+				{ "text": "Kevin Fiala", "answer": ["CH"] }
 			]
 		}
 	},
@@ -241,16 +244,17 @@
 		"difficulty": "EASY",
 		"tags": ["Sports", "Basketball", "National Teams"],
 		"data": {
+			"uiHint": "country",
 			"prompt": "Which nation does this basketball player represent?",
 			"entries": [
-				{ "text": "Bojan Bogdanović", "answer": ["Croatia"] },
-				{ "text": "Patty Mills", "answer": ["Australia"] },
-				{ "text": "Tomas Satoransky", "answer": ["Czech Republic"] },
-				{ "text": "Dennis Schröder", "answer": ["Germany"] },
-				{ "text": "Facundo Campazzo", "answer": ["Argentina"] },
-				{ "text": "Rudy Gobert", "answer": ["France"] },
-				{ "text": "Raul Neto", "answer": ["Brazil"] },
-				{ "text": "Sviatoslav Mykhailiuk", "answer": ["Ukraine"] }
+				{ "text": "Bojan Bogdanović", "answer": ["HR"] },
+				{ "text": "Patty Mills", "answer": ["AU"] },
+				{ "text": "Tomas Satoransky", "answer": ["CZ"] },
+				{ "text": "Dennis Schröder", "answer": ["DE"] },
+				{ "text": "Facundo Campazzo", "answer": ["AR"] },
+				{ "text": "Rudy Gobert", "answer": ["FR"] },
+				{ "text": "Raul Neto", "answer": ["BR"] },
+				{ "text": "Sviatoslav Mykhailiuk", "answer": ["UA"] }
 			]
 		}
 	},

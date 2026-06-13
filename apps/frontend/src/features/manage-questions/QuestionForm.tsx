@@ -6,10 +6,11 @@ import {
 	type TriviaCardFormat,
 	triviaCardDifficultySchema,
 	triviaCardFormatSchema,
+	triviaCardUiHintSchema,
 } from "@packages/contracts";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Button, Field, Select, TextInput } from "@/components";
+import { Button, CountryPicker, Field, Select, TextInput } from "@/components";
 import styles from "./QuestionForm.module.css";
 import {
 	addEntryToQuestionCard,
@@ -202,6 +203,33 @@ export default function QuestionForm({
 		});
 	};
 
+	const updateOpenEndedAnswer = (
+		entryIndex: number,
+		answerIndex: number,
+		value: string,
+	) => {
+		setCard((current) =>
+			current.format === "OPEN_ENDED"
+				? ({
+						...current,
+						entries: current.entries.map((currentEntry, currentIndex) =>
+							currentIndex === entryIndex
+								? {
+										...currentEntry,
+										answer: currentEntry.answer.map(
+											(currentAnswer, currentAnswerIndex) =>
+												currentAnswerIndex === answerIndex
+													? value
+													: currentAnswer,
+										),
+									}
+								: currentEntry,
+						),
+					} satisfies OpenEndedQuestionCardInput)
+				: current,
+		);
+	};
+
 	return (
 		<section className={styles.panel} aria-labelledby="question-form-title">
 			<div className={styles.header}>
@@ -281,6 +309,41 @@ export default function QuestionForm({
 						</Select>
 					</Field>
 				</div>
+
+				{card.format === "OPEN_ENDED" ? (
+					<Field
+						description="Choose a specialized answer picker when this question should use structured input."
+						error={getFieldError("uiHint")}
+						htmlFor="ui-hint"
+						label="Answer type"
+					>
+						<Select
+							id="ui-hint"
+							invalid={Boolean(getFieldError("uiHint"))}
+							onChange={(event) =>
+								setCard((current) =>
+									current.format === "OPEN_ENDED"
+										? ({
+												...current,
+												uiHint:
+													event.target.value === ""
+														? undefined
+														: (event.target.value as "country"),
+											} satisfies OpenEndedQuestionCardInput)
+										: current,
+								)
+							}
+							value={card.uiHint ?? ""}
+						>
+							<option value="">None</option>
+							{triviaCardUiHintSchema.options.map((uiHint) => (
+								<option key={uiHint} value={uiHint}>
+									{uiHint === "country" ? "Country" : uiHint}
+								</option>
+							))}
+						</Select>
+					</Field>
+				) : null}
 
 				<Field
 					description="Tags are optional but must be unique when provided."
@@ -624,7 +687,11 @@ export default function QuestionForm({
 								{card.format === "OPEN_ENDED" ? (
 									<Field
 										error={getFieldError("entries", entryIndex, "answer")}
-										label="Accepted answers"
+										label={
+											card.uiHint === "country"
+												? "Accepted countries"
+												: "Accepted answers"
+										}
 									>
 										<div className={styles.listEditor}>
 											{(
@@ -634,45 +701,47 @@ export default function QuestionForm({
 													className={styles.rowEditor}
 													key={`answer-${entryIndex}-${answerIndex}`}
 												>
-													<TextInput
-														invalid={Boolean(
-															getFieldError(
-																"entries",
-																entryIndex,
-																"answer",
-																answerIndex,
-															),
-														)}
-														onChange={(event) =>
-															setCard((current) =>
-																current.format === "OPEN_ENDED"
-																	? ({
-																			...current,
-																			entries: current.entries.map(
-																				(currentEntry, currentIndex) =>
-																					currentIndex === entryIndex
-																						? {
-																								...currentEntry,
-																								answer: currentEntry.answer.map(
-																									(
-																										currentAnswer,
-																										currentAnswerIndex,
-																									) =>
-																										currentAnswerIndex ===
-																										answerIndex
-																											? event.target.value
-																											: currentAnswer,
-																								),
-																							}
-																						: currentEntry,
-																			),
-																		} satisfies OpenEndedQuestionCardInput)
-																	: current,
-															)
-														}
-														placeholder="Accepted answer"
-														value={answer}
-													/>
+													{card.uiHint === "country" ? (
+														<CountryPicker
+															invalid={Boolean(
+																getFieldError(
+																	"entries",
+																	entryIndex,
+																	"answer",
+																	answerIndex,
+																),
+															)}
+															onChange={(value) =>
+																updateOpenEndedAnswer(
+																	entryIndex,
+																	answerIndex,
+																	value,
+																)
+															}
+															placeholder="Select country"
+															value={answer}
+														/>
+													) : (
+														<TextInput
+															invalid={Boolean(
+																getFieldError(
+																	"entries",
+																	entryIndex,
+																	"answer",
+																	answerIndex,
+																),
+															)}
+															onChange={(event) =>
+																updateOpenEndedAnswer(
+																	entryIndex,
+																	answerIndex,
+																	event.target.value,
+																)
+															}
+															placeholder="Accepted answer"
+															value={answer}
+														/>
+													)}
 													<Button
 														disabled={
 															isSubmitting ||
@@ -736,7 +805,9 @@ export default function QuestionForm({
 												size="sm"
 												variant="secondary"
 											>
-												Add accepted answer
+												{card.uiHint === "country"
+													? "Add accepted country"
+													: "Add accepted answer"}
 											</Button>
 										</div>
 									</Field>

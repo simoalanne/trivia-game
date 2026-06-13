@@ -9,6 +9,7 @@ const triviaCardFormatSchema = z.enum([
 	"OPEN_ENDED",
 	"ORDER_ITEMS",
 ]);
+const triviaCardUiHintSchema = z.enum(["country"]);
 
 const gameStateStatusSchema = z.enum(["waiting", "in_progress", "finished"]);
 const entryStateSchema = z.enum(["unanswered", "correct", "incorrect"]);
@@ -34,6 +35,7 @@ export const currentCardSchema = z.object({
 	id: z.number().int(),
 	prompt: z.string(),
 	format: triviaCardFormatSchema,
+	uiHint: triviaCardUiHintSchema.optional(),
 	choices: z.array(z.string()).optional(),
 	entries: z.array(
 		z.object({
