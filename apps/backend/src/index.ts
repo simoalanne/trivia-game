@@ -7,6 +7,7 @@ import { apiReference } from "@scalar/express-api-reference";
 import type { ErrorRequestHandler } from "express";
 import express from "express";
 import gameplayService from "./features/gameplay/gameplay.service.ts";
+import questionsCrudService from "./features/questionsCrud/questionsCrud.service.ts";
 import { NotFoundError } from "./utils/NotFoundError.ts";
 
 const app = express();
@@ -61,6 +62,7 @@ createRouter({
 	contracts,
 	services: {
 		gameplay: gameplayService,
+		questionsCrud: questionsCrudService,
 	},
 	middlewares: [loggingMiddleware],
 	routePrefix: "/api",

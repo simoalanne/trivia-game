@@ -4,6 +4,7 @@ import type {
 	DotPaths,
 } from "@contract-first-api/core";
 import gameplay from "./gameplay.ts";
+import questionsCrud from "./questionsCrud.ts";
 
 export type {
 	GameplayClientMessage,
@@ -12,9 +13,23 @@ export type {
 	GameplayServerMessage,
 	GameplaySession,
 } from "./gameplay.ts";
+export type {
+	QuestionCard,
+	QuestionCardInput,
+	TriviaCardDifficulty,
+	TriviaCardFormat,
+} from "./questionsCrud.ts";
+export {
+	questionCardInputSchema,
+	questionCardSchema,
+	triviaCardDifficultySchema,
+	triviaCardFormatSchema,
+	triviaCardIdSchema,
+} from "./questionsCrud.ts";
 
 export const contracts = {
 	...gameplay,
+	...questionsCrud,
 };
 
 type AppContracts = typeof contracts;

@@ -28,6 +28,11 @@ export default function SharedLayout({ children }: SharedLayoutProps) {
 							<Link className={styles.brand} href="/">
 								TriviaGame
 							</Link>
+							<nav className={styles.nav} aria-label="Primary">
+								<Link className={styles.navLink} href="/manage-questions">
+									Manage questions
+								</Link>
+							</nav>
 						</header>
 						{children}
 					</div>

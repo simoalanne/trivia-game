@@ -9,13 +9,14 @@
 		"typecheck": "tsc -p tsconfig.json"
 	},
 	"dependencies": {
-		"next": "16.2.7",
-		"react": "19.2.4",
-		"react-dom": "19.2.4",
 		"@contract-first-api/api-client": "^4.3.0",
 		"@contract-first-api/react-query": "^4.3.0",
+		"@packages/contracts": "workspace:*",
 		"@tanstack/react-query": "^5.101.0",
-		"@packages/contracts": "workspace:*"
+		"lucide-react": "^1.18.0",
+		"next": "16.2.7",
+		"react": "19.2.4",
+		"react-dom": "19.2.4"
 	},
 	"devDependencies": {
 		"@types/node": "^20",
