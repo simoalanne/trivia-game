@@ -64,10 +64,36 @@
 	padding: var(--space-3) var(--space-4);
 }
 
-.playerScore span {
+.playerMeta,
+.playerPoints {
+	display: grid;
+	gap: var(--space-1);
+}
+
+.playerMeta strong {
+	display: block;
+}
+
+.playerPoints {
+	justify-items: end;
+}
+
+.playerPoints span {
 	color: var(--color-text-muted);
 	font-family: var(--font-mono);
 	font-weight: 750;
+}
+
+.bankedBadge {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--radius-sm);
+	background: color-mix(in srgb, var(--color-text) 12%, var(--color-surface));
+	padding: 0.1rem 0.45rem;
+	color: var(--color-text-muted);
+	font-size: 0.75rem;
+	font-weight: 700;
 }
 
 .currentPlayer {

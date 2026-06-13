@@ -9,6 +9,7 @@ export type Player = {
 	name: string;
 	isHost: boolean;
 	isReady: boolean;
+	hasBankedRoundPoints: boolean;
 	socket?: unknown;
 };
 
@@ -26,6 +27,7 @@ export type GameSession = {
 	gameState: "waiting" | "in_progress" | "finished";
 	round: number;
 	scores: Record<string, number>;
+	roundScores: Record<string, number>;
 	playerTurnIndex: number;
 	playedThroughCardIds: number[];
 };
@@ -112,7 +114,7 @@ export interface GameSessionManager {
 	getCurrentGameSession(): MaybePromise<GameSession>;
 
 	/**
-	 * Submits an answer for the current card's active entry. This will check if the answer is correct, update the entry state, and adjust the player's score accordingly.
+	 * Submits an answer for the current card's active entry. This will check if the answer is correct, update the entry state, and adjust the player's round score accordingly.
 	 * @param playerId The ID of the player submitting the answer
 	 * @param entryIndex The index of the card entry being answered
 	 * @param answer The player's submitted answer
@@ -122,6 +124,12 @@ export interface GameSessionManager {
 		entryIndex: number,
 		answer: PrismaJson.TriviaCardData["entries"][number]["answer"],
 	): MaybePromise<void>;
+
+	/**
+	 * Banks the player's current round score and removes them from the rest of the round's turn rotation.
+	 * @param playerId The ID of the player banking their round points
+	 */
+	bankPoints(playerId: string): MaybePromise<void>;
 
 	/**
 	 * Advances the turn to the next player. This will update the playerTurnIndex to point to the next player in the turn order.
@@ -149,6 +157,7 @@ class InMemoryGameSessionManager implements GameSessionManager {
 			name: hostName,
 			isHost: true,
 			isReady: false,
+			hasBankedRoundPoints: false,
 		};
 		const newSession: GameSession = {
 			currentCard: null,
@@ -156,6 +165,7 @@ class InMemoryGameSessionManager implements GameSessionManager {
 			gameState: "waiting" as const,
 			round: 1,
 			scores: { [host.id]: 0 },
+			roundScores: { [host.id]: 0 },
 			playerTurnIndex: 0,
 			playedThroughCardIds: [],
 		};
@@ -171,9 +181,11 @@ class InMemoryGameSessionManager implements GameSessionManager {
 			name,
 			isHost: false,
 			isReady: false,
+			hasBankedRoundPoints: false,
 		};
 		this.gameSession.players.push(newPlayer);
 		this.gameSession.scores[newPlayer.id] = 0;
+		this.gameSession.roundScores[newPlayer.id] = 0;
 		return newPlayer;
 	}
 
@@ -182,6 +194,7 @@ class InMemoryGameSessionManager implements GameSessionManager {
 			(p) => p.id !== playerId,
 		);
 		delete this.gameSession.scores[playerId];
+		delete this.gameSession.roundScores[playerId];
 	}
 
 	async setPlayerReady(playerId: string, isReady: boolean) {
@@ -200,6 +213,7 @@ class InMemoryGameSessionManager implements GameSessionManager {
 			throw new Error("All players must be ready to start the game");
 		}
 		this.gameSession.gameState = "in_progress";
+		this.resetRoundState();
 		this.gameSession.currentCard = await this.pickRandomCard(
 			this.gameSession.playedThroughCardIds,
 		);
@@ -222,6 +236,9 @@ class InMemoryGameSessionManager implements GameSessionManager {
 		if (currentPlayer?.id !== playerId) {
 			throw new Error("It's not this player's turn");
 		}
+		if (currentPlayer.hasBankedRoundPoints) {
+			throw new Error("This player has already banked points this round");
+		}
 		const entry = this.gameSession.currentCard.entries[entryIndex];
 		if (!entry) {
 			throw new Error("Invalid entry index");
@@ -242,27 +259,76 @@ class InMemoryGameSessionManager implements GameSessionManager {
 				(normalizedEntryAnswer as string[]).includes(normalizedAnswer));
 		entry.state = isCorrect ? "correct" : "incorrect";
 		if (isCorrect) {
-			this.gameSession.scores[playerId] += 1;
+			this.gameSession.roundScores[playerId] += 1;
+		} else {
+			this.gameSession.roundScores[playerId] = 0;
 		}
+	}
+
+	async bankPoints(playerId: string) {
+		if (!this.gameSession.currentCard) {
+			throw new Error("No active card");
+		}
+		const currentPlayer =
+			this.gameSession.players[this.gameSession.playerTurnIndex];
+		if (currentPlayer?.id !== playerId) {
+			throw new Error("It's not this player's turn");
+		}
+		if (currentPlayer.hasBankedRoundPoints) {
+			throw new Error("This player has already banked points this round");
+		}
+		currentPlayer.hasBankedRoundPoints = true;
 	}
 
 	async nextTurn() {
 		if (!this.gameSession.currentCard) {
 			throw new Error("No active card");
 		}
-		this.gameSession.playerTurnIndex =
-			(this.gameSession.playerTurnIndex + 1) % this.gameSession.players.length;
+		const nextPlayerIndex = this.findNextActivePlayerIndex(
+			this.gameSession.playerTurnIndex,
+		);
+		if (nextPlayerIndex === null) {
+			throw new Error("No active players remaining in this round");
+		}
+		this.gameSession.playerTurnIndex = nextPlayerIndex;
 	}
 
 	async endRound() {
 		if (!this.gameSession.currentCard) {
 			throw new Error("No active card");
 		}
+		Object.keys(this.gameSession.roundScores).forEach((playerId) => {
+			this.gameSession.scores[playerId] +=
+				this.gameSession.roundScores[playerId];
+		});
 		this.gameSession.playedThroughCardIds.push(this.gameSession.currentCard.id);
+		this.resetRoundState();
 		this.gameSession.currentCard = await this.pickRandomCard(
 			this.gameSession.playedThroughCardIds,
 		);
 		this.gameSession.round += 1;
+	}
+
+	private resetRoundState() {
+		this.gameSession.players.forEach((player) => {
+			player.hasBankedRoundPoints = false;
+			this.gameSession.roundScores[player.id] = 0;
+		});
+		this.gameSession.playerTurnIndex = 0;
+	}
+
+	private findNextActivePlayerIndex(fromIndex: number) {
+		const { players } = this.gameSession;
+		if (players.length === 0) {
+			return null;
+		}
+		for (let offset = 1; offset <= players.length; offset += 1) {
+			const candidateIndex = (fromIndex + offset) % players.length;
+			if (!players[candidateIndex]?.hasBankedRoundPoints) {
+				return candidateIndex;
+			}
+		}
+		return null;
 	}
 
 	private async getLoadedCards(limit = 100) {

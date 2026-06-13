@@ -14,6 +14,25 @@ const createUniqueGameSession = async (playerName: string) => {
 	throw new Error("Could not create a unique game code");
 };
 
+const shouldEndRound = async (
+	gameSession: Awaited<ReturnType<typeof gameStore.get>>,
+) => {
+	if (!gameSession) {
+		return false;
+	}
+
+	const updatedSession = await gameSession.getCurrentGameSession();
+	const allEntriesAnswered =
+		updatedSession.currentCard?.entries.every(
+			(entry) => entry.state !== "unanswered",
+		) ?? false;
+	const everyPlayerHasBanked = updatedSession.players.every(
+		(player) => player.hasBankedRoundPoints,
+	);
+
+	return allEntriesAnswered || everyPlayerHasBanked;
+};
+
 export default defineService("gameplay", {
 	async create({ playerName }) {
 		const gameSession = await createUniqueGameSession(playerName);
@@ -104,12 +123,16 @@ export default defineService("gameplay", {
 							message.data.entryIndex,
 							message.data.answer,
 						);
-						const updatedSession = await gameSession.getCurrentGameSession();
-						const allEntriesAnswered =
-							updatedSession.currentCard?.entries.every(
-								(entry) => entry.state !== "unanswered",
-							);
-						if (allEntriesAnswered) {
+						if (await shouldEndRound(gameSession)) {
+							await gameSession.endRound();
+						} else {
+							await gameSession.nextTurn();
+						}
+						break;
+					}
+					case "bankPoints": {
+						await gameSession.bankPoints(playerId);
+						if (await shouldEndRound(gameSession)) {
 							await gameSession.endRound();
 						} else {
 							await gameSession.nextTurn();

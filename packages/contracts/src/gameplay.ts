@@ -27,6 +27,7 @@ export const playerSchema = z.object({
 	name: z.string(),
 	isHost: z.boolean(),
 	isReady: z.boolean(),
+	hasBankedRoundPoints: z.boolean(),
 });
 
 export const currentCardSchema = z.object({
@@ -50,6 +51,7 @@ export const gameSessionSchema = z.object({
 	gameState: gameStateStatusSchema,
 	round: z.number().int().positive(),
 	scores: z.record(z.string(), z.number().int().nonnegative()),
+	roundScores: z.record(z.string(), z.number().int().nonnegative()),
 	playerTurnIndex: z.number().int().nonnegative(),
 	playedThroughCardIds: z.array(z.number().int()),
 });
@@ -66,6 +68,9 @@ export const gameplayClientMessageSchema = z.discriminatedUnion("type", [
 		type: z.literal("submitAnswer"),
 		entryIndex: z.number().int().nonnegative(),
 		answer: submittedAnswerSchema,
+	}),
+	z.object({
+		type: z.literal("bankPoints"),
 	}),
 	z.object({
 		type: z.literal("nextTurn"),

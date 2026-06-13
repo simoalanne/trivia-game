@@ -83,6 +83,10 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 	);
 	const turnPlayer = getCurrentTurnPlayer(gameState);
 	const isCurrentTurn = Boolean(turnPlayer && turnPlayer.id === playerId);
+	const hasBankedRoundPoints = Boolean(currentPlayer?.hasBankedRoundPoints);
+	const currentRoundPoints = currentPlayer
+		? (gameState?.roundScores[currentPlayer.id] ?? 0)
+		: 0;
 	const canSend = connectionState === "open" && Boolean(currentPlayer);
 
 	const sortedPlayers = useMemo(
@@ -134,6 +138,21 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		}
 	};
 
+	const bankPoints = () => {
+		if (!isCurrentTurn || !canSend) {
+			return;
+		}
+
+		const didSend = send({
+			type: "bankPoints",
+		});
+
+		if (didSend) {
+			setAnswers({});
+			setActiveEntryIndex(null);
+		}
+	};
+
 	return (
 		<main className={styles.page}>
 			<section className={styles.panel} aria-labelledby="active-game-title">
@@ -153,10 +172,25 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 							} ${player.id === turnPlayer?.id ? styles.currentTurn : ""}`}
 							key={player.id}
 						>
-							<strong>{player.id === playerId ? "You" : player.name}</strong>
-							<span>
-								{String(gameState?.scores[player.id] ?? 0).padStart(3, "0")}
-							</span>
+							<div className={styles.playerMeta}>
+								<strong>{player.id === playerId ? "You" : player.name}</strong>
+								{player.hasBankedRoundPoints ? (
+									<span className={styles.bankedBadge}>Skipped</span>
+								) : null}
+							</div>
+							<div className={styles.playerPoints}>
+								<span>
+									Total{" "}
+									{String(gameState?.scores[player.id] ?? 0).padStart(3, "0")}
+								</span>
+								<span>
+									Round +
+									{String(gameState?.roundScores[player.id] ?? 0).padStart(
+										2,
+										"0",
+									)}
+								</span>
+							</div>
 						</div>
 					))}
 				</aside>
@@ -171,12 +205,23 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 				{currentCard ? (
 					<section className={styles.round} aria-label="Current trivia card">
 						<h2>{currentCard.prompt}</h2>
+						<div className={styles.actions}>
+							<Button
+								disabled={!canSend || !isCurrentTurn || hasBankedRoundPoints}
+								onClick={bankPoints}
+								size="sm"
+								variant="secondary"
+							>
+								{currentRoundPoints > 0 ? "Skip and bank points" : "Skip"}
+							</Button>
+						</div>
 						<div className={styles.entriesGrid}>
 							{currentCard.entries.map((entry, entryIndex) => {
 								const answered = entry.state !== "unanswered";
 								const inputDisabled =
 									!canSend ||
 									!isCurrentTurn ||
+									hasBankedRoundPoints ||
 									answered ||
 									(activeEntryIndex !== null &&
 										activeEntryIndex !== entryIndex);
