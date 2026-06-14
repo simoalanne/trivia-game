@@ -42,6 +42,21 @@ Run the backend:
 pnpm --filter backend start
 ```
 
+If you want to draft question cards from uploaded images with a local Ollama
+vision model, set these backend environment variables before starting:
+
+```bash
+OLLAMA_MODEL=qwen2.5vl:7b
+```
+
+Optional:
+
+```bash
+OLLAMA_API_BASE_URL=http://localhost:11434/api
+OLLAMA_TEMPERATURE=0
+OLLAMA_TIMEOUT_MS=120000
+```
+
 Run the frontend:
 
 ```bash

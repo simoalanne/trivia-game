@@ -12,7 +12,7 @@ export const createApiClient = () => {
 		fetchOptions: {
 			next: { revalidate: 10 },
 		},
-		timeoutMs: 5000,
+		timeoutMs: 120000,
 	});
 	return apiClient.api;
 };

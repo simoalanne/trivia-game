@@ -21,8 +21,8 @@ importers:
   apps/backend:
     dependencies:
       '@contract-first-api/express':
-        specifier: ^4.3.0
-        version: 4.3.0(express@5.2.1)(ws@8.21.0)
+        specifier: ^4.4.0
+        version: 4.4.0(express@5.2.1)(ws@8.21.0)
       '@contract-first-api/openapi':
         specifier: ^1.0.1
         version: 1.0.1
@@ -38,6 +38,9 @@ importers:
       ws:
         specifier: ^8.21.0
         version: 8.21.0
+      zod:
+        specifier: ^4.4.3
+        version: 4.4.3
     devDependencies:
       '@prisma/adapter-pg':
         specifier: ^7.8.0
@@ -79,11 +82,11 @@ importers:
   apps/frontend:
     dependencies:
       '@contract-first-api/api-client':
-        specifier: ^4.3.0
-        version: 4.3.0
+        specifier: ^4.4.0
+        version: 4.4.0
       '@contract-first-api/react-query':
-        specifier: ^4.3.0
-        version: 4.3.0(@tanstack/react-query@5.101.0(react@19.2.4))
+        specifier: ^4.4.0
+        version: 4.4.0(@tanstack/react-query@5.101.0(react@19.2.4))
       '@packages/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
@@ -119,8 +122,8 @@ importers:
   packages/contracts:
     dependencies:
       '@contract-first-api/core':
-        specifier: ^4.3.0
-        version: 4.3.0
+        specifier: ^4.4.0
+        version: 4.4.0
       zod:
         specifier: ^4.3.6
         version: 4.4.3
@@ -188,14 +191,14 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@contract-first-api/api-client@4.3.0':
-    resolution: {integrity: sha512-U7OqVzMI4lfv7ytdcXidREvNWRD0sVFFCx+8i8k0knJ3pPJpaGRYGDZaII4+S92uF7H2DhSE165scSEIFuCD2A==}
+  '@contract-first-api/api-client@4.4.0':
+    resolution: {integrity: sha512-mWo6Fx3aimhYU/RtrVLjEp6JWuBqHkJecM/R2bkz28+0pWGMdywUYiJfh4YE0lH6eslPo9kt1s0e1LO+Xo4wKg==}
 
-  '@contract-first-api/core@4.3.0':
-    resolution: {integrity: sha512-54V3CkaqxuCJ8QJT4Psdp5l7qkaJ56IkJBu5fjkq+V2r7RSytzWapl66BhR1BoXp6ItwSy6C4GFLFH9Eh+5VhQ==}
+  '@contract-first-api/core@4.4.0':
+    resolution: {integrity: sha512-+Pup6zZfeY2U55MwPnhjp7A+spTMWoYHOFcezpiScncf3EHRwJDk83WeYBEDcN/B9+it6bPsDy9LSa3TRCcXGw==}
 
-  '@contract-first-api/express@4.3.0':
-    resolution: {integrity: sha512-zzkwJdrVRTEyMcT/RfVtCu8d8DieK69wtJNzO1c1SRTNfkD5LUhjKZVlb5yd4nv6IlvJ2DPuvlnZ41zpsMZosA==}
+  '@contract-first-api/express@4.4.0':
+    resolution: {integrity: sha512-dpVIhNCobjiemGgj3RWwul9Uu4M1RMiXJapjUVP8HGd+b4+Sa0iD3E8ad1lGgVUxbQ7keva4rI+05N68fvhvzA==}
     peerDependencies:
       express: ^5.0.0
       ws: ^8.21.0
@@ -203,8 +206,8 @@ packages:
   '@contract-first-api/openapi@1.0.1':
     resolution: {integrity: sha512-tJr7e1RXKhqOg69ove6ihMXHq0JQE4scP4Qp084okVF1mzx/2BZ+LPGcVBxxlgyMg0LPRZpOLyTMJYU0VEKf0Q==}
 
-  '@contract-first-api/react-query@4.3.0':
-    resolution: {integrity: sha512-UZ4h2y2bRAJBfjw/s73WiJw6oRuC4QbMELRZoTXB1k/bFCK1FwTwWfq4XzpYlqzBcHw+LVSklcyCa0Tc8v0k9w==}
+  '@contract-first-api/react-query@4.4.0':
+    resolution: {integrity: sha512-hk1NvUDPidLz8L7p+ZMVswM1NURMcuK7Wd75+lhdCEGoJmj/X3ruFn05mUnAPkXKHyZPavrncw2qQ2ZtvxOMJA==}
     peerDependencies:
       '@tanstack/react-query': ^5.0.0
 
@@ -1474,30 +1477,30 @@ snapshots:
   '@biomejs/cli-win32-x64@2.4.11':
     optional: true
 
-  '@contract-first-api/api-client@4.3.0':
+  '@contract-first-api/api-client@4.4.0':
     dependencies:
-      '@contract-first-api/core': 4.3.0
+      '@contract-first-api/core': 4.4.0
       zod: 4.4.3
 
-  '@contract-first-api/core@4.3.0':
+  '@contract-first-api/core@4.4.0':
     dependencies:
       zod: 4.4.3
 
-  '@contract-first-api/express@4.3.0(express@5.2.1)(ws@8.21.0)':
+  '@contract-first-api/express@4.4.0(express@5.2.1)(ws@8.21.0)':
     dependencies:
-      '@contract-first-api/core': 4.3.0
+      '@contract-first-api/core': 4.4.0
       express: 5.2.1
       ws: 8.21.0
 
   '@contract-first-api/openapi@1.0.1':
     dependencies:
-      '@contract-first-api/core': 4.3.0
+      '@contract-first-api/core': 4.4.0
       zod: 4.4.3
 
-  '@contract-first-api/react-query@4.3.0(@tanstack/react-query@5.101.0(react@19.2.4))':
+  '@contract-first-api/react-query@4.4.0(@tanstack/react-query@5.101.0(react@19.2.4))':
     dependencies:
-      '@contract-first-api/api-client': 4.3.0
-      '@contract-first-api/core': 4.3.0
+      '@contract-first-api/api-client': 4.4.0
+      '@contract-first-api/core': 4.4.0
       '@tanstack/react-query': 5.101.0(react@19.2.4)
 
   '@electric-sql/pglite-socket@0.1.1(@electric-sql/pglite@0.4.1)':

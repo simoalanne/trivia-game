@@ -15,14 +15,23 @@ const app = express();
 const server = createServer(app);
 const port = Number(process.env.PORT ?? 3000);
 
-app.use(express.json());
-
 type RequestContext = Record<string, unknown>;
 
-export const { defineService, defineMiddleware, createRouter } = initServer<
-	typeof contracts,
-	RequestContext
->();
+export const {
+	defineService,
+	defineMiddleware,
+	createRouter,
+	createContractModeMiddleware,
+} = initServer<typeof contracts, RequestContext>();
+
+app.use(
+	createContractModeMiddleware({
+		contracts,
+		nonRaw: express.json(),
+		raw: express.raw({ type: ["image/jpeg", "image/png"], limit: "5mb" }),
+		routePrefix: "/api",
+	}),
+);
 
 const openApiDocument = createOpenApiDocument(contracts, {
 	info: {

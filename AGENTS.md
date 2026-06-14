@@ -37,11 +37,11 @@ Important local docs:
 These should be present in `node_modules` after running `pnpm install` from the repo root. The actual paths may vary depending on how pnpm decides to link the packages, but they should be somewhere under `node_modules/.pnpm/`:
 
 - `@contract-first-api/core`:
-  `node_modules/.pnpm/@contract-first-api+core@4.3.0/node_modules/@contract-first-api/core/README.md`
+  `node_modules/.pnpm/@contract-first-api+core@4.4.0/node_modules/@contract-first-api/core/README.md`
 - `@contract-first-api/express`:
-  `node_modules/.pnpm/@contract-first-api+express@4.3.0_express@5.2.1_ws@8.21.0/node_modules/@contract-first-api/express/README.md`
+  `node_modules/.pnpm/@contract-first-api+express@4.4.0_express@5.2.1_ws@8.21.0/node_modules/@contract-first-api/express/README.md`
 - `@contract-first-api/api-client`:
-  `node_modules/.pnpm/@contract-first-api+api-client@4.3.0/node_modules/@contract-first-api/api-client/README.md`
+  `node_modules/.pnpm/@contract-first-api+api-client@4.4.0/node_modules/@contract-first-api/api-client/README.md`
 
 If you cannot find these files locally, the online documentation is also available on GitHub and per package on npm:
 Github:

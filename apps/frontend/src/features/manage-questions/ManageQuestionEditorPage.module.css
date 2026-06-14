@@ -1,13 +1,71 @@
 .page {
 	display: grid;
+	gap: var(--space-5);
 	place-items: start center;
 	padding: clamp(var(--space-4), 5vw, var(--space-7));
 }
 
+.importPanel,
 .statusMessage,
 .errorMessage {
 	width: min(100%, 64rem);
 	margin: 0;
+}
+
+.importPanel {
+	display: grid;
+	gap: var(--space-4);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-lg);
+	background: color-mix(in srgb, var(--color-surface) 92%, white);
+	padding: clamp(var(--space-4), 4vw, var(--space-5));
+}
+
+.importHeader {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: end;
+	justify-content: space-between;
+	gap: var(--space-4);
+}
+
+.importHeader h2 {
+	margin: 0;
+	font-size: clamp(1.35rem, 4vw, 1.8rem);
+}
+
+.importHeader p {
+	margin: var(--space-2) 0 0;
+	color: var(--color-text-muted);
+	max-width: 42rem;
+}
+
+.uploadButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: 2.75rem;
+	border-radius: var(--radius-md);
+	background: var(--color-accent);
+	color: var(--color-accent-contrast);
+	cursor: pointer;
+	font-weight: 650;
+	padding: 0 var(--space-4);
+}
+
+.uploadButton:hover {
+	background: var(--color-accent-hover);
+}
+
+.uploadInput {
+	display: none;
+}
+
+.importActions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-3);
 }
 
 .errorMessage {

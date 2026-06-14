@@ -1,12 +1,6 @@
 import z from "zod";
 import { defineContractTree } from "./initContracts.ts";
 
-const optionalExplanationSchema = z.preprocess(
-	(value) =>
-		typeof value === "string" && value.trim().length === 0 ? undefined : value,
-	z.string().trim().min(1).optional(),
-);
-
 const uniqueTrimmedStrings = (items: string[]) =>
 	new Set(items.map((item) => item.trim().toLowerCase())).size === items.length;
 
@@ -26,7 +20,7 @@ export const triviaCardIdSchema = z.coerce.number().int().positive();
 
 const baseEntrySchema = z.object({
 	text: nonEmptyTrimmedStringSchema,
-	explanation: optionalExplanationSchema,
+	explanation: z.string().trim().min(1).optional(),
 });
 
 export const multipleChoiceEntryInputSchema = baseEntrySchema.extend({
@@ -190,6 +184,12 @@ export default defineContractTree({
 				}),
 			},
 			response: questionCardSchema,
+		},
+		convertImageToQuestionCardDraft: {
+			path: "/questions/convert-image-to-draft",
+			method: "POST",
+			options: { mode: "raw" },
+			response: questionCardInputSchema,
 		},
 	},
 });

@@ -9,8 +9,8 @@
 		"typecheck": "tsc -p tsconfig.json"
 	},
 	"dependencies": {
-		"@contract-first-api/api-client": "^4.3.0",
-		"@contract-first-api/react-query": "^4.3.0",
+		"@contract-first-api/api-client": "^4.4.0",
+		"@contract-first-api/react-query": "^4.4.0",
 		"@packages/contracts": "workspace:*",
 		"@tanstack/react-query": "^5.101.0",
 		"lucide-react": "^1.18.0",
