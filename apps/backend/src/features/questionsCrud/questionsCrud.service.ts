@@ -61,9 +61,11 @@ For each rings item:
 - do not pair with a neighboring slice
 
 Output rules:
-- preserve original text exactly
+- preserve original text exactly with exception of soft line-breaks that are not part of the text itself but only exist to allow the text to wrap - in that case, join the split word and omit the hyphen
+- keep real hyphens that are part of the intended text, such as compound words, ranges, minus signs, or names
 - true/false icons (green checkmarks and red Xs) in the outer-ring become "true" and "false" string values
-- return JSON only`;
+- return JSON only
+`;
 
 type OllamaChatResponse = {
 	message?: {
