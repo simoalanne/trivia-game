@@ -2,9 +2,20 @@
 
 import type { GameplayCurrentCard, GameplaySession } from "@packages/contracts";
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Button, CountryPicker, Select, TextInput } from "@/components";
+import { useEffect, useMemo, useState } from "react";
+import { Button } from "@/components";
 import styles from "./ActiveGamePage.module.css";
+import {
+	AnswerPanel,
+	type AnswerPanelAnswer,
+	GameCode,
+	PlayerList,
+	type PlayerListItem,
+	type PlayerPosition,
+	type PlayerTone,
+	TriviaCard,
+	type TriviaCardItem,
+} from "./components";
 import { useGameplaySocket } from "./useGameplaySocket";
 
 type ActiveGameClientProps = {
@@ -12,6 +23,14 @@ type ActiveGameClientProps = {
 };
 
 type SubmittedAnswer = string | boolean | number;
+
+const playerPositions: PlayerPosition[] = [
+	"topLeft",
+	"topRight",
+	"bottomLeft",
+	"bottomRight",
+];
+const playerTones: PlayerTone[] = ["green", "red", "blue", "gold"];
 
 const getBrowserLocales = () => {
 	if (typeof navigator === "undefined") {
@@ -97,29 +116,59 @@ const getEntryOptions = (
 	}
 };
 
-const coerceAnswer = (
-	card: GameplayCurrentCard,
-	answer: string,
-): SubmittedAnswer => {
-	if (card.format === "TRUE_OR_FALSE") {
-		return answer === "true";
-	}
-
-	if (card.format === "ORDER_ITEMS") {
-		return Number(answer);
-	}
-
-	return answer.trim();
-};
-
 const getCurrentTurnPlayer = (gameState: GameplaySession | null) =>
 	gameState?.players[gameState.playerTurnIndex] ?? null;
+
+const getTriviaItemAnswer = (
+	card: GameplayCurrentCard,
+	entry: GameplayCurrentCard["entries"][number],
+	displayNames: Intl.DisplayNames,
+) =>
+	entry.state === "unanswered"
+		? undefined
+		: formatAnswer(entry.answer, card.uiHint, displayNames);
+
+const toAnswerPanelAnswer = (
+	card: GameplayCurrentCard,
+	entryIndex: number,
+	onSubmit: (answer: SubmittedAnswer) => void,
+): AnswerPanelAnswer => {
+	switch (card.format) {
+		case "TRUE_OR_FALSE":
+			return {
+				format: card.format,
+				onSubmit: (answer) => onSubmit(answer),
+			};
+		case "MULTIPLE_CHOICE":
+			return {
+				format: card.format,
+				choices: card.choices ?? [],
+				onSubmit: (answer) => onSubmit(answer),
+			};
+		case "ORDER_ITEMS":
+			return {
+				format: card.format,
+				positions: getEntryOptions(card, entryIndex).map((option) =>
+					Number(option.value),
+				),
+				onSubmit: (answer) => onSubmit(answer),
+			};
+		case "OPEN_ENDED":
+			return {
+				format: card.format,
+				placeholder: card.uiHint === "country" ? "Country" : "Your answer",
+				uiHint: card.uiHint,
+				onSubmit: (answer) => onSubmit(answer),
+			};
+	}
+};
 
 export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 	const { connectionState, error, gameState, playerId, send } =
 		useGameplaySocket(gameCode);
-	const [answers, setAnswers] = useState<Record<number, string>>({});
-	const [activeEntryIndex, setActiveEntryIndex] = useState<number | null>(null);
+	const [selectedEntryIndex, setSelectedEntryIndex] = useState<number | null>(
+		null,
+	);
 	const gameCodePath = gameCode.toLowerCase();
 	const currentCard = gameState?.currentCard ?? null;
 	const currentPlayer = gameState?.players.find(
@@ -138,52 +187,72 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		[locales],
 	);
 
-	const sortedPlayers = useMemo(
+	const playerList = useMemo<PlayerListItem[]>(
 		() =>
-			[...(gameState?.players ?? [])].sort(
-				(first, second) =>
-					(gameState?.scores[second.id] ?? 0) -
-					(gameState?.scores[first.id] ?? 0),
-			),
-		[gameState],
+			(gameState?.players ?? []).map((player, index) => ({
+				id: player.id,
+				name: player.name,
+				score:
+					(gameState?.scores[player.id] ?? 0) +
+					(gameState?.roundScores[player.id] ?? 0),
+				tone: playerTones[index % playerTones.length] ?? "blue",
+				position:
+					playerPositions[index % playerPositions.length] ?? "bottomLeft",
+				isYou: player.id === playerId,
+				isCurrentTurn: player.id === turnPlayer?.id,
+				hasBankedRoundPoints: player.hasBankedRoundPoints,
+			})),
+		[gameState, playerId, turnPlayer?.id],
 	);
 
-	const setAnswer = (entryIndex: number, value: string) => {
-		setAnswers((current) => {
-			const next = { ...current };
-			if (value.trim()) {
-				next[entryIndex] = value;
-			} else {
-				delete next[entryIndex];
-			}
-			return next;
-		});
-		setActiveEntryIndex(value.trim() ? entryIndex : null);
-	};
+	const triviaItems = useMemo<TriviaCardItem[]>(
+		() =>
+			currentCard?.entries.map((entry, entryIndex) => ({
+				id: String(entryIndex),
+				label: entry.text,
+				answer: getTriviaItemAnswer(currentCard, entry, displayNames),
+				disabled:
+					entry.state !== "unanswered" ||
+					!canSend ||
+					!isCurrentTurn ||
+					hasBankedRoundPoints,
+			})) ?? [],
+		[currentCard, displayNames, canSend, isCurrentTurn, hasBankedRoundPoints],
+	);
 
-	const submitAnswer = (entryIndex: number) => {
-		if (!currentCard) {
-			return;
-		}
+	const selectedEntry =
+		selectedEntryIndex === null
+			? null
+			: (currentCard?.entries[selectedEntryIndex] ?? null);
+	const canAnswerSelectedEntry = Boolean(
+		currentCard &&
+			selectedEntry &&
+			selectedEntry.state === "unanswered" &&
+			canSend &&
+			isCurrentTurn &&
+			!hasBankedRoundPoints,
+	);
 
-		const rawAnswer = answers[entryIndex]?.trim();
-		if (!rawAnswer) {
+	const selectedCardId = currentCard?.id ?? null;
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset selected entry when the current card changes.
+	useEffect(() => {
+		setSelectedEntryIndex(null);
+	}, [selectedCardId]);
+
+	const submitAnswer = (entryIndex: number, answer: SubmittedAnswer) => {
+		if (!currentCard || !canSend || !isCurrentTurn || hasBankedRoundPoints) {
 			return;
 		}
 
 		const didSend = send({
 			type: "submitAnswer",
 			entryIndex,
-			answer: coerceAnswer(currentCard, rawAnswer),
+			answer,
 		});
 
 		if (didSend) {
-			setAnswers((current) => {
-				const next = { ...current };
-				delete next[entryIndex];
-				return next;
-			});
-			setActiveEntryIndex(null);
+			setSelectedEntryIndex(null);
 		}
 	};
 
@@ -197,166 +266,80 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		});
 
 		if (didSend) {
-			setAnswers({});
-			setActiveEntryIndex(null);
+			setSelectedEntryIndex(null);
 		}
 	};
 
 	return (
 		<main className={styles.page}>
-			<section className={styles.panel} aria-labelledby="active-game-title">
-				<div className={styles.header}>
-					<p className={styles.kicker}>Game {gameCode.toUpperCase()}</p>
-					<h1 id="active-game-title">
+			<header className={styles.topBar}>
+				<GameCode code={gameCode} />
+				<div className={styles.roundStatus}>
+					<strong>
 						{currentCard ? `Round ${gameState?.round ?? 1}` : "Gameplay"}
-					</h1>
+					</strong>
+					{turnPlayer ? (
+						<span>
+							{turnPlayer.id === playerId
+								? "Your turn"
+								: `${turnPlayer.name}'s turn`}
+						</span>
+					) : null}
 				</div>
-				{error ? <p className={styles.errorMessage}>{error}</p> : null}
+			</header>
 
-				<aside className={styles.scoreboard} aria-label="Scoreboard">
-					{sortedPlayers.map((player) => (
-						<div
-							className={`${styles.playerScore} ${
-								player.id === playerId ? styles.currentPlayer : ""
-							} ${player.id === turnPlayer?.id ? styles.currentTurn : ""}`}
-							key={player.id}
-						>
-							<div className={styles.playerMeta}>
-								<strong>{player.id === playerId ? "You" : player.name}</strong>
-								{player.hasBankedRoundPoints ? (
-									<span className={styles.bankedBadge}>Skipped</span>
-								) : null}
-							</div>
-							<div className={styles.playerPoints}>
-								<span>
-									Total{" "}
-									{String(gameState?.scores[player.id] ?? 0).padStart(3, "0")}
-								</span>
-								<span>
-									Round +
-									{String(gameState?.roundScores[player.id] ?? 0).padStart(
-										2,
-										"0",
-									)}
-								</span>
-							</div>
-						</div>
-					))}
-				</aside>
+			{error ? <p className={styles.errorMessage}>{error}</p> : null}
 
-				{gameState?.gameState === "waiting" ? (
-					<div className={styles.notice}>
-						<p>This game has not started yet.</p>
-						<Link href={`/play/${gameCodePath}/lobby`}>Open lobby</Link>
-					</div>
-				) : null}
+			{gameState?.gameState === "waiting" ? (
+				<div className={styles.notice}>
+					<p>This game has not started yet.</p>
+					<Link href={`/play/${gameCodePath}/lobby`}>Open lobby</Link>
+				</div>
+			) : null}
 
-				{currentCard ? (
-					<section className={styles.round} aria-label="Current trivia card">
-						<h2>{currentCard.prompt}</h2>
-						<div className={styles.actions}>
-							<Button
-								disabled={!canSend || !isCurrentTurn || hasBankedRoundPoints}
-								onClick={bankPoints}
-								size="sm"
-								variant="secondary"
-							>
-								{currentRoundPoints > 0 ? "Skip and bank points" : "Skip"}
-							</Button>
-						</div>
-						<div className={styles.entriesGrid}>
-							{currentCard.entries.map((entry, entryIndex) => {
-								const answered = entry.state !== "unanswered";
-								const inputDisabled =
-									!canSend ||
-									!isCurrentTurn ||
-									hasBankedRoundPoints ||
-									answered ||
-									(activeEntryIndex !== null &&
-										activeEntryIndex !== entryIndex);
-								const selectedAnswer = answers[entryIndex] ?? "";
-								const options = getEntryOptions(currentCard, entryIndex);
+			{currentCard ? (
+				<>
+					<section className={styles.stage} aria-label="Current trivia card">
+						<PlayerList players={playerList} />
 
-								return (
-									<article
-										className={`${styles.entryCard} ${
-											answered ? styles.answeredEntry : ""
-										}`}
-										key={`${entry.text}`}
-									>
-										<h3>{entry.text}</h3>
-
-										{answered ? (
-											<div className={styles.answerSummary}>
-												<span>
-													{formatAnswer(
-														entry.answer,
-														currentCard.uiHint,
-														displayNames,
-													)}
-												</span>
-												<strong
-													className={
-														entry.state === "correct"
-															? styles.correctAnswer
-															: styles.wrongAnswer
-													}
-												>
-													{entry.state === "correct" ? "Correct" : "Wrong"}
-												</strong>
-												{entry.explanation ? <p>{entry.explanation}</p> : null}
-											</div>
-										) : currentCard.format === "OPEN_ENDED" ? (
-											currentCard.uiHint === "country" ? (
-												<CountryPicker
-													disabled={inputDisabled}
-													onChange={(value) => setAnswer(entryIndex, value)}
-													placeholder="Select country"
-													value={selectedAnswer}
-												/>
-											) : (
-												<TextInput
-													disabled={inputDisabled}
-													onChange={(event) =>
-														setAnswer(entryIndex, event.target.value)
-													}
-													placeholder="Your answer"
-													value={selectedAnswer}
-												/>
-											)
-										) : (
-											<Select
-												disabled={inputDisabled}
-												onChange={(event) =>
-													setAnswer(entryIndex, event.target.value)
-												}
-												value={selectedAnswer}
-											>
-												<option value="">Select answer</option>
-												{options.map((option) => (
-													<option key={option.value} value={option.value}>
-														{option.label}
-													</option>
-												))}
-											</Select>
-										)}
-
-										{!answered ? (
-											<Button
-												disabled={inputDisabled || !selectedAnswer.trim()}
-												onClick={() => submitAnswer(entryIndex)}
-												size="sm"
-											>
-												Submit answer
-											</Button>
-										) : null}
-									</article>
-								);
-							})}
-						</div>
+						<TriviaCard
+							items={triviaItems}
+							onSelectedItemChange={(itemId) =>
+								setSelectedEntryIndex(itemId === null ? null : Number(itemId))
+							}
+							prompt={currentCard.prompt}
+							selectedItemId={
+								selectedEntryIndex === null ? null : String(selectedEntryIndex)
+							}
+						/>
 					</section>
-				) : null}
-			</section>
+
+					<div className={styles.gameActions}>
+						<Button
+							disabled={!canSend || !isCurrentTurn || hasBankedRoundPoints}
+							onClick={bankPoints}
+							size="sm"
+							variant="secondary"
+						>
+							{currentRoundPoints > 0 ? "Skip and bank points" : "Skip"}
+						</Button>
+					</div>
+
+					{selectedEntryIndex !== null && selectedEntry ? (
+						<AnswerPanel
+							answer={toAnswerPanelAnswer(
+								currentCard,
+								selectedEntryIndex,
+								(answer) => submitAnswer(selectedEntryIndex, answer),
+							)}
+							disabled={!canAnswerSelectedEntry}
+							onSkip={bankPoints}
+							prompt={currentCard.prompt}
+							title={selectedEntry.text}
+						/>
+					) : null}
+				</>
+			) : null}
 		</main>
 	);
 }

@@ -1,0 +1,35 @@
+.gameCode {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	border: 1px solid #d8dde8;
+	border-radius: var(--radius-md);
+	background: rgb(255 255 255 / 52%);
+	padding: 0.5rem;
+	color: #141a28;
+	font-size: 15px;
+	box-shadow: 0 10px 28px rgb(25 36 61 / 5%);
+	backdrop-filter: blur(14px);
+}
+
+.gameCode strong {
+	font-size: 14px;
+	letter-spacing: 0.02em;
+}
+
+.gameCode button {
+	display: inline-grid;
+	width: 1.5rem;
+	height: 1.5rem;
+	place-items: center;
+	border: 0;
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.gameCode button:hover {
+	background: rgb(11 87 232 / 8%);
+	color: #0b57e8;
+}

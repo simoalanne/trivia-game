@@ -18,8 +18,23 @@ export type SearchableDropdownOption = {
 	searchText?: string;
 };
 
+export type SearchableDropdownClassNames = {
+	root?: string;
+	control?: string;
+	value?: string;
+	placeholder?: string;
+	chevron?: string;
+	popover?: string;
+	searchInput?: string;
+	options?: string;
+	option?: string;
+	optionSelected?: string;
+	message?: string;
+};
+
 type SearchableDropdownProps = {
 	className?: string;
+	classNames?: SearchableDropdownClassNames;
 	disabled?: boolean;
 	emptyMessage?: string;
 	id?: string;
@@ -42,6 +57,7 @@ const cx = (...classNames: Array<string | false | undefined>) =>
 
 export function SearchableDropdown({
 	className,
+	classNames,
 	disabled = false,
 	emptyMessage = "No options available.",
 	id,
@@ -147,7 +163,7 @@ export function SearchableDropdown({
 	};
 
 	return (
-		<div className={cx(styles.root, className)} ref={rootRef}>
+		<div className={cx(styles.root, className, classNames?.root)} ref={rootRef}>
 			{name ? <input name={name} type="hidden" value={value ?? ""} /> : null}
 			<button
 				aria-controls={listboxId}
@@ -158,6 +174,7 @@ export function SearchableDropdown({
 					styles.control,
 					invalid && styles.controlInvalid,
 					disabled && styles.controlDisabled,
+					classNames?.control,
 				)}
 				disabled={disabled}
 				id={controlId}
@@ -166,22 +183,30 @@ export function SearchableDropdown({
 				type="button"
 			>
 				<span
-					className={cx(styles.value, !selectedOption && styles.placeholder)}
+					className={cx(
+						styles.value,
+						classNames?.value,
+						!selectedOption && styles.placeholder,
+						!selectedOption && classNames?.placeholder,
+					)}
 				>
 					{selectedOption
 						? (renderValue?.(selectedOption) ?? selectedOption.label)
 						: placeholder}
 				</span>
-				<span aria-hidden="true" className={styles.chevron}>
+				<span
+					aria-hidden="true"
+					className={cx(styles.chevron, classNames?.chevron)}
+				>
 					▾
 				</span>
 			</button>
 
 			{isOpen ? (
-				<div className={styles.popover}>
+				<div className={cx(styles.popover, classNames?.popover)}>
 					<input
 						autoComplete="off"
-						className={styles.searchInput}
+						className={cx(styles.searchInput, classNames?.searchInput)}
 						id={searchInputId}
 						onChange={(event) => setQuery(event.target.value)}
 						placeholder={searchPlaceholder}
@@ -190,16 +215,22 @@ export function SearchableDropdown({
 					/>
 					<div
 						aria-labelledby={controlId}
-						className={styles.options}
+						className={cx(styles.options, classNames?.options)}
 						id={listboxId}
 						role="listbox"
 					>
 						{loading ? (
-							<p className={styles.message}>{loadingMessage}</p>
+							<p className={cx(styles.message, classNames?.message)}>
+								{loadingMessage}
+							</p>
 						) : options.length === 0 ? (
-							<p className={styles.message}>{emptyMessage}</p>
+							<p className={cx(styles.message, classNames?.message)}>
+								{emptyMessage}
+							</p>
 						) : filteredOptions.length === 0 ? (
-							<p className={styles.message}>{noResultsMessage}</p>
+							<p className={cx(styles.message, classNames?.message)}>
+								{noResultsMessage}
+							</p>
 						) : (
 							filteredOptions.map((option) => {
 								const isSelected = option.value === value;
@@ -209,6 +240,8 @@ export function SearchableDropdown({
 										className={cx(
 											styles.option,
 											isSelected && styles.optionSelected,
+											classNames?.option,
+											isSelected && classNames?.optionSelected,
 										)}
 										key={option.value}
 										onClick={() => handleSelect(option.value)}

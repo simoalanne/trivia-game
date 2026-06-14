@@ -1,0 +1,154 @@
+.players {
+	position: absolute;
+	inset: 0;
+	z-index: 5;
+	pointer-events: none;
+}
+
+.player {
+	--tone: #0b57e8;
+	--tone-soft: #dfe9ff;
+	position: absolute;
+	z-index: 5;
+	display: grid;
+	gap: 14px;
+	color: var(--tone);
+	pointer-events: auto;
+}
+
+.playerName {
+	font-size: 17px;
+	font-weight: 850;
+	line-height: 1;
+	letter-spacing: 0;
+}
+
+.playerScoreLine {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+
+.player strong {
+	min-width: 50px;
+	font-size: 22px;
+	font-weight: 900;
+	letter-spacing: 0.03em;
+}
+
+.playerStatus {
+	border: 1px solid currentColor;
+	border-radius: var(--radius-sm);
+	padding: 0.05rem 0.4rem;
+	font-size: 0.75rem;
+	font-weight: 800;
+	line-height: 1.4;
+}
+
+.topLeft {
+	top: 12px;
+	left: 0;
+}
+
+.topRight {
+	top: 12px;
+	right: 0;
+	justify-items: end;
+}
+
+.topRight .playerScoreLine,
+.bottomRight .playerScoreLine {
+	flex-direction: row-reverse;
+}
+
+.bottomLeft {
+	bottom: 120px;
+	left: 0;
+}
+
+.bottomRight {
+	right: 0;
+	bottom: 120px;
+	justify-items: end;
+}
+
+.blue {
+	--tone: #0b57e8;
+	--tone-soft: #e2eaff;
+}
+
+.red {
+	--tone: #d22c45;
+	--tone-soft: #fbe4e6;
+}
+
+.green {
+	--tone: #127a37;
+	--tone-soft: #ddf4e5;
+}
+
+.gold {
+	--tone: #f0a000;
+	--tone-soft: #fff1cc;
+}
+
+.isCurrentTurn {
+	text-decoration: underline;
+	text-decoration-thickness: 2px;
+	text-underline-offset: 0.25rem;
+}
+
+@media (max-width: 980px) {
+	.players {
+		position: static;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 14px;
+		pointer-events: auto;
+	}
+
+	.playerName {
+		font-size: 14px;
+	}
+
+	.player strong {
+		font-size: 17px;
+	}
+
+	.player {
+		position: static;
+		border: 1px solid rgb(210 216 230 / 78%);
+		border-radius: 12px;
+		background: rgb(255 255 255 / 72%);
+		padding: 12px 14px;
+		box-shadow: 0 14px 34px rgb(33 45 67 / 8%);
+		backdrop-filter: blur(14px);
+	}
+
+	.topRight,
+	.bottomRight {
+		justify-items: start;
+	}
+
+	.topRight .playerScoreLine,
+	.bottomRight .playerScoreLine {
+		flex-direction: row;
+	}
+}
+
+@media (max-width: 640px) {
+	.players {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+
+	.player {
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 10px;
+	}
+
+	.playerScoreLine {
+		gap: 10px;
+	}
+}

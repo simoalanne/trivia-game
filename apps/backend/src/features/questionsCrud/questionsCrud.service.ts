@@ -292,12 +292,18 @@ const toQuestionCard = (
 	}
 };
 
+const normalizePromptEnding = (card: QuestionCardInput) => {
+	const prompt = card.prompt.trim().replace(/[?!.:;]+$/u, "");
+	const ending = card.format === "ORDER_ITEMS" ? ":" : "?";
+	return `${prompt}${ending}`;
+};
+
 const toTriviaCardCreateData = (card: QuestionCardInput) => ({
 	format: card.format,
 	difficulty: card.difficulty,
 	tags: card.tags,
 	data: {
-		prompt: card.prompt,
+		prompt: normalizePromptEnding(card),
 		...(card.format === "OPEN_ENDED" && card.uiHint
 			? { uiHint: card.uiHint }
 			: {}),

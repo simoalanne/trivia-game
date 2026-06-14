@@ -3,12 +3,16 @@
 import { useMemo } from "react";
 import {
 	SearchableDropdown,
+	type SearchableDropdownClassNames,
 	type SearchableDropdownOption,
 } from "@/components/SearchableDropdown";
 import { useApiClient } from "@/lib/apiClientProvider";
 
+export type CountryPickerClassNames = SearchableDropdownClassNames;
+
 type CountryPickerProps = {
 	className?: string;
+	classNames?: CountryPickerClassNames;
 	disabled?: boolean;
 	id?: string;
 	invalid?: boolean;
@@ -42,6 +46,7 @@ const getBrowserLocales = () => {
 
 export function CountryPicker({
 	className,
+	classNames,
 	disabled = false,
 	id,
 	invalid = false,
@@ -84,6 +89,7 @@ export function CountryPicker({
 	return (
 		<SearchableDropdown
 			className={className}
+			classNames={classNames}
 			disabled={disabled}
 			emptyMessage="No countries available."
 			id={id}
