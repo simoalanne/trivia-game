@@ -100,6 +100,7 @@ export default function GameCardMock() {
 	const questions = api.questionsCrud.list.useQuery();
 	const [selectedCardId, setSelectedCardId] = useState<number | null>(null);
 	const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
+	const [isAnswerPanelOpen, setIsAnswerPanelOpen] = useState(false);
 	const selectedCard =
 		questions.data?.find((question) => question.id === selectedCardId) ?? null;
 	const items = useMemo(
@@ -107,7 +108,20 @@ export default function GameCardMock() {
 		[selectedCard],
 	);
 	const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
-	const clearSelection = () => setSelectedItemId(null);
+
+	const clearSelection = () => {
+		setIsAnswerPanelOpen(false);
+	};
+
+	const selectItem = (itemId: string | null) => {
+		if (itemId === null) {
+			clearSelection();
+			return;
+		}
+
+		setSelectedItemId(itemId);
+		setIsAnswerPanelOpen(true);
+	};
 
 	useEffect(() => {
 		if (!questions.data?.length) {
@@ -122,6 +136,7 @@ export default function GameCardMock() {
 		}
 
 		setSelectedCardId(pickRandomQuestion(questions.data)?.id ?? null);
+		setIsAnswerPanelOpen(false);
 		setSelectedItemId(null);
 	}, [questions.data, selectedCardId]);
 
@@ -153,19 +168,30 @@ export default function GameCardMock() {
 
 					<TriviaCard
 						items={items}
-						onSelectedItemChange={setSelectedItemId}
+						onSelectedItemChange={selectItem}
 						prompt={selectedCard.prompt}
-						selectedItemId={selectedItemId}
+						selectedItemId={isAnswerPanelOpen ? selectedItemId : null}
 					/>
 				</section>
 			) : null}
 
-			{selectedCard && selectedItem ? (
+			{selectedCard ? (
 				<AnswerPanel
-					answer={toAnswerPanelAnswer(selectedCard, clearSelection)}
-					onSkip={clearSelection}
+					answer={
+						selectedItem
+							? toAnswerPanelAnswer(selectedCard, clearSelection)
+							: null
+					}
+					open={isAnswerPanelOpen}
 					prompt={selectedCard.prompt}
-					title={selectedItem.label}
+					setOpen={(open) => {
+						if (open) {
+							setIsAnswerPanelOpen(true);
+						} else {
+							clearSelection();
+						}
+					}}
+					title={selectedItem?.label}
 				/>
 			) : null}
 		</main>

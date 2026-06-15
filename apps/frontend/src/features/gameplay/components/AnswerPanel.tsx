@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CountryPicker } from "@/components/CountryPicker";
+import { Sheet } from "@/components/Sheet";
 import styles from "./AnswerPanel.module.css";
 
 type TrueOrFalseAnswer = {
@@ -35,24 +36,26 @@ export type AnswerPanelAnswer =
 	| OpenEndedAnswer;
 
 type AnswerPanelProps = {
-	title: string;
+	open: boolean;
+	setOpen: (open: boolean) => void;
+	title?: string;
 	prompt?: string;
-	answer: AnswerPanelAnswer;
-	onSkip: () => void;
+	answer: AnswerPanelAnswer | null;
 	disabled?: boolean;
 };
 
 export function AnswerPanel({
+	open,
+	setOpen,
 	title,
 	prompt,
 	answer,
-	onSkip,
 	disabled = false,
 }: AnswerPanelProps) {
 	const [selectedChip, setSelectedChip] = useState<string | null>(null);
 	const [textAnswer, setTextAnswer] = useState("");
 	const trimmedPrompt = prompt?.trim();
-	const answerResetKey = `${answer.format}:${title}`;
+	const answerResetKey = answer ? `${answer.format}:${title}` : "empty";
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset answer controls when the selected prompt changes.
 	useEffect(() => {
@@ -60,12 +63,52 @@ export function AnswerPanel({
 		setTextAnswer("");
 	}, [answerResetKey]);
 
-	// TODO: Promote this from an inline panel to a first-class dialog surface.
-	// Desktop should likely use a modal; mobile should likely use a bottom sheet.
+	return (
+		<Sheet
+			content={
+				answer ? (
+					<AnswerPanelContent
+						answer={answer}
+						disabled={disabled}
+						prompt={trimmedPrompt}
+						selectedChip={selectedChip}
+						setSelectedChip={setSelectedChip}
+						setTextAnswer={setTextAnswer}
+						textAnswer={textAnswer}
+						title={title ?? ""}
+					/>
+				) : null
+			}
+			open={open && Boolean(answer)}
+			setOpen={setOpen}
+			title="Answer the question"
+		/>
+	);
+}
+
+function AnswerPanelContent({
+	title,
+	prompt,
+	answer,
+	disabled,
+	selectedChip,
+	setSelectedChip,
+	textAnswer,
+	setTextAnswer,
+}: {
+	title: string;
+	prompt?: string;
+	answer: AnswerPanelAnswer;
+	disabled: boolean;
+	selectedChip: string | null;
+	setSelectedChip: (value: string | null) => void;
+	textAnswer: string;
+	setTextAnswer: (value: string) => void;
+}) {
 	return (
 		<div className={styles.answerPanel}>
 			<p className={styles.answerPrompt}>
-				{trimmedPrompt ? <span>{trimmedPrompt} </span> : null}
+				{prompt ? <span>{prompt} </span> : null}
 				<strong>{title}</strong>
 			</p>
 
@@ -86,14 +129,6 @@ export function AnswerPanel({
 						type="button"
 					>
 						False
-					</button>
-					<button
-						className={styles.neutralButton}
-						disabled={disabled}
-						onClick={onSkip}
-						type="button"
-					>
-						I don&apos;t know
 					</button>
 				</div>
 			) : null}
@@ -119,7 +154,6 @@ export function AnswerPanel({
 					<PanelFooter
 						canSubmit={Boolean(selectedChip)}
 						disabled={disabled}
-						onSkip={onSkip}
 						onSubmit={() => {
 							if (selectedChip) {
 								answer.onSubmit(selectedChip);
@@ -154,7 +188,6 @@ export function AnswerPanel({
 					<PanelFooter
 						canSubmit={Boolean(selectedChip)}
 						disabled={disabled}
-						onSkip={onSkip}
 						onSubmit={() => {
 							if (selectedChip) {
 								answer.onSubmit(Number(selectedChip));
@@ -193,7 +226,6 @@ export function AnswerPanel({
 					<PanelFooter
 						canSubmit={Boolean(textAnswer.trim())}
 						disabled={disabled}
-						onSkip={onSkip}
 						onSubmit={() => {
 							const trimmedAnswer = textAnswer.trim();
 							if (trimmedAnswer) {
@@ -210,12 +242,10 @@ export function AnswerPanel({
 function PanelFooter({
 	canSubmit,
 	disabled,
-	onSkip,
 	onSubmit,
 }: {
 	canSubmit: boolean;
 	disabled: boolean;
-	onSkip: () => void;
 	onSubmit: () => void;
 }) {
 	return (
@@ -227,14 +257,6 @@ function PanelFooter({
 				type="button"
 			>
 				Submit
-			</button>
-			<button
-				className={styles.neutralButton}
-				disabled={disabled}
-				onClick={onSkip}
-				type="button"
-			>
-				I don&apos;t know
 			</button>
 		</div>
 	);

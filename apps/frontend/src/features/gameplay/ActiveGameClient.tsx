@@ -169,6 +169,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 	const [selectedEntryIndex, setSelectedEntryIndex] = useState<number | null>(
 		null,
 	);
+	const [isAnswerPanelOpen, setIsAnswerPanelOpen] = useState(false);
 	const gameCodePath = gameCode.toLowerCase();
 	const currentCard = gameState?.currentCard ?? null;
 	const currentPlayer = gameState?.players.find(
@@ -235,8 +236,23 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 
 	const selectedCardId = currentCard?.id ?? null;
 
+	const closeAnswerPanel = () => {
+		setIsAnswerPanelOpen(false);
+	};
+
+	const selectEntry = (itemId: string | null) => {
+		if (itemId === null) {
+			closeAnswerPanel();
+			return;
+		}
+
+		setSelectedEntryIndex(Number(itemId));
+		setIsAnswerPanelOpen(true);
+	};
+
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset selected entry when the current card changes.
 	useEffect(() => {
+		setIsAnswerPanelOpen(false);
 		setSelectedEntryIndex(null);
 	}, [selectedCardId]);
 
@@ -252,7 +268,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		});
 
 		if (didSend) {
-			setSelectedEntryIndex(null);
+			closeAnswerPanel();
 		}
 	};
 
@@ -266,7 +282,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		});
 
 		if (didSend) {
-			setSelectedEntryIndex(null);
+			closeAnswerPanel();
 		}
 	};
 
@@ -304,12 +320,12 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 
 						<TriviaCard
 							items={triviaItems}
-							onSelectedItemChange={(itemId) =>
-								setSelectedEntryIndex(itemId === null ? null : Number(itemId))
-							}
+							onSelectedItemChange={selectEntry}
 							prompt={currentCard.prompt}
 							selectedItemId={
-								selectedEntryIndex === null ? null : String(selectedEntryIndex)
+								isAnswerPanelOpen && selectedEntryIndex !== null
+									? String(selectedEntryIndex)
+									: null
 							}
 						/>
 					</section>
@@ -325,19 +341,28 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 						</Button>
 					</div>
 
-					{selectedEntryIndex !== null && selectedEntry ? (
-						<AnswerPanel
-							answer={toAnswerPanelAnswer(
-								currentCard,
-								selectedEntryIndex,
-								(answer) => submitAnswer(selectedEntryIndex, answer),
-							)}
-							disabled={!canAnswerSelectedEntry}
-							onSkip={bankPoints}
-							prompt={currentCard.prompt}
-							title={selectedEntry.text}
-						/>
-					) : null}
+					<AnswerPanel
+						answer={
+							selectedEntryIndex !== null && selectedEntry
+								? toAnswerPanelAnswer(
+										currentCard,
+										selectedEntryIndex,
+										(answer) => submitAnswer(selectedEntryIndex, answer),
+									)
+								: null
+						}
+						disabled={!canAnswerSelectedEntry}
+						open={isAnswerPanelOpen}
+						prompt={currentCard.prompt}
+						setOpen={(open) => {
+							if (open) {
+								setIsAnswerPanelOpen(true);
+							} else {
+								closeAnswerPanel();
+							}
+						}}
+						title={selectedEntry?.text}
+					/>
 				</>
 			) : null}
 		</main>

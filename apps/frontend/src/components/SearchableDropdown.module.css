@@ -3,22 +3,34 @@
 	width: 100%;
 }
 
+.inputWrap {
+	position: relative;
+}
+
 .control {
-	display: flex;
-	align-items: center;
-	justify-content: space-between;
+	display: block;
 	width: 100%;
 	min-height: 2.5rem;
 	border: 1px solid var(--color-border);
 	border-radius: var(--radius-md);
 	background: var(--color-surface);
 	color: var(--color-text);
-	padding: 0.625rem var(--space-3);
+	padding: 0 var(--space-8) 0 var(--space-3);
 	text-align: left;
 	transition:
 		background-color 140ms ease,
 		border-color 140ms ease,
 		box-shadow 140ms ease;
+}
+
+.root:has(.popover) .control {
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+.control::placeholder {
+	color: var(--color-text-muted);
+	opacity: 1;
 }
 
 .controlInvalid {
@@ -40,9 +52,16 @@
 	color: var(--color-text-muted);
 }
 
+.placeholderInput {
+	color: var(--color-text);
+}
+
 .chevron {
-	flex: 0 0 auto;
-	margin-left: var(--space-3);
+	position: absolute;
+	top: 50%;
+	right: var(--space-3);
+	pointer-events: none;
+	transform: translateY(-50%);
 	color: var(--color-text-muted);
 	font-size: 0.875rem;
 }
@@ -50,16 +69,14 @@
 .popover {
 	position: absolute;
 	z-index: 20;
-	top: calc(100% + 0.375rem);
+	top: calc(100% - 1px);
 	left: 0;
 	right: 0;
-	display: grid;
-	gap: var(--space-2);
 	border: 1px solid var(--color-border);
-	border-radius: var(--radius-md);
+	border-radius: 0 0 var(--radius-md) var(--radius-md);
 	background: var(--color-surface);
-	box-shadow: 0 12px 28px color-mix(in srgb, var(--color-text) 10%, transparent);
-	padding: var(--space-2);
+	box-shadow: none;
+	padding: 0;
 }
 
 .searchInput {
@@ -80,7 +97,6 @@
 
 .options {
 	display: grid;
-	gap: 0.25rem;
 	max-height: 15rem;
 	overflow-y: auto;
 }
@@ -89,7 +105,7 @@
 	display: block;
 	width: 100%;
 	border: 0;
-	border-radius: var(--radius-sm);
+	border-radius: 0;
 	background: transparent;
 	color: var(--color-text);
 	padding: 0.625rem 0.75rem;
@@ -97,6 +113,7 @@
 }
 
 .option:hover,
+.optionActive,
 .optionSelected {
 	background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import {
+	type FocusEvent,
 	type KeyboardEvent,
 	type ReactNode,
 	useDeferredValue,
@@ -71,23 +72,37 @@ export function SearchableDropdown({
 	placeholder = "Select an option",
 	renderOption,
 	renderValue,
-	searchPlaceholder = "Search...",
 	value,
 }: SearchableDropdownProps) {
 	const generatedId = useId();
 	const controlId = id ?? generatedId;
 	const listboxId = `${controlId}-listbox`;
-	const searchInputId = `${controlId}-search`;
 	const rootRef = useRef<HTMLDivElement | null>(null);
-	const searchInputRef = useRef<HTMLInputElement | null>(null);
 	const [isOpen, setIsOpen] = useState(false);
 	const [query, setQuery] = useState("");
+	const [activeIndex, setActiveIndex] = useState(0);
 	const deferredQuery = useDeferredValue(query);
 
 	const selectedOption = useMemo(
 		() => options.find((option) => option.value === value),
 		[options, value],
 	);
+	const selectedDisplayValue = useMemo(() => {
+		if (!selectedOption) {
+			return "";
+		}
+
+		const renderedValue = renderValue?.(selectedOption);
+		if (
+			typeof renderedValue === "string" ||
+			typeof renderedValue === "number"
+		) {
+			return String(renderedValue);
+		}
+
+		return selectedOption.label;
+	}, [renderValue, selectedOption]);
+	const inputValue = isOpen ? query : selectedDisplayValue;
 
 	const filteredOptions = useMemo(() => {
 		const normalizedQuery = deferredQuery.trim().toLowerCase();
@@ -112,8 +127,6 @@ export function SearchableDropdown({
 			return;
 		}
 
-		searchInputRef.current?.focus();
-
 		const handlePointerDown = (event: MouseEvent) => {
 			if (!rootRef.current?.contains(event.target as Node)) {
 				setIsOpen(false);
@@ -127,32 +140,68 @@ export function SearchableDropdown({
 		};
 	}, [isOpen]);
 
-	const handleToggle = () => {
+	const openDropdown = () => {
 		if (disabled) {
 			return;
 		}
 
-		setIsOpen((current) => {
-			const next = !current;
-			if (!next) {
-				setQuery("");
-			}
-			return next;
-		});
+		setIsOpen(true);
 	};
 
-	const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+	const handleInputFocus = () => {
+		openDropdown();
+		setQuery(selectedDisplayValue);
+		setActiveIndex(0);
+	};
+
+	const handleInputBlur = (event: FocusEvent<HTMLInputElement>) => {
+		if (rootRef.current?.contains(event.relatedTarget as Node | null)) {
+			return;
+		}
+
+		setIsOpen(false);
+		setQuery("");
+	};
+
+	const handleInputChange = (nextQuery: string) => {
+		setQuery(nextQuery);
+		setActiveIndex(0);
+		openDropdown();
+	};
+
+	const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
 		if (disabled) {
 			return;
 		}
 
-		if (
-			event.key === "ArrowDown" ||
-			event.key === "Enter" ||
-			event.key === " "
-		) {
+		if (event.key === "ArrowDown") {
 			event.preventDefault();
 			setIsOpen(true);
+			setActiveIndex((current) =>
+				Math.min(current + 1, Math.max(filteredOptions.length - 1, 0)),
+			);
+			return;
+		}
+
+		if (event.key === "ArrowUp") {
+			event.preventDefault();
+			setIsOpen(true);
+			setActiveIndex((current) => Math.max(current - 1, 0));
+			return;
+		}
+
+		if (event.key === "Enter" && isOpen) {
+			const activeOption = filteredOptions[activeIndex];
+			if (activeOption) {
+				event.preventDefault();
+				handleSelect(activeOption.value);
+			}
+			return;
+		}
+
+		if (event.key === "Escape") {
+			setIsOpen(false);
+			setQuery("");
 		}
 	};
 
@@ -165,54 +214,49 @@ export function SearchableDropdown({
 	return (
 		<div className={cx(styles.root, className, classNames?.root)} ref={rootRef}>
 			{name ? <input name={name} type="hidden" value={value ?? ""} /> : null}
-			<button
-				aria-controls={listboxId}
-				aria-expanded={isOpen}
-				aria-haspopup="listbox"
-				aria-invalid={invalid || undefined}
-				className={cx(
-					styles.control,
-					invalid && styles.controlInvalid,
-					disabled && styles.controlDisabled,
-					classNames?.control,
-				)}
-				disabled={disabled}
-				id={controlId}
-				onClick={handleToggle}
-				onKeyDown={handleKeyDown}
-				type="button"
-			>
-				<span
+			<div className={styles.inputWrap}>
+				<input
+					aria-activedescendant={
+						isOpen && filteredOptions[activeIndex]
+							? `${listboxId}-${filteredOptions[activeIndex].value}`
+							: undefined
+					}
+					aria-controls={listboxId}
+					aria-expanded={isOpen}
+					aria-haspopup="listbox"
+					aria-invalid={invalid || undefined}
+					autoComplete="off"
 					className={cx(
-						styles.value,
-						classNames?.value,
-						!selectedOption && styles.placeholder,
-						!selectedOption && classNames?.placeholder,
+						styles.control,
+						invalid && styles.controlInvalid,
+						disabled && styles.controlDisabled,
+						classNames?.control,
+						classNames?.searchInput,
+						!selectedOption && !isOpen && styles.placeholderInput,
+						!selectedOption && !isOpen && classNames?.placeholder,
 					)}
-				>
-					{selectedOption
-						? (renderValue?.(selectedOption) ?? selectedOption.label)
-						: placeholder}
-				</span>
+					disabled={disabled}
+					id={controlId}
+					onBlur={handleInputBlur}
+					onChange={(event) => handleInputChange(event.target.value)}
+					onClick={openDropdown}
+					onFocus={handleInputFocus}
+					onKeyDown={handleKeyDown}
+					placeholder={placeholder}
+					role="combobox"
+					type="text"
+					value={inputValue}
+				/>
 				<span
 					aria-hidden="true"
 					className={cx(styles.chevron, classNames?.chevron)}
 				>
 					▾
 				</span>
-			</button>
+			</div>
 
 			{isOpen ? (
 				<div className={cx(styles.popover, classNames?.popover)}>
-					<input
-						autoComplete="off"
-						className={cx(styles.searchInput, classNames?.searchInput)}
-						id={searchInputId}
-						onChange={(event) => setQuery(event.target.value)}
-						placeholder={searchPlaceholder}
-						ref={searchInputRef}
-						value={query}
-					/>
 					<div
 						aria-labelledby={controlId}
 						className={cx(styles.options, classNames?.options)}
@@ -232,19 +276,22 @@ export function SearchableDropdown({
 								{noResultsMessage}
 							</p>
 						) : (
-							filteredOptions.map((option) => {
+							filteredOptions.map((option, optionIndex) => {
 								const isSelected = option.value === value;
 								return (
 									<button
 										aria-selected={isSelected}
 										className={cx(
 											styles.option,
+											optionIndex === activeIndex && styles.optionActive,
 											isSelected && styles.optionSelected,
 											classNames?.option,
 											isSelected && classNames?.optionSelected,
 										)}
+										id={`${listboxId}-${option.value}`}
 										key={option.value}
 										onClick={() => handleSelect(option.value)}
+										onMouseDown={(event) => event.preventDefault()}
 										role="option"
 										type="button"
 									>
