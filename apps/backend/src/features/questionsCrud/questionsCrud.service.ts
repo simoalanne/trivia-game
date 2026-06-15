@@ -52,8 +52,8 @@ Return:
 - rings: the surrounding text-answer pairs in positional order around the circle. there is always exactly 10 pairs.
 
 For each rings item:
-- outer: the bold outer-ring text or icon value (red X or green checkmark) - return "true" for green checkmark and "false" for red X, otherwise return the text as-is
-- inner: the paired inner-ring text
+- outer: the text FARTHER from the center. return the text as is. if there is a true/false icon, return "true" or "false" as a string.
+- inner: the paired inner-ring text CLOSER to the center. return the text as is.
 - pair outer and inner values using a black connector line that visually links them
 - the 10 pairs divide the circle into 10 equal angular slices around the center
 - read pairs clockwise
@@ -77,6 +77,7 @@ const ollamaResponseToQuestionCardInput = (response: {
 	prompt: string;
 	rings: { outer: string; inner: string }[];
 }) => {
+	console.log("Ollama response:", response);
 	const normalizedCardContent = {
 		prompt: response.prompt,
 		entries: response.rings.map((ring) => {
@@ -92,7 +93,7 @@ const ollamaResponseToQuestionCardInput = (response: {
 			};
 		}),
 	};
-
+	console.log("Normalized card content:", normalizedCardContent);
 	// 1. if all answers are boolean, it's a TRUE_OR_FALSE question
 	if (
 		normalizedCardContent.entries.every(
