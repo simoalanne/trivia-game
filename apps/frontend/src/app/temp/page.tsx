@@ -167,6 +167,7 @@ export default function GameCardMock() {
 					<PlayerList players={players} />
 
 					<TriviaCard
+						concealUnselectedAnswers={true}
 						items={items}
 						onSelectedItemChange={selectItem}
 						prompt={selectedCard.prompt}

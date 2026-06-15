@@ -6,11 +6,11 @@ import { type ChangeEvent, useState } from "react";
 import { Button } from "@/components";
 import { useApiClient } from "@/lib/apiClientProvider";
 import styles from "./ManageQuestionEditorPage.module.css";
-import QuestionForm from "./QuestionForm";
+import QuestionCardEditor from "./QuestionCardEditor";
 import {
 	createEmptyQuestionCard,
 	toQuestionCardInput,
-} from "./questionFormData";
+} from "./questionCardDraft";
 
 type ManageQuestionEditorPageProps = {
 	mode: "create" | "edit";
@@ -181,7 +181,7 @@ export default function ManageQuestionEditorPage({
 				</section>
 			) : null}
 
-			<QuestionForm
+			<QuestionCardEditor
 				cancelHref="/manage-questions"
 				initialValue={initialValue}
 				isSubmitting={createQuestion.isPending || updateQuestion.isPending}

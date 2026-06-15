@@ -319,6 +319,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 						<PlayerList players={playerList} />
 
 						<TriviaCard
+							concealUnselectedAnswers={true}
 							items={triviaItems}
 							onSelectedItemChange={selectEntry}
 							prompt={currentCard.prompt}

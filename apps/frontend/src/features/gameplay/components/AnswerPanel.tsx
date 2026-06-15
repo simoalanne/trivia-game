@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChipPicker } from "@/components";
 import { CountryPicker } from "@/components/CountryPicker";
 import { Sheet } from "@/components/Sheet";
 import styles from "./AnswerPanel.module.css";
@@ -135,22 +136,15 @@ function AnswerPanelContent({
 
 			{answer.format === "MULTIPLE_CHOICE" ? (
 				<>
-					<div className={styles.chipGrid}>
-						{answer.choices.map((choice) => (
-							<button
-								aria-pressed={selectedChip === choice}
-								className={`${styles.chip} ${
-									selectedChip === choice ? styles.selectedChip : ""
-								}`}
-								disabled={disabled}
-								key={choice}
-								onClick={() => setSelectedChip(choice)}
-								type="button"
-							>
-								{choice}
-							</button>
-						))}
-					</div>
+					<ChipPicker
+						disabled={disabled}
+						onChange={setSelectedChip}
+						options={answer.choices.map((choice) => ({
+							label: choice,
+							value: choice,
+						}))}
+						value={selectedChip}
+					/>
 					<PanelFooter
 						canSubmit={Boolean(selectedChip)}
 						disabled={disabled}
