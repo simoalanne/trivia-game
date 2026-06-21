@@ -3,7 +3,6 @@
 import {
 	type QuestionCardInput,
 	questionCardInputSchema,
-	type TriviaCardFormat,
 } from "@packages/contracts";
 import { ArrowLeft, ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -16,6 +15,8 @@ import {
 	type TriviaCardItem,
 } from "@/components";
 import MultipleChoiceEditor from "./MultipleChoiceEditor";
+import OpenEndedEditor from "./OpenEndedEditor";
+import OrderItemsEditor from "./OrderItemsEditor";
 import styles from "./QuestionCardEditor.module.css";
 import QuestionCardSettings from "./QuestionCardSettings";
 import {
@@ -23,6 +24,7 @@ import {
 	changeQuestionCardFormat,
 	removeEntryFromQuestionCard,
 } from "./questionCardDraft";
+import TrueOrFalseEditor from "./TrueOrFalseEditor";
 
 type QuestionCardEditorProps = {
 	cancelHref: string;
@@ -37,13 +39,18 @@ type MultipleChoiceQuestionCardInput = Extract<
 	QuestionCardInput,
 	{ format: "MULTIPLE_CHOICE" }
 >;
-
-const questionTypeLabels: Record<TriviaCardFormat, string> = {
-	MULTIPLE_CHOICE: "Multiple choice",
-	TRUE_OR_FALSE: "True or false",
-	OPEN_ENDED: "Open ended",
-	ORDER_ITEMS: "Order items",
-};
+type TrueOrFalseQuestionCardInput = Extract<
+	QuestionCardInput,
+	{ format: "TRUE_OR_FALSE" }
+>;
+type OpenEndedQuestionCardInput = Extract<
+	QuestionCardInput,
+	{ format: "OPEN_ENDED" }
+>;
+type OrderItemsQuestionCardInput = Extract<
+	QuestionCardInput,
+	{ format: "ORDER_ITEMS" }
+>;
 
 const formatIssuePath = (path: ReadonlyArray<PropertyKey>) => {
 	if (path.length === 0) {
@@ -62,8 +69,91 @@ const pathStartsWith = (
 	prefix: Array<string | number>,
 ) => prefix.every((segment, index) => path[index] === segment);
 
-const cx = (...classNames: Array<string | false | undefined>) =>
-	classNames.filter(Boolean).join(" ");
+const formatEntryAnswer = (
+	card: QuestionCardInput,
+	entry: QuestionCardInput["entries"][number],
+) => {
+	switch (card.format) {
+		case "TRUE_OR_FALSE":
+			return (entry as TrueOrFalseQuestionCardInput["entries"][number]).answer
+				? "True"
+				: "False";
+		case "OPEN_ENDED": {
+			const openEndedEntry =
+				entry as OpenEndedQuestionCardInput["entries"][number];
+			const firstAnswer = openEndedEntry.answer[0]?.trim();
+			const remainingAnswers = Math.max(openEndedEntry.answer.length - 1, 0);
+			if (!firstAnswer) {
+				return "Set answer";
+			}
+
+			return remainingAnswers > 0
+				? `${firstAnswer} +${remainingAnswers}`
+				: firstAnswer;
+		}
+		case "ORDER_ITEMS":
+			return `#${(entry as OrderItemsQuestionCardInput["entries"][number]).answer}`;
+		case "MULTIPLE_CHOICE":
+		default:
+			return (
+				(
+					entry as MultipleChoiceQuestionCardInput["entries"][number]
+				).answer.trim() || "Pick answer"
+			);
+	}
+};
+
+const updateEntryAtIndex = (
+	card: QuestionCardInput,
+	entryIndex: number,
+	updater: (
+		entry: QuestionCardInput["entries"][number],
+	) => QuestionCardInput["entries"][number],
+): QuestionCardInput => {
+	switch (card.format) {
+		case "TRUE_OR_FALSE":
+			return {
+				...card,
+				entries: card.entries.map((entry, currentIndex) =>
+					currentIndex === entryIndex
+						? (updater(
+								entry,
+							) as TrueOrFalseQuestionCardInput["entries"][number])
+						: entry,
+				),
+			} satisfies TrueOrFalseQuestionCardInput;
+		case "OPEN_ENDED":
+			return {
+				...card,
+				entries: card.entries.map((entry, currentIndex) =>
+					currentIndex === entryIndex
+						? (updater(entry) as OpenEndedQuestionCardInput["entries"][number])
+						: entry,
+				),
+			} satisfies OpenEndedQuestionCardInput;
+		case "ORDER_ITEMS":
+			return {
+				...card,
+				entries: card.entries.map((entry, currentIndex) =>
+					currentIndex === entryIndex
+						? (updater(entry) as OrderItemsQuestionCardInput["entries"][number])
+						: entry,
+				),
+			} satisfies OrderItemsQuestionCardInput;
+		case "MULTIPLE_CHOICE":
+		default:
+			return {
+				...card,
+				entries: card.entries.map((entry, currentIndex) =>
+					currentIndex === entryIndex
+						? (updater(
+								entry,
+							) as MultipleChoiceQuestionCardInput["entries"][number])
+						: entry,
+				),
+			} satisfies MultipleChoiceQuestionCardInput;
+	}
+};
 
 export default function QuestionCardEditor({
 	cancelHref,
@@ -86,12 +176,6 @@ export default function QuestionCardEditor({
 		setSelectedEntryIndex(null);
 		setOpenSheet(null);
 	}, [initialValue]);
-
-	useEffect(() => {
-		if (card.format !== "MULTIPLE_CHOICE") {
-			setOpenSheet(null);
-		}
-	}, [card.format]);
 
 	useEffect(() => {
 		if (
@@ -163,7 +247,6 @@ export default function QuestionCardEditor({
 
 	const hasUnsavedChanges =
 		JSON.stringify(card) !== JSON.stringify(initialValue);
-	const summaryTone = validationResult.success ? "valid" : "invalid";
 
 	const handleSubmit = () => {
 		setShowValidation(true);
@@ -184,14 +267,10 @@ export default function QuestionCardEditor({
 
 	const updateEntryText = (entryIndex: number, value: string) => {
 		setCard((current) =>
-			current.format === "MULTIPLE_CHOICE"
-				? {
-						...current,
-						entries: current.entries.map((entry, currentIndex) =>
-							currentIndex === entryIndex ? { ...entry, text: value } : entry,
-						),
-					}
-				: current,
+			updateEntryAtIndex(current, entryIndex, (entry) => ({
+				...entry,
+				text: value,
+			})),
 		);
 	};
 
@@ -199,42 +278,160 @@ export default function QuestionCardEditor({
 		const explanation = value || undefined;
 
 		setCard((current) =>
-			current.format === "MULTIPLE_CHOICE"
-				? {
-						...current,
-						entries: current.entries.map((entry, currentIndex) =>
-							currentIndex === entryIndex ? { ...entry, explanation } : entry,
-						),
-					}
-				: current,
+			updateEntryAtIndex(current, entryIndex, (entry) => ({
+				...entry,
+				explanation,
+			})),
 		);
 	};
 
-	if (card.format !== "MULTIPLE_CHOICE") {
-		throw new Error(
-			`Unsupported question format in wheel editor: ${card.format}`,
-		);
-	}
-
-	const multipleChoiceCard = card as MultipleChoiceQuestionCardInput;
-
-	const wheelItems = multipleChoiceCard.entries.map(
+	const wheelItems = card.entries.map(
 		(entry, entryIndex) =>
 			({
 				id: String(entryIndex),
 				label: entry.text.trim() || `Entry ${entryIndex + 1}`,
-				answer: entry.answer.trim() || "Pick answer",
+				answer: formatEntryAnswer(card, entry),
 			}) satisfies TriviaCardItem,
 	);
 
-	const validationCount = validationResult.success
-		? 0
-		: validationResult.error.issues.length;
-	const promptLabel = multipleChoiceCard.prompt.trim() || "Set up card";
+	const promptLabel = card.prompt.trim() || "Set up card";
 	const selectedEntry =
 		selectedEntryIndex === null
 			? null
-			: (multipleChoiceCard.entries[selectedEntryIndex] ?? null);
+			: (card.entries[selectedEntryIndex] ?? null);
+
+	const entryEditor =
+		selectedEntryIndex !== null && selectedEntry ? (
+			card.format === "MULTIPLE_CHOICE" ? (
+				<MultipleChoiceEditor
+					card={card}
+					entryIndex={selectedEntryIndex}
+					getFieldError={getFieldError}
+					isSubmitting={isSubmitting}
+					onEntryAnswerChange={(entryIndex, answer) =>
+						setCard((current) =>
+							current.format === "MULTIPLE_CHOICE"
+								? updateEntryAtIndex(current, entryIndex, (entry) => ({
+										...entry,
+										answer,
+									}))
+								: current,
+						)
+					}
+					onEntryExplanationChange={updateEntryExplanation}
+					onEntryTextChange={updateEntryText}
+					open={openSheet === "entry"}
+				/>
+			) : card.format === "TRUE_OR_FALSE" ? (
+				<TrueOrFalseEditor
+					card={card}
+					entryIndex={selectedEntryIndex}
+					getFieldError={getFieldError}
+					isSubmitting={isSubmitting}
+					onEntryAnswerChange={(entryIndex, answer) =>
+						setCard((current) =>
+							current.format === "TRUE_OR_FALSE"
+								? updateEntryAtIndex(current, entryIndex, (entry) => ({
+										...entry,
+										answer,
+									}))
+								: current,
+						)
+					}
+					onEntryExplanationChange={updateEntryExplanation}
+					onEntryTextChange={updateEntryText}
+					open={openSheet === "entry"}
+				/>
+			) : card.format === "ORDER_ITEMS" ? (
+				<OrderItemsEditor
+					card={card}
+					entryIndex={selectedEntryIndex}
+					getFieldError={getFieldError}
+					isSubmitting={isSubmitting}
+					onEntryAnswerChange={(entryIndex, answer) =>
+						setCard((current) =>
+							current.format === "ORDER_ITEMS"
+								? updateEntryAtIndex(current, entryIndex, (entry) => ({
+										...entry,
+										answer,
+									}))
+								: current,
+						)
+					}
+					onEntryExplanationChange={updateEntryExplanation}
+					onEntryTextChange={updateEntryText}
+					open={openSheet === "entry"}
+				/>
+			) : (
+				<OpenEndedEditor
+					card={card}
+					entryIndex={selectedEntryIndex}
+					getFieldError={getFieldError}
+					isSubmitting={isSubmitting}
+					onAddAcceptedAnswer={(entryIndex) =>
+						setCard((current) =>
+							current.format === "OPEN_ENDED"
+								? updateEntryAtIndex(current, entryIndex, (entry) => {
+										const openEndedEntry =
+											entry as OpenEndedQuestionCardInput["entries"][number];
+
+										return {
+											...openEndedEntry,
+											answer: [...openEndedEntry.answer, ""],
+										};
+									})
+								: current,
+						)
+					}
+					onEntryAcceptedAnswerChange={(entryIndex, answerIndex, value) =>
+						setCard((current) =>
+							current.format === "OPEN_ENDED"
+								? updateEntryAtIndex(current, entryIndex, (entry) => {
+										const openEndedEntry =
+											entry as OpenEndedQuestionCardInput["entries"][number];
+
+										return {
+											...openEndedEntry,
+											answer: openEndedEntry.answer.map(
+												(answer, currentIndex) =>
+													currentIndex === answerIndex ? value : answer,
+											),
+										};
+									})
+								: current,
+						)
+					}
+					onEntryExplanationChange={updateEntryExplanation}
+					onEntryTextChange={updateEntryText}
+					onRemoveAcceptedAnswer={(entryIndex, answerIndex) =>
+						setCard((current) => {
+							if (current.format !== "OPEN_ENDED") {
+								return current;
+							}
+
+							const answerCount =
+								current.entries[entryIndex]?.answer.length ?? 0;
+							if (answerCount <= 1) {
+								return current;
+							}
+
+							return updateEntryAtIndex(current, entryIndex, (entry) => {
+								const openEndedEntry =
+									entry as OpenEndedQuestionCardInput["entries"][number];
+
+								return {
+									...openEndedEntry,
+									answer: openEndedEntry.answer.filter(
+										(_, currentIndex) => currentIndex !== answerIndex,
+									),
+								};
+							});
+						})
+					}
+					open={openSheet === "entry"}
+				/>
+			)
+		) : null;
 
 	return (
 		<section className={styles.panel} aria-labelledby="question-editor-title">
@@ -243,96 +440,8 @@ export default function QuestionCardEditor({
 					<h1 id="question-editor-title">
 						{mode === "create" ? "Create question" : "Edit question"}
 					</h1>
-					<p>
-						Use the card like a canvas: click the center for card settings and
-						click entries around the wheel to edit them.
-					</p>
-				</div>
-				<div className={styles.headerActions}>
-					<Button
-						disabled={isSubmitting || multipleChoiceCard.entries.length >= 10}
-						onClick={() => {
-							let nextEntryIndex: number | null = null;
-
-							setCard((current) => {
-								const nextCard = addEntryToQuestionCard(current);
-								nextEntryIndex =
-									nextCard.entries.length > current.entries.length
-										? nextCard.entries.length - 1
-										: null;
-								return nextCard;
-							});
-
-							if (nextEntryIndex !== null) {
-								setSelectedEntryIndex(nextEntryIndex);
-								setOpenSheet("entry");
-							}
-						}}
-						size="sm"
-						variant="secondary"
-					>
-						Add entry
-					</Button>
-					<Button
-						onClick={() => setOpenSheet("card")}
-						size="sm"
-						variant="ghost"
-					>
-						Card settings
-					</Button>
 				</div>
 			</div>
-
-			<div className={styles.summaryStrip}>
-				<div className={styles.summaryMeta}>
-					<span className={styles.summaryChip}>
-						{questionTypeLabels[card.format]}
-					</span>
-					<span className={styles.summaryChip}>{card.difficulty}</span>
-					<span className={styles.summaryChip}>
-						{card.entries.length} / 10 entries
-					</span>
-					<span className={styles.summaryChip}>
-						{multipleChoiceCard.choices.length} choices
-					</span>
-					<span
-						className={cx(
-							styles.summaryChip,
-							summaryTone === "valid"
-								? styles.summaryChipValid
-								: styles.summaryChipInvalid,
-						)}
-					>
-						{validationCount === 0
-							? "Ready to save"
-							: `${validationCount} issue${validationCount === 1 ? "" : "s"}`}
-					</span>
-					{card.tags.length ? (
-						card.tags.map((tag, tagIndex) => (
-							<span className={styles.summaryTag} key={`${tag}-${tagIndex}`}>
-								#{tag || "tag"}
-							</span>
-						))
-					) : (
-						<span className={styles.summaryMuted}>No tags yet</span>
-					)}
-				</div>
-
-				<div className={styles.summaryHints}>
-					{!multipleChoiceCard.prompt.trim() ? (
-						<p>Add a prompt from the card center.</p>
-					) : null}
-					{multipleChoiceCard.choices.some((choice) => !choice.trim()) ? (
-						<p>Finish your shared choice list in an entry editor.</p>
-					) : null}
-					{hasUnsavedChanges ? (
-						<p>Draft has unsaved changes.</p>
-					) : (
-						<p>Draft matches the last loaded state.</p>
-					)}
-				</div>
-			</div>
-
 			<div className={styles.canvas}>
 				<TriviaCard
 					centerHint="Card settings"
@@ -391,7 +500,7 @@ export default function QuestionCardEditor({
 				content={
 					openSheet === "card" ? (
 						<QuestionCardSettings
-							card={multipleChoiceCard}
+							card={card}
 							getFieldError={getFieldError}
 							isSubmitting={isSubmitting}
 							onAddChoice={() =>
@@ -466,36 +575,31 @@ export default function QuestionCardEditor({
 									),
 								}))
 							}
-						/>
-					) : selectedEntryIndex !== null && selectedEntry ? (
-						<MultipleChoiceEditor
-							card={multipleChoiceCard}
-							entryIndex={selectedEntryIndex}
-							getFieldError={getFieldError}
-							isSubmitting={isSubmitting}
-							onEntryAnswerChange={(entryIndex, answer) =>
+							onUiHintChange={(uiHint) =>
 								setCard((current) =>
-									current.format === "MULTIPLE_CHOICE"
-										? {
-												...current,
-												entries: current.entries.map((entry, currentIndex) =>
-													currentIndex === entryIndex
-														? { ...entry, answer }
-														: entry,
-												),
-											}
+									current.format === "OPEN_ENDED"
+										? { ...current, uiHint }
 										: current,
 								)
 							}
-							onEntryExplanationChange={updateEntryExplanation}
-							onEntryTextChange={updateEntryText}
-							open={openSheet === "entry"}
 						/>
-					) : null
+					) : (
+						entryEditor
+					)
 				}
 				footer={
 					openSheet === "card" ? (
-						<div className={styles.sheetFooterCenter}>
+						<div className={styles.sheetFooterActions}>
+							<Button
+								disabled={isSubmitting || card.entries.length >= 10}
+								onClick={() =>
+									setCard((current) => addEntryToQuestionCard(current))
+								}
+								size="sm"
+								variant="secondary"
+							>
+								Add entry
+							</Button>
 							<Button
 								disabled={card.entries.length === 0}
 								onClick={() => {
@@ -518,8 +622,8 @@ export default function QuestionCardEditor({
 									setSelectedEntryIndex((current) =>
 										current === null
 											? 0
-											: (current - 1 + multipleChoiceCard.entries.length) %
-												multipleChoiceCard.entries.length,
+											: (current - 1 + card.entries.length) %
+												card.entries.length,
 									);
 								}}
 							/>
@@ -536,9 +640,7 @@ export default function QuestionCardEditor({
 								label="Next entry"
 								onClick={() => {
 									setSelectedEntryIndex((current) =>
-										current === null
-											? 0
-											: (current + 1) % multipleChoiceCard.entries.length,
+										current === null ? 0 : (current + 1) % card.entries.length,
 									);
 								}}
 							/>
@@ -561,7 +663,7 @@ export default function QuestionCardEditor({
 										return null;
 									}
 
-									if (multipleChoiceCard.entries.length <= 2) {
+									if (card.entries.length <= 2) {
 										return current;
 									}
 

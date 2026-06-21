@@ -5,32 +5,32 @@ import { ChipPicker, Field } from "@/components";
 import QuestionEntryEditorLayout from "./QuestionEntryEditorLayout";
 import { useQuestionEditorArrowNavigation } from "./useQuestionEditorArrowNavigation";
 
-type MultipleChoiceQuestionCardInput = Extract<
+type OrderItemsQuestionCardInput = Extract<
 	QuestionCardInput,
-	{ format: "MULTIPLE_CHOICE" }
+	{ format: "ORDER_ITEMS" }
 >;
 
-type MultipleChoiceEditorProps = {
-	card: MultipleChoiceQuestionCardInput;
+type OrderItemsEditorProps = {
+	card: OrderItemsQuestionCardInput;
 	entryIndex: number;
 	getFieldError: (...prefix: Array<string | number>) => string | undefined;
 	isSubmitting: boolean;
-	open: boolean;
-	onEntryAnswerChange: (entryIndex: number, answer: string) => void;
+	onEntryAnswerChange: (entryIndex: number, answer: number) => void;
 	onEntryExplanationChange: (entryIndex: number, value: string) => void;
 	onEntryTextChange: (entryIndex: number, value: string) => void;
+	open: boolean;
 };
 
-export default function MultipleChoiceEditor({
+export default function OrderItemsEditor({
 	card,
 	entryIndex,
 	getFieldError,
 	isSubmitting,
-	open,
 	onEntryAnswerChange,
 	onEntryExplanationChange,
 	onEntryTextChange,
-}: MultipleChoiceEditorProps) {
+	open,
+}: OrderItemsEditorProps) {
 	const entry = card.entries[entryIndex];
 
 	useQuestionEditorArrowNavigation(open);
@@ -50,17 +50,18 @@ export default function MultipleChoiceEditor({
 			text={entry.text}
 		>
 			<Field
+				description="Each position should be used once across the card."
 				error={getFieldError("entries", entryIndex, "answer")}
-				label="Correct choice"
+				label="Correct position"
 			>
 				<ChipPicker
 					disabled={isSubmitting}
-					onChange={(answer) => onEntryAnswerChange(entryIndex, answer)}
-					options={card.choices.map((choice, choiceIndex) => ({
-						label: choice || `Choice ${choiceIndex + 1}`,
-						value: choice,
+					onChange={(answer) => onEntryAnswerChange(entryIndex, Number(answer))}
+					options={card.entries.map((_, positionIndex) => ({
+						label: `#${positionIndex + 1}`,
+						value: String(positionIndex + 1),
 					}))}
-					value={entry.answer || null}
+					value={String(entry.answer)}
 				/>
 			</Field>
 		</QuestionEntryEditorLayout>

@@ -6,35 +6,25 @@ import { CountryPicker } from "@/components/CountryPicker";
 import { Sheet } from "@/components/Sheet";
 import styles from "./AnswerPanel.module.css";
 
-type TrueOrFalseAnswer = {
-	format: "TRUE_OR_FALSE";
-	onSubmit: (answer: boolean) => void;
-};
-
-type MultipleChoiceAnswer = {
-	format: "MULTIPLE_CHOICE";
+type ChoiceAnswer = {
+	kind: "choices";
 	choices: string[];
 	onSubmit: (answer: string) => void;
 };
 
-type OrderItemsAnswer = {
-	format: "ORDER_ITEMS";
-	positions: number[];
-	onSubmit: (answer: number) => void;
-};
-
-type OpenEndedAnswer = {
-	format: "OPEN_ENDED";
+type TextAnswer = {
+	kind: "text";
 	placeholder?: string;
-	uiHint?: "country";
 	onSubmit: (answer: string) => void;
 };
 
-export type AnswerPanelAnswer =
-	| TrueOrFalseAnswer
-	| MultipleChoiceAnswer
-	| OrderItemsAnswer
-	| OpenEndedAnswer;
+type CountryAnswer = {
+	kind: "country";
+	placeholder?: string;
+	onSubmit: (answer: string) => void;
+};
+
+export type AnswerPanelAnswer = ChoiceAnswer | TextAnswer | CountryAnswer;
 
 type AnswerPanelProps = {
 	open: boolean;
@@ -56,7 +46,7 @@ export function AnswerPanel({
 	const [selectedChip, setSelectedChip] = useState<string | null>(null);
 	const [textAnswer, setTextAnswer] = useState("");
 	const trimmedPrompt = prompt?.trim();
-	const answerResetKey = answer ? `${answer.format}:${title}` : "empty";
+	const answerResetKey = answer ? `${answer.kind}:${title}` : "empty";
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset answer controls when the selected prompt changes.
 	useEffect(() => {
@@ -113,28 +103,7 @@ function AnswerPanelContent({
 				<strong>{title}</strong>
 			</p>
 
-			{answer.format === "TRUE_OR_FALSE" ? (
-				<div className={styles.answerButtons}>
-					<button
-						className={styles.primaryButton}
-						disabled={disabled}
-						onClick={() => answer.onSubmit(true)}
-						type="button"
-					>
-						True
-					</button>
-					<button
-						className={styles.dangerButton}
-						disabled={disabled}
-						onClick={() => answer.onSubmit(false)}
-						type="button"
-					>
-						False
-					</button>
-				</div>
-			) : null}
-
-			{answer.format === "MULTIPLE_CHOICE" ? (
+			{answer.kind === "choices" ? (
 				<>
 					<ChipPicker
 						disabled={disabled}
@@ -157,43 +126,9 @@ function AnswerPanelContent({
 				</>
 			) : null}
 
-			{answer.format === "ORDER_ITEMS" ? (
+			{answer.kind === "text" || answer.kind === "country" ? (
 				<>
-					<div className={styles.orderGrid}>
-						{answer.positions.map((position) => {
-							const value = String(position);
-
-							return (
-								<button
-									aria-pressed={selectedChip === value}
-									className={`${styles.orderChip} ${
-										selectedChip === value ? styles.selectedChip : ""
-									}`}
-									disabled={disabled}
-									key={position}
-									onClick={() => setSelectedChip(value)}
-									type="button"
-								>
-									{position}
-								</button>
-							);
-						})}
-					</div>
-					<PanelFooter
-						canSubmit={Boolean(selectedChip)}
-						disabled={disabled}
-						onSubmit={() => {
-							if (selectedChip) {
-								answer.onSubmit(Number(selectedChip));
-							}
-						}}
-					/>
-				</>
-			) : null}
-
-			{answer.format === "OPEN_ENDED" ? (
-				<>
-					{answer.uiHint === "country" ? (
+					{answer.kind === "country" ? (
 						<CountryPicker
 							classNames={{
 								control: styles.countryPickerControl,

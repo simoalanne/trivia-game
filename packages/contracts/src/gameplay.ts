@@ -1,64 +1,44 @@
 import z from "zod";
 import { defineContractTree } from "./initContracts.ts";
 
-const playerNameSchema = z.string().trim().min(1).max(20);
-
-const triviaCardFormatSchema = z.enum([
-	"MULTIPLE_CHOICE",
-	"TRUE_OR_FALSE",
-	"OPEN_ENDED",
-	"ORDER_ITEMS",
-]);
-const triviaCardUiHintSchema = z.enum(["country"]);
-
-const gameStateStatusSchema = z.enum(["waiting", "in_progress", "finished"]);
-const entryStateSchema = z.enum(["unanswered", "correct", "incorrect"]);
-
-const triviaAnswerSchema = z.union([
-	z.string(),
-	z.array(z.string()),
-	z.boolean(),
-	z.number(),
-]);
-
-const submittedAnswerSchema = z.union([z.string(), z.boolean(), z.number()]);
-
-export const playerSchema = z.object({
-	id: z.string(),
-	name: z.string(),
-	isHost: z.boolean(),
-	isReady: z.boolean(),
-	hasBankedRoundPoints: z.boolean(),
-});
-
-export const currentCardSchema = z.object({
-	id: z.number().int(),
-	prompt: z.string(),
-	format: triviaCardFormatSchema,
-	uiHint: triviaCardUiHintSchema.optional(),
-	choices: z.array(z.string()).optional(),
-	entries: z.array(
+export const gamestateSchema = z.object({
+	card: z
+		.object({
+			uiHint: z.enum([
+				"MULTIPLE_CHOICE",
+				"TRUE_OR_FALSE",
+				"OPEN_ENDED",
+				"ORDER_ITEMS",
+				"COUNTRY",
+			]),
+			prompt: z.string(),
+			entries: z.array(
+				z.object({
+					text: z.string(),
+					answer: z.string().nullable(),
+					explanation: z.string().nullable(),
+				}),
+			),
+			choices: z.array(z.string()).nullable(),
+		})
+		.nullable(),
+	players: z.array(
 		z.object({
-			text: z.string(),
-			answer: triviaAnswerSchema,
-			explanation: z.string().optional(),
-			state: entryStateSchema,
+			id: z.string(),
+			name: z.string(),
+			isHost: z.boolean(),
+			isReady: z.boolean(),
+			isPlayerTurn: z.boolean(),
+			isParticipatingInCurrentRound: z.boolean(),
+			totalPoints: z.int(),
+			roundPoints: z.int(),
 		}),
 	),
+	gameState: z.enum(["NOT_STARTED", "IN_PROGRESS", "FINISHED"]),
+	round: z.int(),
 });
 
-export const gameSessionSchema = z.object({
-	players: z.array(playerSchema),
-	currentCard: currentCardSchema.nullable(),
-	gameState: gameStateStatusSchema,
-	round: z.number().int().positive(),
-	scores: z.record(z.string(), z.number().int().nonnegative()),
-	roundScores: z.record(z.string(), z.number().int().nonnegative()),
-	playerTurnIndex: z.number().int().nonnegative(),
-	playedThroughCardIds: z.array(z.number().int()),
-});
-
-export const gameplayClientMessageSchema = z.discriminatedUnion("type", [
+const gameplayClientMessageSchema = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("toggleReady"),
 		state: z.boolean(),
@@ -68,24 +48,18 @@ export const gameplayClientMessageSchema = z.discriminatedUnion("type", [
 	}),
 	z.object({
 		type: z.literal("submitAnswer"),
-		entryIndex: z.number().int().nonnegative(),
-		answer: submittedAnswerSchema,
+		entryIndex: z.int(),
+		answer: z.string(),
 	}),
 	z.object({
-		type: z.literal("bankPoints"),
-	}),
-	z.object({
-		type: z.literal("nextTurn"),
-	}),
-	z.object({
-		type: z.literal("endRound"),
+		type: z.literal("doneAnswering"),
 	}),
 ]);
 
-export const gameplayServerMessageSchema = z.discriminatedUnion("type", [
+const gameplayServerMessageSchema = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("gameStateUpdate"),
-		gameState: gameSessionSchema,
+		gameState: gamestateSchema,
 	}),
 	z.object({
 		type: z.literal("gameError"),
@@ -95,9 +69,11 @@ export const gameplayServerMessageSchema = z.discriminatedUnion("type", [
 
 export type GameplayClientMessage = z.infer<typeof gameplayClientMessageSchema>;
 export type GameplayServerMessage = z.infer<typeof gameplayServerMessageSchema>;
-export type GameplaySession = z.infer<typeof gameSessionSchema>;
-export type GameplayPlayer = z.infer<typeof playerSchema>;
-export type GameplayCurrentCard = z.infer<typeof currentCardSchema>;
+export type GameplayState = z.infer<typeof gamestateSchema>;
+export type GamestateMessage = Extract<
+	GameplayServerMessage,
+	{ type: "gameStateUpdate" }
+>;
 
 export default defineContractTree({
 	gameplay: {
@@ -106,7 +82,7 @@ export default defineContractTree({
 			method: "POST",
 			request: {
 				body: z.object({
-					playerName: playerNameSchema,
+					playerName: z.string().trim().min(1).max(20),
 				}),
 			},
 			response: z.object({
@@ -120,7 +96,7 @@ export default defineContractTree({
 			request: {
 				body: z.object({
 					gameCode: z.string().min(1).trim(),
-					playerName: playerNameSchema,
+					playerName: z.string().trim().min(1).max(20),
 				}),
 			},
 			response: z.object({

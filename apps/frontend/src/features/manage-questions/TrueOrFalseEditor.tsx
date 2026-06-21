@@ -5,32 +5,37 @@ import { ChipPicker, Field } from "@/components";
 import QuestionEntryEditorLayout from "./QuestionEntryEditorLayout";
 import { useQuestionEditorArrowNavigation } from "./useQuestionEditorArrowNavigation";
 
-type MultipleChoiceQuestionCardInput = Extract<
+type TrueOrFalseQuestionCardInput = Extract<
 	QuestionCardInput,
-	{ format: "MULTIPLE_CHOICE" }
+	{ format: "TRUE_OR_FALSE" }
 >;
 
-type MultipleChoiceEditorProps = {
-	card: MultipleChoiceQuestionCardInput;
+type TrueOrFalseEditorProps = {
+	card: TrueOrFalseQuestionCardInput;
 	entryIndex: number;
 	getFieldError: (...prefix: Array<string | number>) => string | undefined;
 	isSubmitting: boolean;
-	open: boolean;
-	onEntryAnswerChange: (entryIndex: number, answer: string) => void;
+	onEntryAnswerChange: (entryIndex: number, answer: boolean) => void;
 	onEntryExplanationChange: (entryIndex: number, value: string) => void;
 	onEntryTextChange: (entryIndex: number, value: string) => void;
+	open: boolean;
 };
 
-export default function MultipleChoiceEditor({
+const trueOrFalseOptions = [
+	{ label: "True", value: "true" },
+	{ label: "False", value: "false" },
+];
+
+export default function TrueOrFalseEditor({
 	card,
 	entryIndex,
 	getFieldError,
 	isSubmitting,
-	open,
 	onEntryAnswerChange,
 	onEntryExplanationChange,
 	onEntryTextChange,
-}: MultipleChoiceEditorProps) {
+	open,
+}: TrueOrFalseEditorProps) {
 	const entry = card.entries[entryIndex];
 
 	useQuestionEditorArrowNavigation(open);
@@ -51,16 +56,15 @@ export default function MultipleChoiceEditor({
 		>
 			<Field
 				error={getFieldError("entries", entryIndex, "answer")}
-				label="Correct choice"
+				label="Correct answer"
 			>
 				<ChipPicker
 					disabled={isSubmitting}
-					onChange={(answer) => onEntryAnswerChange(entryIndex, answer)}
-					options={card.choices.map((choice, choiceIndex) => ({
-						label: choice || `Choice ${choiceIndex + 1}`,
-						value: choice,
-					}))}
-					value={entry.answer || null}
+					onChange={(answer) =>
+						onEntryAnswerChange(entryIndex, answer === "true")
+					}
+					options={trueOrFalseOptions}
+					value={entry.answer ? "true" : "false"}
 				/>
 			</Field>
 		</QuestionEntryEditorLayout>

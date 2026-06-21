@@ -6,16 +6,17 @@ import {
 	triviaCardDifficultySchema,
 	triviaCardFormatSchema,
 } from "@packages/contracts";
-import { Button, Field, Select, TextInput } from "@/components";
+import { Button, Field, TextInput } from "@/components";
+import { ChipPicker } from "@/components/ChipPicker";
 import styles from "./QuestionCardSettings.module.css";
 
-type MultipleChoiceQuestionCardInput = Extract<
+type TriviaCardUiHint = Extract<
 	QuestionCardInput,
-	{ format: "MULTIPLE_CHOICE" }
->;
+	{ format: "OPEN_ENDED" }
+>["uiHint"];
 
 type QuestionCardSettingsProps = {
-	card: MultipleChoiceQuestionCardInput;
+	card: QuestionCardInput;
 	getFieldError: (...prefix: Array<string | number>) => string | undefined;
 	isSubmitting: boolean;
 	onAddChoice: () => void;
@@ -27,6 +28,7 @@ type QuestionCardSettingsProps = {
 	onRemoveChoice: (choiceIndex: number) => void;
 	onRemoveTag: (tagIndex: number) => void;
 	onTagChange: (tagIndex: number, value: string) => void;
+	onUiHintChange: (uiHint: TriviaCardUiHint | undefined) => void;
 };
 
 const questionTypeLabels: Record<TriviaCardFormat, string> = {
@@ -35,6 +37,11 @@ const questionTypeLabels: Record<TriviaCardFormat, string> = {
 	OPEN_ENDED: "Open ended",
 	ORDER_ITEMS: "Order items",
 };
+
+const openEndedUiHintOptions = [
+	{ label: "Plain text", value: "none" },
+	{ label: "Country picker", value: "country" },
+];
 
 export default function QuestionCardSettings({
 	card,
@@ -49,6 +56,7 @@ export default function QuestionCardSettings({
 	onRemoveChoice,
 	onRemoveTag,
 	onTagChange,
+	onUiHintChange,
 }: QuestionCardSettingsProps) {
 	return (
 		<div className={styles.panel}>
@@ -72,22 +80,16 @@ export default function QuestionCardSettings({
 						htmlFor="difficulty"
 						label="Difficulty"
 					>
-						<Select
-							id="difficulty"
-							invalid={Boolean(getFieldError("difficulty"))}
-							onChange={(event) =>
-								onDifficultyChange(
-									event.target.value as QuestionCardInput["difficulty"],
-								)
+						<ChipPicker
+							onChange={(value) =>
+								onDifficultyChange(value as QuestionCardInput["difficulty"])
 							}
+							options={triviaCardDifficultySchema.options.map((difficulty) => ({
+								label: difficulty,
+								value: difficulty,
+							}))}
 							value={card.difficulty}
-						>
-							{triviaCardDifficultySchema.options.map((difficulty) => (
-								<option key={difficulty} value={difficulty}>
-									{difficulty}
-								</option>
-							))}
-						</Select>
+						/>
 					</Field>
 
 					<Field
@@ -95,20 +97,16 @@ export default function QuestionCardSettings({
 						htmlFor="format"
 						label="Question type"
 					>
-						<Select
-							id="format"
-							invalid={Boolean(getFieldError("format"))}
-							onChange={(event) =>
-								onFormatChange(event.target.value as TriviaCardFormat)
+						<ChipPicker
+							onChange={(value) =>
+								onFormatChange(value as QuestionCardInput["format"])
 							}
+							options={triviaCardFormatSchema.options.map((format) => ({
+								label: questionTypeLabels[format],
+								value: format,
+							}))}
 							value={card.format}
-						>
-							{triviaCardFormatSchema.options.map((format) => (
-								<option key={format} value={format}>
-									{questionTypeLabels[format]}
-								</option>
-							))}
-						</Select>
+						/>
 					</Field>
 				</div>
 
@@ -149,47 +147,75 @@ export default function QuestionCardSettings({
 					</div>
 				</Field>
 
-				<section className={styles.section} aria-label="Choices">
-					<div className={styles.sectionHeader}>
-						<div>
-							<h2>Choices</h2>
-							<p>
-								Multiple choice cards share one choice list across all entries.
-							</p>
-						</div>
-						<button
-							className={styles.inlineAction}
-							disabled={isSubmitting}
-							onClick={onAddChoice}
-							type="button"
-						>
-							Add choice
-						</button>
-					</div>
-
-					<div className={styles.listEditor}>
-						{card.choices.map((choice, choiceIndex) => (
-							<div className={styles.rowEditor} key={`choice-${choiceIndex}`}>
-								<TextInput
-									invalid={Boolean(getFieldError("choices", choiceIndex))}
-									onChange={(event) =>
-										onChoiceChange(choiceIndex, event.target.value)
-									}
-									placeholder={`Choice ${choiceIndex + 1}`}
-									value={choice}
-								/>
-								<button
-									className={styles.inlineRemove}
-									disabled={isSubmitting || card.choices.length <= 2}
-									onClick={() => onRemoveChoice(choiceIndex)}
-									type="button"
-								>
-									Remove
-								</button>
+				{card.format === "OPEN_ENDED" ? (
+					<section className={styles.section} aria-label="Answer input">
+						<div className={styles.sectionHeader}>
+							<div>
+								<h2>Answer input</h2>
+								<p>Choose how players enter answers during gameplay.</p>
 							</div>
-						))}
-					</div>
-				</section>
+						</div>
+
+						<Field error={getFieldError("uiHint")} label="Input style">
+							<ChipPicker
+								onChange={(value) =>
+									onUiHintChange(
+										value === "country"
+											? ("country" satisfies TriviaCardUiHint)
+											: undefined,
+									)
+								}
+								options={openEndedUiHintOptions}
+								value={card.uiHint ?? "none"}
+							/>
+						</Field>
+					</section>
+				) : null}
+
+				{card.format === "MULTIPLE_CHOICE" ? (
+					<section className={styles.section} aria-label="Choices">
+						<div className={styles.sectionHeader}>
+							<div>
+								<h2>Choices</h2>
+								<p>
+									Multiple choice cards share one choice list across all
+									entries.
+								</p>
+							</div>
+							<button
+								className={styles.inlineAction}
+								disabled={isSubmitting}
+								onClick={onAddChoice}
+								type="button"
+							>
+								Add choice
+							</button>
+						</div>
+
+						<div className={styles.listEditor}>
+							{card.choices.map((choice, choiceIndex) => (
+								<div className={styles.rowEditor} key={`choice-${choiceIndex}`}>
+									<TextInput
+										invalid={Boolean(getFieldError("choices", choiceIndex))}
+										onChange={(event) =>
+											onChoiceChange(choiceIndex, event.target.value)
+										}
+										placeholder={`Choice ${choiceIndex + 1}`}
+										value={choice}
+									/>
+									<button
+										className={styles.inlineRemove}
+										disabled={isSubmitting || card.choices.length <= 2}
+										onClick={() => onRemoveChoice(choiceIndex)}
+										type="button"
+									>
+										Remove
+									</button>
+								</div>
+							))}
+						</div>
+					</section>
+				) : null}
 			</div>
 		</div>
 	);

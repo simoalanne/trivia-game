@@ -9,10 +9,9 @@ import questionsCrud from "./questionsCrud.ts";
 
 export type {
 	GameplayClientMessage,
-	GameplayCurrentCard,
-	GameplayPlayer,
 	GameplayServerMessage,
-	GameplaySession,
+	GameplayState,
+	GamestateMessage,
 } from "./gameplay.ts";
 export type {
 	QuestionCard,

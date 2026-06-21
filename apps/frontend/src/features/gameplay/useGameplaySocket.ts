@@ -1,9 +1,6 @@
 "use client";
 
-import type {
-	GameplayClientMessage,
-	GameplaySession,
-} from "@packages/contracts";
+import type { GameplayClientMessage, GameplayState } from "@packages/contracts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
 
@@ -37,7 +34,7 @@ export function useGameplaySocket(gameCode: string) {
 	const api = useApiClient();
 	const normalizedGameCode = useMemo(() => gameCode.toLowerCase(), [gameCode]);
 	const [playerId, setPlayerId] = useState<string | null>(null);
-	const [gameState, setGameState] = useState<GameplaySession | null>(null);
+	const [gameState, setGameState] = useState<GameplayState | null>(null);
 	const [connectionState, setConnectionState] =
 		useState<ConnectionState>("connecting");
 	const [error, setError] = useState<string | null>(null);
@@ -97,6 +94,7 @@ export function useGameplaySocket(gameCode: string) {
 
 			switch (result.data.type) {
 				case "gameStateUpdate":
+					console.log("Received gameStateUpdate", result.data.gameState);
 					setGameState(result.data.gameState);
 					setError(null);
 					break;

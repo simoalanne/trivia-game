@@ -40,7 +40,6 @@ export default function ManageQuestionEditorPage({
 			api.questionsCrud.list.setData((current) =>
 				current ? [createdQuestion, ...current] : [createdQuestion],
 			);
-			router.push("/manage-questions");
 		},
 	});
 
@@ -56,7 +55,6 @@ export default function ManageQuestionEditorPage({
 				{ id: updatedQuestion.id },
 				() => updatedQuestion,
 			);
-			router.push("/manage-questions");
 		},
 	});
 

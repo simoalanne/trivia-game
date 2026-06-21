@@ -15,7 +15,7 @@ export type PlayerListItem = {
 	position: PlayerPosition;
 	isYou?: boolean;
 	isCurrentTurn?: boolean;
-	hasBankedRoundPoints?: boolean;
+	statusLabel?: string;
 };
 
 type PlayerCardProps = {
@@ -55,8 +55,8 @@ export function PlayerCard({ player }: PlayerCardProps) {
 			</span>
 			<div className={styles.playerScoreLine}>
 				<strong>{player.score.toString().padStart(3, "0")}</strong>
-				{player.hasBankedRoundPoints ? (
-					<span className={styles.playerStatus}>Skipped</span>
+				{player.statusLabel ? (
+					<span className={styles.playerStatus}>{player.statusLabel}</span>
 				) : null}
 			</div>
 		</div>

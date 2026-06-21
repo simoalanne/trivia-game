@@ -25,7 +25,7 @@ export default function LobbyClient({ gameCode }: LobbyClientProps) {
 	const canSend = connectionState === "open" && Boolean(currentPlayer);
 
 	useEffect(() => {
-		if (gameState?.gameState === "in_progress") {
+		if (gameState?.gameState === "IN_PROGRESS") {
 			router.replace(`/play/${gameCodePath}`);
 		}
 	}, [gameCodePath, gameState?.gameState, router]);
