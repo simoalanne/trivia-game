@@ -1,16 +1,22 @@
 import z from "zod";
 import { defineContractTree } from "./initContracts.ts";
 
+export const gameplayTurnTimeoutSecondsMin = 0;
+export const gameplayTurnTimeoutSecondsMax = 60;
+export const gameplayTurnTimeoutSecondsDefault = 30;
+
+const gameplayUiHintSchema = z.enum([
+	"MULTIPLE_CHOICE",
+	"TRUE_OR_FALSE",
+	"OPEN_ENDED",
+	"ORDER_ITEMS",
+	"COUNTRY",
+]);
+
 export const gamestateSchema = z.object({
 	card: z
 		.object({
-			uiHint: z.enum([
-				"MULTIPLE_CHOICE",
-				"TRUE_OR_FALSE",
-				"OPEN_ENDED",
-				"ORDER_ITEMS",
-				"COUNTRY",
-			]),
+			uiHint: gameplayUiHintSchema,
 			prompt: z.string(),
 			entries: z.array(
 				z.object({
@@ -36,6 +42,13 @@ export const gamestateSchema = z.object({
 	),
 	gameState: z.enum(["NOT_STARTED", "IN_PROGRESS", "FINISHED"]),
 	round: z.int(),
+	turnDurationSeconds: z
+		.int()
+		.min(gameplayTurnTimeoutSecondsMin)
+		.max(gameplayTurnTimeoutSecondsMax),
+	turnRemainingMs: z.int().nullable(),
+	turnExpiresAt: z.string().datetime().nullable(),
+	isTurnPaused: z.boolean(),
 });
 
 const gameplayClientMessageSchema = z.discriminatedUnion("type", [
@@ -54,12 +67,47 @@ const gameplayClientMessageSchema = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("doneAnswering"),
 	}),
+	z.object({
+		type: z.literal("setOpenedEntry"),
+		entryIndex: z.int().nullable(),
+	}),
+	z.object({
+		type: z.literal("setTurnPaused"),
+		paused: z.boolean(),
+	}),
 ]);
 
-const gameplayServerMessageSchema = z.discriminatedUnion("type", [
+const turnResolvedMessageSchema = z.discriminatedUnion("resolution", [
+	z.object({
+		type: z.literal("turnResolved"),
+		resolution: z.literal("submitted"),
+		playerId: z.string(),
+		playerName: z.string(),
+		uiHint: gameplayUiHintSchema,
+		entryIndex: z.int(),
+		entryText: z.string(),
+		prompt: z.string(),
+		answer: z.string(),
+		correctAnswer: z.string(),
+		isCorrect: z.boolean(),
+	}),
+	z.object({
+		type: z.literal("turnResolved"),
+		resolution: z.literal("timedOut"),
+		playerId: z.string(),
+		playerName: z.string(),
+	}),
+]);
+
+const gameplayServerMessageSchema = z.union([
 	z.object({
 		type: z.literal("gameStateUpdate"),
 		gameState: gamestateSchema,
+	}),
+	turnResolvedMessageSchema,
+	z.object({
+		type: z.literal("openedEntryUpdate"),
+		entryIndex: z.int().nullable(),
 	}),
 	z.object({
 		type: z.literal("gameError"),
@@ -74,6 +122,10 @@ export type GamestateMessage = Extract<
 	GameplayServerMessage,
 	{ type: "gameStateUpdate" }
 >;
+export type TurnResolvedMessage = Extract<
+	GameplayServerMessage,
+	{ type: "turnResolved" }
+>;
 
 export default defineContractTree({
 	gameplay: {
@@ -83,6 +135,11 @@ export default defineContractTree({
 			request: {
 				body: z.object({
 					playerName: z.string().trim().min(1).max(20),
+					turnDurationSeconds: z
+						.int()
+						.min(gameplayTurnTimeoutSecondsMin)
+						.max(gameplayTurnTimeoutSecondsMax)
+						.default(gameplayTurnTimeoutSecondsDefault),
 				}),
 			},
 			response: z.object({

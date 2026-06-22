@@ -12,6 +12,12 @@ export type {
 	GameplayServerMessage,
 	GameplayState,
 	GamestateMessage,
+	TurnResolvedMessage,
+} from "./gameplay.ts";
+export {
+	gameplayTurnTimeoutSecondsDefault,
+	gameplayTurnTimeoutSecondsMax,
+	gameplayTurnTimeoutSecondsMin,
 } from "./gameplay.ts";
 export type {
 	QuestionCard,

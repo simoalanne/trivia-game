@@ -24,6 +24,32 @@
 	gap: 12px;
 }
 
+.choiceGrid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+	gap: 10px;
+}
+
+.choiceChip {
+	min-height: 48px;
+	border: 1px solid #cfd6e4;
+	border-radius: 999px;
+	background: #ffffff;
+	padding: 0.55rem 0.9rem;
+	color: #172033;
+	font: inherit;
+	font-weight: 800;
+	overflow-wrap: anywhere;
+	text-align: center;
+	cursor: pointer;
+	transition:
+		background 180ms ease,
+		border-color 180ms ease,
+		box-shadow 180ms ease,
+		color 180ms ease,
+		transform 180ms ease;
+}
+
 .answerButtons button,
 .panelFooter button {
 	min-height: 54px;
@@ -41,7 +67,8 @@
 
 .answerButtons button:hover:not(:disabled),
 .panelFooter button:hover:not(:disabled),
-.orderChip:hover:not(:disabled) {
+.orderChip:hover:not(:disabled),
+.choiceChip:hover:not(:disabled) {
 	background: #f8fbff;
 	box-shadow: 0 10px 22px rgb(33 45 67 / 9%);
 	transform: translateY(-1px);
@@ -49,6 +76,7 @@
 
 .answerButtons button:disabled,
 .panelFooter button:disabled,
+.choiceChip:disabled,
 .orderChip:disabled,
 .textInput:disabled {
 	cursor: not-allowed;
@@ -58,6 +86,42 @@
 .primaryButton {
 	border: 2px solid #0b57e8;
 	color: #0b57e8;
+}
+
+.primaryButton,
+.primaryButtonSubmitting,
+.primaryButtonCorrect,
+.primaryButtonWrong {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+}
+
+.primaryButtonSubmitting {
+	border-color: #0b57e8;
+	background: #f8fbff;
+	color: #0b57e8;
+}
+
+.primaryButtonCorrect {
+	border-color: #217a3a;
+	background: linear-gradient(135deg, #e9f7ed 0%, #d6f0dd 100%);
+	color: #1d6a32;
+	box-shadow: 0 12px 28px rgb(33 122 58 / 16%);
+	animation: submitButtonResolve 520ms ease;
+}
+
+.primaryButtonWrong {
+	border-color: #d43d56;
+	background: linear-gradient(135deg, #fff1f4 0%, #ffe0e6 100%);
+	color: #ba2341;
+	box-shadow: 0 12px 28px rgb(212 61 86 / 16%);
+	animation: submitButtonResolve 520ms ease;
+}
+
+.primaryButtonSpinner {
+	animation: spin 900ms linear infinite;
 }
 
 .dangerButton {
@@ -94,6 +158,13 @@
 }
 
 .selectedChip {
+	border-color: #0b57e8;
+	background: rgb(11 87 232 / 9%);
+	color: #0b57e8;
+	box-shadow: inset 0 0 0 1px #0b57e8;
+}
+
+.choiceChipSelected {
 	border-color: #0b57e8;
 	background: rgb(11 87 232 / 9%);
 	color: #0b57e8;
@@ -162,6 +233,31 @@
 	margin-top: 18px;
 }
 
+@keyframes submitButtonResolve {
+	0% {
+		transform: scale(0.98);
+		box-shadow: 0 0 0 rgb(0 0 0 / 0%);
+	}
+
+	60% {
+		transform: scale(1.02);
+	}
+
+	100% {
+		transform: scale(1);
+	}
+}
+
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
 @media (max-width: 640px) {
 	.answerPrompt {
 		margin-bottom: 18px;
@@ -172,6 +268,10 @@
 	.panelFooter {
 		grid-template-columns: 1fr;
 		gap: 10px;
+	}
+
+	.choiceGrid {
+		grid-template-columns: 1fr;
 	}
 
 	.answerButtons button,

@@ -68,6 +68,12 @@
 	gap: var(--space-4);
 }
 
+.rangeInput {
+	width: 100%;
+	accent-color: var(--color-accent);
+	cursor: pointer;
+}
+
 .actions {
 	display: flex;
 	flex-wrap: wrap;

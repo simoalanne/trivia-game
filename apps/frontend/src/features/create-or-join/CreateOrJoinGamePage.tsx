@@ -1,5 +1,10 @@
 "use client";
 
+import {
+	gameplayTurnTimeoutSecondsDefault,
+	gameplayTurnTimeoutSecondsMax,
+	gameplayTurnTimeoutSecondsMin,
+} from "@packages/contracts";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState } from "react";
@@ -16,6 +21,9 @@ export default function CreateOrJoinGamePage() {
 	const [mode, setMode] = useState<Mode>("create");
 	const [playerName, setPlayerName] = useState("");
 	const [gameCode, setGameCode] = useState("");
+	const [turnDurationSeconds, setTurnDurationSeconds] = useState(
+		gameplayTurnTimeoutSecondsDefault,
+	);
 
 	const createGame = api.gameplay.create.useMutation();
 	const joinGame = api.gameplay.join.useMutation();
@@ -40,6 +48,7 @@ export default function CreateOrJoinGamePage() {
 			createGame.mutate(
 				{
 					playerName: trimmedPlayerName,
+					turnDurationSeconds,
 				},
 				{
 					onSuccess: async (session) => {
@@ -133,6 +142,27 @@ export default function CreateOrJoinGamePage() {
 								placeholder="Code from host"
 								type="text"
 								value={gameCode}
+							/>
+						</Field>
+					)}
+
+					{mode === "create" && (
+						<Field
+							htmlFor="turnDurationSeconds"
+							label={`Turn timer: ${
+								turnDurationSeconds === 0 ? "Off" : `${turnDurationSeconds}s`
+							}`}
+						>
+							<input
+								className={styles.rangeInput}
+								id="turnDurationSeconds"
+								max={gameplayTurnTimeoutSecondsMax}
+								min={gameplayTurnTimeoutSecondsMin}
+								onChange={(event) =>
+									setTurnDurationSeconds(Number(event.target.value))
+								}
+								type="range"
+								value={turnDurationSeconds}
 							/>
 						</Field>
 					)}

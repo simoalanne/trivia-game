@@ -1,20 +1,20 @@
 "use client";
 
-import type { GameplayState } from "@packages/contracts";
+import type { GameplayState, TurnResolvedMessage } from "@packages/contracts";
+import { CheckIcon, XIcon } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components";
 import styles from "./ActiveGamePage.module.css";
 import {
 	AnswerPanel,
 	type AnswerPanelAnswer,
+	type AnswerPanelResult,
 	GameCode,
 	PlayerList,
-	type PlayerListItem,
 	type PlayerPosition,
 	type PlayerTone,
 	TriviaCard,
-	type TriviaCardItem,
 } from "./components";
 import { useGameplaySocket } from "./useGameplaySocket";
 
@@ -29,39 +29,133 @@ const playerPositions: PlayerPosition[] = [
 	"bottomRight",
 ];
 const playerTones: PlayerTone[] = ["green", "red", "blue", "gold"];
+const answerResolutionDurationMs = 1200;
+
+type AnswerPanelConfig =
+	| {
+			kind: "choices";
+			choices: string[];
+	  }
+	| {
+			kind: "text";
+			placeholder: string;
+	  }
+	| {
+			kind: "country";
+			placeholder: string;
+	  };
+
+type ActiveAnswerPanelState = {
+	entryIndex: number;
+	prompt: string;
+	title: string;
+	answerConfig: AnswerPanelConfig;
+};
 
 const getCurrentTurnPlayer = (gameState: GameplayState | null) =>
 	gameState?.players.find((player) => player.isPlayerTurn) ?? null;
 
-const toAnswerPanelAnswer = (
+const fallbackCountryLabel = (countryCode: string) => countryCode.toUpperCase();
+
+const getBrowserLocales = () => {
+	if (typeof navigator === "undefined") {
+		return ["en"];
+	}
+
+	return navigator.languages.length > 0 ? navigator.languages : ["en"];
+};
+
+const normalizeResolvedAnswer = (
+	turnResolution: Extract<TurnResolvedMessage, { resolution: "submitted" }>,
+) => {
+	if (turnResolution.uiHint !== "COUNTRY") {
+		return {
+			answer: turnResolution.answer,
+			correctAnswer: turnResolution.correctAnswer,
+		};
+	}
+
+	const displayNames = new Intl.DisplayNames(getBrowserLocales(), {
+		type: "region",
+	});
+	const toCountryLabel = (countryCode: string) =>
+		displayNames.of(countryCode.toUpperCase()) ??
+		fallbackCountryLabel(countryCode);
+
+	return {
+		answer: toCountryLabel(turnResolution.answer),
+		correctAnswer: toCountryLabel(turnResolution.correctAnswer),
+	};
+};
+
+const createAnswerPanelState = (
 	card: NonNullable<GameplayState["card"]>,
-	onSubmit: (answer: string) => void,
-): AnswerPanelAnswer =>
-	card.choices?.length
+	entryIndex: number,
+): ActiveAnswerPanelState => ({
+	answerConfig: card.choices?.length
 		? {
 				kind: "choices",
 				choices: card.choices,
-				onSubmit,
 			}
 		: card.uiHint === "COUNTRY"
 			? {
 					kind: "country",
 					placeholder: "Country",
-					onSubmit,
 				}
 			: {
 					kind: "text",
 					placeholder: "Your answer",
-					onSubmit,
-				};
+				},
+	entryIndex,
+	prompt: card.prompt,
+	title: card.entries[entryIndex]?.text ?? "",
+});
+
+const toAnswerPanelAnswer = (
+	panelState: ActiveAnswerPanelState,
+	onSubmit: (answer: string) => void,
+): AnswerPanelAnswer => {
+	switch (panelState.answerConfig.kind) {
+		case "choices":
+			return {
+				kind: "choices",
+				choices: panelState.answerConfig.choices,
+				onSubmit,
+			};
+		case "country":
+			return {
+				kind: "country",
+				placeholder: panelState.answerConfig.placeholder,
+				onSubmit,
+			};
+		case "text":
+			return {
+				kind: "text",
+				placeholder: panelState.answerConfig.placeholder,
+				onSubmit,
+			};
+	}
+};
 
 export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
-	const { connectionState, error, gameState, playerId, send } =
-		useGameplaySocket(gameCode);
-	const [selectedEntryIndex, setSelectedEntryIndex] = useState<number | null>(
-		null,
-	);
+	const {
+		answerResolution,
+		connectionState,
+		error,
+		gameState,
+		openedEntryIndex,
+		playerId,
+		send,
+	} = useGameplaySocket(gameCode);
+	const [activeAnswerPanel, setActiveAnswerPanel] =
+		useState<ActiveAnswerPanelState | null>(null);
 	const [isAnswerPanelOpen, setIsAnswerPanelOpen] = useState(false);
+	const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
+	const [answerPanelResult, setAnswerPanelResult] =
+		useState<AnswerPanelResult | null>(null);
+	const [spectatorResolution, setSpectatorResolution] =
+		useState<TurnResolvedMessage | null>(null);
+	const [remainingTurnMs, setRemainingTurnMs] = useState<number | null>(null);
 	const gameCodePath = gameCode.toLowerCase();
 	const currentCard = gameState?.card ?? null;
 	const currentPlayer =
@@ -71,52 +165,68 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 	const canAnswer =
 		canSend &&
 		Boolean(currentPlayer?.isPlayerTurn) &&
-		Boolean(currentPlayer?.isParticipatingInCurrentRound);
+		Boolean(currentPlayer?.isParticipatingInCurrentRound) &&
+		!gameState?.isTurnPaused;
+	const turnTimeoutEnabled = (gameState?.turnDurationSeconds ?? 0) > 0;
+	const canTogglePause =
+		connectionState === "open" &&
+		Boolean(currentPlayer?.isHost) &&
+		gameState?.gameState === "IN_PROGRESS" &&
+		turnTimeoutEnabled;
 
-	const playerList = useMemo<PlayerListItem[]>(
-		() =>
-			(gameState?.players ?? []).map((player, index) => ({
-				id: player.id,
-				name: player.name,
-				score: player.totalPoints + player.roundPoints,
-				tone: playerTones[index % playerTones.length] ?? "blue",
-				position:
-					playerPositions[index % playerPositions.length] ?? "bottomLeft",
-				isYou: player.id === playerId,
-				isCurrentTurn: player.id === turnPlayer?.id,
-				statusLabel: !player.isParticipatingInCurrentRound ? "Done" : undefined,
-			})),
-		[gameState?.players, playerId, turnPlayer?.id],
-	);
+	const playerList = (gameState?.players ?? []).map((player, index) => ({
+		id: player.id,
+		name: player.name,
+		score: player.totalPoints + player.roundPoints,
+		tone: playerTones[index % playerTones.length] ?? "blue",
+		position: playerPositions[index % playerPositions.length] ?? "bottomLeft",
+		isYou: player.id === playerId,
+		isCurrentTurn: player.id === turnPlayer?.id,
+		statusLabel: !player.isParticipatingInCurrentRound ? "Done" : undefined,
+	}));
 
-	const triviaItems = useMemo<TriviaCardItem[]>(
-		() =>
-			currentCard?.entries.map((entry, entryIndex) => ({
-				id: String(entryIndex),
-				label: entry.text,
-				answer: entry.answer ?? undefined,
-				disabled: entry.answer !== null || !canAnswer,
-			})) ?? [],
-		[currentCard, canAnswer],
-	);
+	const triviaItems =
+		currentCard?.entries.map((entry, entryIndex) => ({
+			id: String(entryIndex),
+			label: entry.text,
+			answer: entry.answer ?? undefined,
+			disabled: entry.answer !== null || !canAnswer,
+			highlightColor: "blue",
+		})) ?? [];
 
 	const selectedEntry =
-		selectedEntryIndex === null
-			? null
-			: (currentCard?.entries[selectedEntryIndex] ?? null);
+		activeAnswerPanel && currentCard
+			? (currentCard.entries[activeAnswerPanel.entryIndex] ?? null)
+			: null;
 	const canAnswerSelectedEntry = Boolean(
-		selectedEntry && selectedEntry.answer === null && canAnswer,
+		activeAnswerPanel &&
+			selectedEntry &&
+			selectedEntry.answer === null &&
+			canAnswer &&
+			!isSubmittingAnswer &&
+			!answerPanelResult,
 	);
 	const selectedCardKey = `${gameState?.round ?? 0}:${currentCard?.prompt ?? ""}`;
 
-	const closeAnswerPanel = () => {
+	const closeAnswerPanel = (clearOpenedEntry: boolean = false) => {
 		setIsAnswerPanelOpen(false);
-		setSelectedEntryIndex(null);
+		setIsSubmittingAnswer(false);
+		setAnswerPanelResult(null);
+		setActiveAnswerPanel(null);
+
+		if (!clearOpenedEntry) {
+			return;
+		}
+
+		send({
+			type: "setOpenedEntry",
+			entryIndex: null,
+		});
 	};
 
 	const selectEntry = (itemId: string | null) => {
 		if (itemId === null) {
-			closeAnswerPanel();
+			closeAnswerPanel(true);
 			return;
 		}
 
@@ -124,14 +234,120 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 			return;
 		}
 
-		setSelectedEntryIndex(Number(itemId));
+		if (!currentCard) {
+			return;
+		}
+
+		const nextOpenedEntryIndex = Number(itemId);
+		const nextAnswerPanelState = createAnswerPanelState(
+			currentCard,
+			nextOpenedEntryIndex,
+		);
+		const didSend = send({
+			type: "setOpenedEntry",
+			entryIndex: nextOpenedEntryIndex,
+		});
+
+		if (!didSend) {
+			return;
+		}
+
+		setActiveAnswerPanel(nextAnswerPanelState);
+		setAnswerPanelResult(null);
+		setIsSubmittingAnswer(false);
 		setIsAnswerPanelOpen(true);
 	};
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset selected entry when the backend advances the card.
 	useEffect(() => {
+		if (isSubmittingAnswer || answerPanelResult) {
+			return;
+		}
+
 		closeAnswerPanel();
-	}, [selectedCardKey]);
+	}, [answerPanelResult, isSubmittingAnswer, selectedCardKey]);
+
+	useEffect(() => {
+		if (openedEntryIndex !== null || isSubmittingAnswer || answerPanelResult) {
+			return;
+		}
+
+		setActiveAnswerPanel(null);
+		setIsAnswerPanelOpen(false);
+	}, [answerPanelResult, isSubmittingAnswer, openedEntryIndex]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: we don't care if answerpanelstate changes...
+	useEffect(() => {
+		if (!answerResolution) {
+			return;
+		}
+
+		if (
+			answerResolution.resolution === "submitted" &&
+			answerResolution.playerId === playerId
+		) {
+			setSpectatorResolution(null);
+			setIsSubmittingAnswer(false);
+			setAnswerPanelResult({
+				answer: answerResolution.answer,
+				isCorrect: answerResolution.isCorrect,
+			});
+			setIsAnswerPanelOpen(true);
+
+			const timeoutId = window.setTimeout(() => {
+				closeAnswerPanel();
+			}, answerResolutionDurationMs);
+
+			return () => {
+				window.clearTimeout(timeoutId);
+			};
+		}
+
+		if (
+			answerResolution.resolution === "timedOut" &&
+			answerResolution.playerId === playerId
+		) {
+			closeAnswerPanel();
+		}
+
+		setSpectatorResolution(answerResolution);
+		const timeoutId = window.setTimeout(() => {
+			setSpectatorResolution(null);
+		}, answerResolutionDurationMs);
+
+		return () => {
+			window.clearTimeout(timeoutId);
+		};
+	}, [answerResolution, playerId]);
+
+	useEffect(() => {
+		if (gameState?.isTurnPaused) {
+			setRemainingTurnMs(gameState.turnRemainingMs);
+			return;
+		}
+
+		if (!gameState?.turnExpiresAt) {
+			setRemainingTurnMs(gameState?.turnRemainingMs ?? null);
+			return;
+		}
+
+		const syncRemainingTurnMs = () => {
+			const remaining =
+				new Date(gameState.turnExpiresAt!).getTime() - Date.now();
+			setRemainingTurnMs(Math.max(0, remaining));
+		};
+
+		syncRemainingTurnMs();
+		const intervalId = window.setInterval(syncRemainingTurnMs, 250);
+
+		return () => {
+			window.clearInterval(intervalId);
+		};
+	}, [
+		gameState?.isTurnPaused,
+		gameState?.turnExpiresAt,
+		gameState?.turnRemainingMs,
+	]);
 
 	const submitAnswer = (entryIndex: number, answer: string) => {
 		if (!canAnswer) {
@@ -145,7 +361,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		});
 
 		if (didSend) {
-			closeAnswerPanel();
+			setIsSubmittingAnswer(true);
 		}
 	};
 
@@ -163,6 +379,17 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 		}
 	};
 
+	const toggleTurnPaused = () => {
+		if (!canTogglePause) {
+			return;
+		}
+
+		send({
+			type: "setTurnPaused",
+			paused: !gameState?.isTurnPaused,
+		});
+	};
+
 	return (
 		<main className={styles.page}>
 			<header className={styles.topBar}>
@@ -178,6 +405,13 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 								: `${turnPlayer.name}'s turn`}
 						</span>
 					) : null}
+					{turnTimeoutEnabled ? (
+						<span className={styles.turnTimer}>
+							{gameState?.isTurnPaused
+								? `Paused at ${Math.ceil((remainingTurnMs ?? 0) / 1000)}s`
+								: `${Math.ceil((remainingTurnMs ?? 0) / 1000)}s left`}
+						</span>
+					) : null}
 				</div>
 			</header>
 
@@ -190,7 +424,7 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 				</div>
 			) : null}
 
-			{currentCard ? (
+			{currentCard && (
 				<>
 					<section className={styles.stage} aria-label="Current trivia card">
 						<PlayerList players={playerList} />
@@ -200,14 +434,77 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 							onSelectedItemChange={selectEntry}
 							prompt={currentCard.prompt}
 							selectedItemId={
-								isAnswerPanelOpen && selectedEntryIndex !== null
-									? String(selectedEntryIndex)
-									: null
+								openedEntryIndex !== null ? String(openedEntryIndex) : null
 							}
+							showSelectedStyling={!isAnswerPanelOpen}
 						/>
+
+						{spectatorResolution
+							? (() => {
+									const normalizedResolution =
+										spectatorResolution.resolution === "submitted"
+											? normalizeResolvedAnswer(spectatorResolution)
+											: null;
+
+									return (
+										<div
+											className={`${styles.answerResolutionOverlay} ${
+												spectatorResolution.resolution === "submitted" &&
+												spectatorResolution.isCorrect
+													? styles.answerResolutionOverlayCorrect
+													: styles.answerResolutionOverlayWrong
+											}`}
+										>
+											<p className={styles.answerResolutionPrompt}>
+												{spectatorResolution.resolution === "submitted"
+													? spectatorResolution.prompt
+													: `${spectatorResolution.playerName}'s turn ended`}
+											</p>
+											<p className={styles.answerResolutionLine}>
+												<strong>{spectatorResolution.playerName}</strong>
+												{spectatorResolution.resolution === "submitted" ? (
+													<>
+														<span> answered: </span>
+														<strong>{normalizedResolution?.answer}</strong>
+													</>
+												) : (
+													<span> ran out of time</span>
+												)}
+											</p>
+											<div className={styles.answerResolutionBadge}>
+												{spectatorResolution.resolution === "submitted" &&
+												spectatorResolution.isCorrect ? (
+													<CheckIcon aria-hidden="true" size={26} />
+												) : (
+													<XIcon aria-hidden="true" size={26} />
+												)}
+												<span>
+													{spectatorResolution.resolution === "submitted"
+														? spectatorResolution.isCorrect
+															? "Correct"
+															: "Wrong"
+														: "Timed out"}
+												</span>
+											</div>
+											{spectatorResolution.resolution === "submitted" &&
+											!spectatorResolution.isCorrect ? (
+												<p className={styles.answerResolutionCorrectAnswer}>
+													<span>Correct answer:</span>{" "}
+													<strong>{normalizedResolution?.correctAnswer}</strong>
+												</p>
+											) : null}
+										</div>
+									);
+								})()
+							: null}
 					</section>
 
 					<div className={styles.gameActions}>
+						{canTogglePause ? (
+							<Button onClick={toggleTurnPaused} size="sm" variant="secondary">
+								{gameState?.isTurnPaused ? "Resume timer" : "Pause timer"}
+							</Button>
+						) : null}
 						<Button
 							disabled={!canSend || !currentPlayer?.isPlayerTurn}
 							onClick={doneAnswering}
@@ -220,27 +517,29 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 
 					<AnswerPanel
 						answer={
-							selectedEntryIndex !== null && selectedEntry
-								? toAnswerPanelAnswer(currentCard, (answer) =>
-										submitAnswer(selectedEntryIndex, answer),
+							activeAnswerPanel
+								? toAnswerPanelAnswer(activeAnswerPanel, (answer) =>
+										submitAnswer(activeAnswerPanel.entryIndex, answer),
 									)
 								: null
 						}
+						result={answerPanelResult}
 						disabled={!canAnswerSelectedEntry}
 						open={isAnswerPanelOpen}
-						prompt={currentCard.prompt}
+						prompt={activeAnswerPanel?.prompt}
 						setOpen={(open) => {
 							if (open) {
 								setIsAnswerPanelOpen(true);
 								return;
 							}
 
-							closeAnswerPanel();
+							closeAnswerPanel(true);
 						}}
-						title={selectedEntry?.text}
+						submitting={isSubmittingAnswer}
+						title={activeAnswerPanel?.title}
 					/>
 				</>
-			) : null}
+			)}
 
 			{gameState?.gameState === "FINISHED" ? (
 				<div className={styles.notice}>

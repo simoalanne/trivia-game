@@ -14,6 +14,7 @@ type TriviaCardProps = {
 	items: TriviaCardItem[];
 	selectedItemId: string | null;
 	onSelectedItemChange: (itemId: string | null) => void;
+	showSelectedStyling?: boolean;
 	centerHint?: string;
 	concealUnselectedAnswers?: boolean;
 	onCenterClick?: () => void;
@@ -81,6 +82,7 @@ export function TriviaCard({
 	items,
 	selectedItemId,
 	onSelectedItemChange,
+	showSelectedStyling = true,
 	centerHint,
 	concealUnselectedAnswers = false,
 	onCenterClick,
@@ -137,6 +139,8 @@ export function TriviaCard({
 				{items.map((item, index) => {
 					const selected =
 						item.variant !== "action" && item.id === selectedItemId;
+					const selectedClassName =
+						selected && showSelectedStyling ? styles.selected : "";
 					const hideAnswer =
 						concealUnselectedAnswers && !selected && !item.disabled;
 					const layout = getRadialLayout(index, items.length);
@@ -145,7 +149,7 @@ export function TriviaCard({
 						<button
 							disabled={item.disabled}
 							key={item.id}
-							className={`${styles.item} ${selected ? styles.selected : ""} ${
+							className={`${styles.item} ${selectedClassName} ${
 								item.variant === "action" ? styles.itemAction : ""
 							}`}
 							style={

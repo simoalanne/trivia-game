@@ -1,4 +1,8 @@
-import type { GameplayState } from "@packages/contracts";
+import type {
+	GameplayServerMessage,
+	GameplayState,
+	TurnResolvedMessage,
+} from "@packages/contracts";
 import type { TriviaCardFormat } from "../../../generated/prisma/client.ts";
 import { defineService } from "../../initServer.ts";
 import prismaClient from "../../prisma.ts";
@@ -42,6 +46,12 @@ type GameSession = {
 	gameState: GameState;
 	round: number;
 	playedThroughCardIds: number[];
+	openedEntryIndex: number | null;
+	turnDurationSeconds: number;
+	turnRemainingMs: number | null;
+	turnExpiresAt: string | null;
+	isTurnPaused: boolean;
+	turnTimeoutHandle: ReturnType<typeof setTimeout> | null;
 };
 
 type DbTriviaSourceCard = {
@@ -51,6 +61,19 @@ type DbTriviaSourceCard = {
 };
 
 const gameStore = new Map<string, GameSession>();
+const initialTurnTimeoutGraceSeconds = 5;
+
+const sendToPlayers = (
+	gameSession: GameSession,
+	message: GameplayServerMessage,
+) => {
+	gameSession.players.forEach((player) => {
+		const playerSocket = player.socket as
+			| { send: (payload: GameplayServerMessage) => void }
+			| undefined;
+		playerSocket?.send(message);
+	});
+};
 
 const createPlayer = (name: string, isHost: boolean = false): GamePlayer => ({
 	id: crypto.randomUUID(),
@@ -167,6 +190,7 @@ const advanceGame = async (gameSession: GameSession) => {
 			const nextPlayer = players[(i + j) % players.length];
 			if (nextPlayer.isParticipatingInCurrentRound) {
 				nextPlayer.isPlayerTurn = true;
+				scheduleTurnTimeout(gameSession);
 				return;
 			}
 		}
@@ -228,6 +252,10 @@ const endRound = async (gameSession: GameSession) => {
 		player.isParticipatingInCurrentRound = true;
 		player.isPlayerTurn = false;
 	});
+	clearTurnTimeout(gameSession);
+	gameSession.turnRemainingMs = null;
+	gameSession.isTurnPaused = false;
+	gameSession.openedEntryIndex = null;
 
 	gameSession.playedThroughCardIds.push(currentRound.id);
 
@@ -239,12 +267,20 @@ const endRound = async (gameSession: GameSession) => {
 			player.isPlayerTurn = false;
 			player.isParticipatingInCurrentRound = false;
 		});
+		gameSession.openedEntryIndex = null;
+		clearTurnTimeout(gameSession);
+		gameSession.turnRemainingMs = null;
+		gameSession.isTurnPaused = false;
 		return;
 	}
 
 	gameSession.round += 1;
 	gameSession.currentRound = nextCard;
-	gameSession.players[0].isPlayerTurn = true;
+	gameSession.openedEntryIndex = null;
+	gameSession.players.forEach((player, index) => {
+		player.isPlayerTurn = index === 0;
+	});
+	scheduleTurnTimeout(gameSession);
 };
 
 const buildClientGameState = (gameSession: GameSession): GameplayState => {
@@ -276,6 +312,10 @@ const buildClientGameState = (gameSession: GameSession): GameplayState => {
 		})),
 		gameState: gameSession.gameState,
 		round: gameSession.round,
+		isTurnPaused: gameSession.isTurnPaused,
+		turnDurationSeconds: gameSession.turnDurationSeconds,
+		turnRemainingMs: gameSession.turnRemainingMs,
+		turnExpiresAt: gameSession.turnExpiresAt,
 	};
 };
 
@@ -305,6 +345,162 @@ const connectPlayerSocket = (
 	getPlayerOrThrow(gameSession, playerId).socket = socket;
 };
 
+const disconnectPlayerSocket = (
+	gameSession: GameSession,
+	playerId: string,
+	socket: unknown,
+) => {
+	const player = gameSession.players.find(
+		(currentPlayer) => currentPlayer.id === playerId,
+	);
+	if (!player || player.socket !== socket) {
+		return false;
+	}
+
+	player.socket = undefined;
+	return true;
+};
+
+const buildOpenedEntryState = (gameSession: GameSession) =>
+	gameSession.openedEntryIndex;
+
+const clearTurnTimeout = (gameSession: GameSession) => {
+	if (gameSession.turnTimeoutHandle) {
+		clearTimeout(gameSession.turnTimeoutHandle);
+		gameSession.turnTimeoutHandle = null;
+	}
+	gameSession.turnExpiresAt = null;
+};
+
+const setTurnPaused = (
+	gameSession: GameSession,
+	playerId: string,
+	paused: boolean,
+) => {
+	const player = getPlayerOrThrow(gameSession, playerId);
+	if (!player.isHost) {
+		throw new Error("Only the host can pause the turn");
+	}
+	if (
+		gameSession.turnDurationSeconds === 0 ||
+		gameSession.gameState !== "IN_PROGRESS"
+	) {
+		return;
+	}
+	if (gameSession.isTurnPaused === paused) {
+		return;
+	}
+
+	if (paused) {
+		gameSession.turnRemainingMs = getTurnRemainingMs(gameSession);
+		clearTurnTimeout(gameSession);
+		gameSession.isTurnPaused = true;
+		return;
+	}
+
+	gameSession.isTurnPaused = false;
+	scheduleTurnTimeout(gameSession);
+};
+
+const getTurnRemainingMs = (gameSession: GameSession) => {
+	if (gameSession.turnExpiresAt) {
+		return Math.max(
+			0,
+			new Date(gameSession.turnExpiresAt).getTime() - Date.now(),
+		);
+	}
+
+	return gameSession.turnRemainingMs ?? 0;
+};
+
+const sendGameStateUpdate = (gameSession: GameSession) => {
+	sendToPlayers(gameSession, {
+		type: "gameStateUpdate",
+		gameState: buildClientGameState(gameSession),
+	});
+};
+
+const sendOpenedEntryUpdate = (
+	gameSession: GameSession,
+	entryIndex: number | null,
+) => {
+	sendToPlayers(gameSession, {
+		type: "openedEntryUpdate",
+		entryIndex,
+	});
+};
+
+const sendOpenedEntryState = (gameSession: GameSession) => {
+	sendOpenedEntryUpdate(gameSession, buildOpenedEntryState(gameSession));
+};
+
+const sendTurnResolved = (
+	gameSession: GameSession,
+	turnResolution: TurnResolvedMessage,
+) => {
+	sendToPlayers(gameSession, turnResolution);
+};
+
+const handleTurnTimedOut = async (
+	gameSession: GameSession,
+	playerId: string,
+) => {
+	const currentPlayer = gameSession.players.find(
+		(player) => player.isPlayerTurn,
+	);
+	if (!currentPlayer || currentPlayer.id !== playerId) {
+		return;
+	}
+
+	clearTurnTimeout(gameSession);
+	gameSession.turnRemainingMs = null;
+	gameSession.isTurnPaused = false;
+	gameSession.openedEntryIndex = null;
+	currentPlayer.isParticipatingInCurrentRound = false;
+
+	sendTurnResolved(gameSession, {
+		type: "turnResolved",
+		resolution: "timedOut",
+		playerId: currentPlayer.id,
+		playerName: currentPlayer.name,
+	});
+
+	await advanceGame(gameSession);
+	sendGameStateUpdate(gameSession);
+	sendOpenedEntryState(gameSession);
+};
+
+const scheduleTurnTimeout = (
+	gameSession: GameSession,
+	extraDurationSeconds: number = 0,
+) => {
+	clearTurnTimeout(gameSession);
+	gameSession.isTurnPaused = false;
+
+	if (
+		gameSession.turnDurationSeconds === 0 ||
+		gameSession.gameState !== "IN_PROGRESS"
+	) {
+		return;
+	}
+
+	const currentPlayer = gameSession.players.find(
+		(player) => player.isPlayerTurn,
+	);
+	if (!currentPlayer) {
+		return;
+	}
+
+	const timeoutMs =
+		gameSession.turnRemainingMs ??
+		(gameSession.turnDurationSeconds + extraDurationSeconds) * 1000;
+	gameSession.turnRemainingMs = timeoutMs;
+	gameSession.turnExpiresAt = new Date(Date.now() + timeoutMs).toISOString();
+	gameSession.turnTimeoutHandle = setTimeout(() => {
+		void handleTurnTimedOut(gameSession, currentPlayer.id);
+	}, timeoutMs);
+};
+
 const startGame = async (gameSession: GameSession) => {
 	if (gameSession.gameState !== "NOT_STARTED") {
 		throw new Error("Game has already started");
@@ -320,7 +516,11 @@ const startGame = async (gameSession: GameSession) => {
 
 	gameSession.gameState = "IN_PROGRESS";
 	gameSession.currentRound = nextCard;
-	gameSession.players[0].isPlayerTurn = true;
+	gameSession.openedEntryIndex = null;
+	gameSession.players.forEach((player, index) => {
+		player.isPlayerTurn = index === 0;
+	});
+	scheduleTurnTimeout(gameSession, initialTurnTimeoutGraceSeconds);
 };
 
 const submitAnswer = (
@@ -328,9 +528,9 @@ const submitAnswer = (
 	playerId: string,
 	entryIndex: number,
 	answer: string,
-) => {
+): TurnResolvedMessage => {
 	const currentRound = getCurrentRoundOrThrow(gameSession);
-	getCurrentTurnPlayerOrThrow(gameSession, playerId);
+	const currentPlayer = getCurrentTurnPlayerOrThrow(gameSession, playerId);
 
 	const entry = currentRound.entries[entryIndex];
 
@@ -341,13 +541,57 @@ const submitAnswer = (
 	const isCorrect = isAnswerCorrect(entry.answer, answer);
 	currentRound.answeredEntryIds.add(entry.id);
 
-	const currentPlayer = getPlayerOrThrow(gameSession, playerId);
 	currentPlayer.roundPoints = isCorrect ? currentPlayer.roundPoints + 1 : 0;
+	clearTurnTimeout(gameSession);
+	gameSession.turnRemainingMs = null;
+	gameSession.isTurnPaused = false;
+	gameSession.openedEntryIndex = null;
+
+	return {
+		type: "turnResolved",
+		resolution: "submitted",
+		answer,
+		correctAnswer: Array.isArray(entry.answer)
+			? entry.answer.join(", ")
+			: String(entry.answer),
+		entryIndex,
+		entryText: entry.text,
+		isCorrect,
+		playerId,
+		playerName: currentPlayer.name,
+		prompt: currentRound.prompt,
+		uiHint: currentRound.uiHint ? ("COUNTRY" as const) : currentRound.format,
+	};
 };
 
 const doneAnswering = (gameSession: GameSession, playerId: string) => {
 	const currentPlayer = getCurrentTurnPlayerOrThrow(gameSession, playerId);
+	clearTurnTimeout(gameSession);
+	gameSession.turnRemainingMs = null;
+	gameSession.isTurnPaused = false;
 	currentPlayer.isParticipatingInCurrentRound = false;
+	gameSession.openedEntryIndex = null;
+};
+
+const setOpenedEntry = (
+	gameSession: GameSession,
+	playerId: string,
+	entryIndex: number | null,
+) => {
+	if (entryIndex === null) {
+		gameSession.openedEntryIndex = null;
+		return;
+	}
+
+	const currentRound = getCurrentRoundOrThrow(gameSession);
+	getCurrentTurnPlayerOrThrow(gameSession, playerId);
+
+	const entry = currentRound.entries[entryIndex];
+	if (!entry || currentRound.answeredEntryIds.has(entry.id)) {
+		throw new Error("Invalid entry index");
+	}
+
+	gameSession.openedEntryIndex = entryIndex;
 };
 
 const getGameSession = (gameCode: string) =>
@@ -362,16 +606,22 @@ const requireGameSession = (gameCode: string) => {
 };
 
 export default defineService("gameplay", {
-	async create({ playerName }) {
+	async create({ playerName, turnDurationSeconds }) {
 		const gameSession = {
 			gameCode: Array.from({ length: 6 }, () =>
 				Math.random().toString(36).charAt(2),
 			).join(""),
 			currentRound: null,
+			openedEntryIndex: null,
 			players: [createPlayer(playerName, true)],
 			gameState: "NOT_STARTED" as const,
 			round: 1,
 			playedThroughCardIds: [],
+			turnDurationSeconds,
+			turnRemainingMs: null,
+			turnExpiresAt: null,
+			isTurnPaused: false,
+			turnTimeoutHandle: null,
 		};
 
 		if (gameStore.has(gameSession.gameCode)) {
@@ -411,18 +661,8 @@ export default defineService("gameplay", {
 
 		connectPlayerSocket(gameSession, playerId, socket);
 
-		const sendGameState = async () => {
-			const gameState = buildClientGameState(gameSession);
-			gameSession.players.forEach((player) => {
-				const playerSocket = player.socket as typeof socket | undefined;
-				playerSocket?.send({
-					type: "gameStateUpdate",
-					gameState,
-				});
-			});
-		};
-
-		await sendGameState(); // send initial game state on connection
+		sendGameStateUpdate(gameSession);
+		sendOpenedEntryState(gameSession);
 
 		socket.onMessage(async (message) => {
 			console.log("Received message from player", playerId, ":", message);
@@ -444,12 +684,13 @@ export default defineService("gameplay", {
 					break;
 				}
 				case "submitAnswer": {
-					submitAnswer(
+					const turnResolution = submitAnswer(
 						gameSession,
 						playerId,
 						message.data.entryIndex,
 						message.data.answer,
 					);
+					sendTurnResolved(gameSession, turnResolution);
 					await advanceGame(gameSession);
 					break;
 				}
@@ -458,11 +699,40 @@ export default defineService("gameplay", {
 					await advanceGame(gameSession);
 					break;
 				}
+				case "setOpenedEntry": {
+					setOpenedEntry(gameSession, playerId, message.data.entryIndex);
+					sendOpenedEntryUpdate(gameSession, message.data.entryIndex);
+					break;
+				}
+				case "setTurnPaused": {
+					setTurnPaused(gameSession, playerId, message.data.paused);
+					break;
+				}
 			}
-			await sendGameState();
+			if (message.data.type === "setOpenedEntry") {
+				return;
+			}
+			sendGameStateUpdate(gameSession);
+			sendOpenedEntryState(gameSession);
 		});
 
 		socket.onClose(() => {
+			const didDisconnectCurrentSocket = disconnectPlayerSocket(
+				gameSession,
+				playerId,
+				socket,
+			);
+			if (!didDisconnectCurrentSocket) {
+				return;
+			}
+
+			const player = gameSession.players.find(
+				(currentPlayer) => currentPlayer.id === playerId,
+			);
+			if (player?.isPlayerTurn) {
+				gameSession.openedEntryIndex = null;
+			}
+			sendOpenedEntryUpdate(gameSession, gameSession.openedEntryIndex);
 			console.log("Player disconnected", playerId);
 		});
 	},

@@ -6,6 +6,7 @@ export type TriviaCardItem = {
 	label: string;
 	answer?: string;
 	disabled?: boolean;
+	highlightColor?: string;
 };
 
 type TriviaCardProps = {
@@ -125,12 +126,19 @@ export function TriviaCard({
 									"--y": `${layout.y}%`,
 									"--item-max-width": `${layout.maxWidth}px`,
 									"--item-transform": layout.itemTransform,
+									"--item-highlight-color": item.highlightColor ?? "inherit",
 								} as CSSProperties
 							}
 							onClick={() => onSelectedItemChange(selected ? null : item.id)}
 							type="button"
 						>
-							<span className={styles.itemLabel}>{item.label}</span>
+							<span
+								className={`${styles.itemLabel} ${
+									item.highlightColor ? styles.itemLabelHighlighted : ""
+								}`}
+							>
+								{item.label}
+							</span>
 							{item.answer ? (
 								<span
 									className={`${styles.itemAnswer} ${

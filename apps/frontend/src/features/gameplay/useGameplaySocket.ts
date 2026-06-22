@@ -1,6 +1,10 @@
 "use client";
 
-import type { GameplayClientMessage, GameplayState } from "@packages/contracts";
+import type {
+	GameplayClientMessage,
+	GameplayState,
+	TurnResolvedMessage,
+} from "@packages/contracts";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
 
@@ -35,6 +39,9 @@ export function useGameplaySocket(gameCode: string) {
 	const normalizedGameCode = useMemo(() => gameCode.toLowerCase(), [gameCode]);
 	const [playerId, setPlayerId] = useState<string | null>(null);
 	const [gameState, setGameState] = useState<GameplayState | null>(null);
+	const [answerResolution, setAnswerResolution] =
+		useState<TurnResolvedMessage | null>(null);
+	const [openedEntryIndex, setOpenedEntryIndex] = useState<number | null>(null);
 	const [connectionState, setConnectionState] =
 		useState<ConnectionState>("connecting");
 	const [error, setError] = useState<string | null>(null);
@@ -59,6 +66,8 @@ export function useGameplaySocket(gameCode: string) {
 		setPlayerId(session.playerId);
 		setConnectionState("connecting");
 		setError(null);
+		setAnswerResolution(null);
+		setOpenedEntryIndex(null);
 
 		const result = api.gameplay.play.$tryConnect({
 			gameCode: normalizedGameCode,
@@ -77,13 +86,17 @@ export function useGameplaySocket(gameCode: string) {
 		});
 		const unsubscribeClose = socket.onClose((event) => {
 			setConnectionState("closed");
+			setAnswerResolution(null);
 			setSendMessage(null);
+			setOpenedEntryIndex(null);
 			if (event.code !== 1000) {
 				setError(event.reason || "Gameplay socket closed.");
 			}
 		});
 		const unsubscribeError = socket.onError(() => {
 			setConnectionState("error");
+			setAnswerResolution(null);
+			setOpenedEntryIndex(null);
 			setError("Gameplay socket encountered an error.");
 		});
 		const unsubscribeMessage = socket.onMessage((result) => {
@@ -94,10 +107,16 @@ export function useGameplaySocket(gameCode: string) {
 
 			switch (result.data.type) {
 				case "gameStateUpdate":
-					console.log("Received gameStateUpdate", result.data.gameState);
 					setGameState(result.data.gameState);
 					setError(null);
 					break;
+				case "turnResolved":
+					setAnswerResolution(result.data);
+					break;
+				case "openedEntryUpdate": {
+					setOpenedEntryIndex(result.data.entryIndex);
+					break;
+				}
 				case "gameError":
 					setError(result.data.message);
 					break;
@@ -141,7 +160,9 @@ export function useGameplaySocket(gameCode: string) {
 	return {
 		connectionState,
 		error,
+		answerResolution,
 		gameState,
+		openedEntryIndex,
 		playerId,
 		send,
 	};

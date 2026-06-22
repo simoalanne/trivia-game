@@ -1,7 +1,7 @@
 "use client";
 
+import { CheckIcon, LoaderCircleIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ChipPicker } from "@/components";
 import { CountryPicker } from "@/components/CountryPicker";
 import { Sheet } from "@/components/Sheet";
 import styles from "./AnswerPanel.module.css";
@@ -26,6 +26,11 @@ type CountryAnswer = {
 
 export type AnswerPanelAnswer = ChoiceAnswer | TextAnswer | CountryAnswer;
 
+export type AnswerPanelResult = {
+	answer: string;
+	isCorrect: boolean;
+};
+
 type AnswerPanelProps = {
 	open: boolean;
 	setOpen: (open: boolean) => void;
@@ -33,6 +38,8 @@ type AnswerPanelProps = {
 	prompt?: string;
 	answer: AnswerPanelAnswer | null;
 	disabled?: boolean;
+	result?: AnswerPanelResult | null;
+	submitting?: boolean;
 };
 
 export function AnswerPanel({
@@ -42,6 +49,8 @@ export function AnswerPanel({
 	prompt,
 	answer,
 	disabled = false,
+	result = null,
+	submitting = false,
 }: AnswerPanelProps) {
 	const [selectedChip, setSelectedChip] = useState<string | null>(null);
 	const [textAnswer, setTextAnswer] = useState("");
@@ -62,9 +71,11 @@ export function AnswerPanel({
 						answer={answer}
 						disabled={disabled}
 						prompt={trimmedPrompt}
+						result={result}
 						selectedChip={selectedChip}
 						setSelectedChip={setSelectedChip}
 						setTextAnswer={setTextAnswer}
+						submitting={submitting}
 						textAnswer={textAnswer}
 						title={title ?? ""}
 					/>
@@ -82,20 +93,41 @@ function AnswerPanelContent({
 	prompt,
 	answer,
 	disabled,
+	result,
 	selectedChip,
 	setSelectedChip,
 	textAnswer,
 	setTextAnswer,
+	submitting,
 }: {
 	title: string;
 	prompt?: string;
 	answer: AnswerPanelAnswer;
 	disabled: boolean;
+	result: AnswerPanelResult | null;
 	selectedChip: string | null;
 	setSelectedChip: (value: string | null) => void;
 	textAnswer: string;
 	setTextAnswer: (value: string) => void;
+	submitting: boolean;
 }) {
+	const isResolved = Boolean(result);
+	const isBusy = disabled || submitting || isResolved;
+	const submitButtonLabel = result
+		? result.isCorrect
+			? "Correct"
+			: "Wrong"
+		: submitting
+			? "Submitting..."
+			: "Submit";
+	const submitButtonTone = result
+		? result.isCorrect
+			? "correct"
+			: "wrong"
+		: submitting
+			? "submitting"
+			: "default";
+
 	return (
 		<div className={styles.answerPanel}>
 			<p className={styles.answerPrompt}>
@@ -105,23 +137,36 @@ function AnswerPanelContent({
 
 			{answer.kind === "choices" ? (
 				<>
-					<ChipPicker
-						disabled={disabled}
-						onChange={setSelectedChip}
-						options={answer.choices.map((choice) => ({
-							label: choice,
-							value: choice,
-						}))}
-						value={selectedChip}
-					/>
+					<div className={styles.choiceGrid}>
+						{answer.choices.map((choice) => {
+							const isSelected = selectedChip === choice;
+
+							return (
+								<button
+									aria-pressed={isSelected}
+									className={`${styles.choiceChip} ${
+										isSelected ? styles.choiceChipSelected : ""
+									}`}
+									disabled={isBusy}
+									key={choice}
+									onClick={() => setSelectedChip(choice)}
+									type="button"
+								>
+									{choice}
+								</button>
+							);
+						})}
+					</div>
 					<PanelFooter
 						canSubmit={Boolean(selectedChip)}
-						disabled={disabled}
+						disabled={isBusy}
+						label={submitButtonLabel}
 						onSubmit={() => {
 							if (selectedChip) {
 								answer.onSubmit(selectedChip);
 							}
 						}}
+						tone={submitButtonTone}
 					/>
 				</>
 			) : null}
@@ -137,7 +182,7 @@ function AnswerPanelContent({
 								option: styles.countryPickerOption,
 								optionSelected: styles.countryPickerOptionSelected,
 							}}
-							disabled={disabled}
+							disabled={isBusy}
 							onChange={setTextAnswer}
 							placeholder={answer.placeholder ?? "Country"}
 							searchPlaceholder="Search countries..."
@@ -146,7 +191,7 @@ function AnswerPanelContent({
 					) : (
 						<input
 							className={styles.textInput}
-							disabled={disabled}
+							disabled={isBusy}
 							onChange={(event) => setTextAnswer(event.target.value)}
 							placeholder={answer.placeholder ?? "Your answer"}
 							value={textAnswer}
@@ -154,13 +199,15 @@ function AnswerPanelContent({
 					)}
 					<PanelFooter
 						canSubmit={Boolean(textAnswer.trim())}
-						disabled={disabled}
+						disabled={isBusy}
+						label={submitButtonLabel}
 						onSubmit={() => {
 							const trimmedAnswer = textAnswer.trim();
 							if (trimmedAnswer) {
 								answer.onSubmit(trimmedAnswer);
 							}
 						}}
+						tone={submitButtonTone}
 					/>
 				</>
 			) : null}
@@ -171,21 +218,42 @@ function AnswerPanelContent({
 function PanelFooter({
 	canSubmit,
 	disabled,
+	label,
 	onSubmit,
+	tone,
 }: {
 	canSubmit: boolean;
 	disabled: boolean;
+	label: string;
 	onSubmit: () => void;
+	tone: "default" | "submitting" | "correct" | "wrong";
 }) {
 	return (
 		<div className={styles.panelFooter}>
 			<button
-				className={styles.primaryButton}
+				className={`${styles.primaryButton} ${
+					tone === "submitting"
+						? styles.primaryButtonSubmitting
+						: tone === "correct"
+							? styles.primaryButtonCorrect
+							: tone === "wrong"
+								? styles.primaryButtonWrong
+								: ""
+				}`}
 				disabled={disabled || !canSubmit}
 				onClick={onSubmit}
 				type="button"
 			>
-				Submit
+				{tone === "submitting" ? (
+					<LoaderCircleIcon
+						aria-hidden="true"
+						className={styles.primaryButtonSpinner}
+						size={18}
+					/>
+				) : null}
+				{tone === "correct" ? <CheckIcon aria-hidden="true" size={18} /> : null}
+				{tone === "wrong" ? <XIcon aria-hidden="true" size={18} /> : null}
+				{label}
 			</button>
 		</div>
 	);
