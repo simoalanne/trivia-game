@@ -1,6 +1,8 @@
 "use client";
 
 import {
+	MAX_MULTIPLE_CHOICE_CHOICES,
+	MAX_TAGS_PER_CARD,
 	type QuestionCardInput,
 	questionCardInputSchema,
 } from "@packages/contracts";
@@ -20,9 +22,12 @@ import OrderItemsEditor from "./OrderItemsEditor";
 import styles from "./QuestionCardEditor.module.css";
 import QuestionCardSettings from "./QuestionCardSettings";
 import {
+	addChoiceToQuestionCard,
 	addEntryToQuestionCard,
+	addTagToQuestionCard,
 	changeQuestionCardFormat,
 	removeEntryFromQuestionCard,
+	updateOpenEndedQuestionCardUiHint,
 } from "./questionCardDraft";
 import TrueOrFalseEditor from "./TrueOrFalseEditor";
 
@@ -291,6 +296,10 @@ export default function QuestionCardEditor({
 				id: String(entryIndex),
 				label: entry.text.trim() || `Entry ${entryIndex + 1}`,
 				answer: formatEntryAnswer(card, entry),
+				answerUiHint:
+					card.format === "OPEN_ENDED" && card.uiHint === "country"
+						? ("country" as const)
+						: undefined,
 			}) satisfies TriviaCardItem,
 	);
 
@@ -501,20 +510,22 @@ export default function QuestionCardEditor({
 					openSheet === "card" ? (
 						<QuestionCardSettings
 							card={card}
+							canAddChoice={
+								card.format === "MULTIPLE_CHOICE" &&
+								card.choices.length < MAX_MULTIPLE_CHOICE_CHOICES
+							}
+							canAddTag={card.tags.length < MAX_TAGS_PER_CARD}
 							getFieldError={getFieldError}
 							isSubmitting={isSubmitting}
 							onAddChoice={() =>
 								setCard((current) =>
 									current.format === "MULTIPLE_CHOICE"
-										? { ...current, choices: [...current.choices, ""] }
+										? addChoiceToQuestionCard(current)
 										: current,
 								)
 							}
 							onAddTag={() =>
-								setCard((current) => ({
-									...current,
-									tags: [...current.tags, ""],
-								}))
+								setCard((current) => addTagToQuestionCard(current))
 							}
 							onChoiceChange={(choiceIndex, value) =>
 								setCard((current) =>
@@ -578,7 +589,7 @@ export default function QuestionCardEditor({
 							onUiHintChange={(uiHint) =>
 								setCard((current) =>
 									current.format === "OPEN_ENDED"
-										? { ...current, uiHint }
+										? updateOpenEndedQuestionCardUiHint(current, uiHint)
 										: current,
 								)
 							}

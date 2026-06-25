@@ -1,116 +1,141 @@
 "use client";
 
-import { useMemo } from "react";
+import { countries } from "countries-list";
+import { useMemo, useState } from "react";
 import {
-	SearchableDropdown,
-	type SearchableDropdownClassNames,
-	type SearchableDropdownOption,
-} from "@/components/SearchableDropdown";
-import { useApiClient } from "@/lib/apiClientProvider";
-
-export type CountryPickerClassNames = SearchableDropdownClassNames;
+	formatCountryDisplay,
+	getCountryLabel,
+	getFlagEmoji,
+	stripLeadingFlagEmoji,
+} from "./countryDisplay";
+import { Button } from "./ui/button";
+import {
+	Combobox,
+	ComboboxContent,
+	ComboboxEmpty,
+	ComboboxInput,
+	ComboboxItem,
+	ComboboxList,
+	ComboboxTrigger,
+} from "./ui/combobox";
 
 type CountryPickerProps = {
 	className?: string;
-	classNames?: CountryPickerClassNames;
 	disabled?: boolean;
 	id?: string;
-	invalid?: boolean;
 	name?: string;
 	onChange: (value: string) => void;
 	placeholder?: string;
-	searchPlaceholder?: string;
 	value?: string;
 };
 
-const fallbackLabel = (countryCode: string) => countryCode.toUpperCase();
-
-const getFlagEmoji = (countryCode: string) => {
-	const normalizedCode = countryCode.trim().toUpperCase();
-	if (!/^[A-Z]{2}$/.test(normalizedCode)) {
-		return "";
-	}
-
-	return Array.from(normalizedCode)
-		.map((character) => String.fromCodePoint(127397 + character.charCodeAt(0)))
-		.join("");
-};
-
-const getBrowserLocales = () => {
-	if (typeof navigator === "undefined") {
-		return ["en"];
-	}
-
-	return navigator.languages.length > 0 ? navigator.languages : ["en"];
+type CountryOption = {
+	code: string;
+	value: string;
+	label: string;
+	searchText: string;
 };
 
 export function CountryPicker({
 	className,
-	classNames,
 	disabled = false,
 	id,
-	invalid = false,
 	name,
 	onChange,
 	placeholder = "Select a country",
-	searchPlaceholder = "Search countries...",
 	value,
 }: CountryPickerProps) {
-	const api = useApiClient();
-	const countriesQuery = api.countries.list.useQuery();
-	const locales = getBrowserLocales();
+	const [rootElement, setRootElement] = useState<HTMLDivElement | null>(null);
 
-	const displayNames = useMemo(
-		() => new Intl.DisplayNames(locales, { type: "region" }),
-		[locales],
-	);
-
-	const options = useMemo<SearchableDropdownOption[]>(() => {
-		const countryCodes = countriesQuery.data ?? [];
-
-		return [...countryCodes]
+	const options = useMemo<CountryOption[]>(() => {
+		const countryCodes = Object.keys(countries);
+		return countryCodes
 			.map((countryCode) => countryCode.toUpperCase())
 			.map((countryCode) => {
-				const label =
-					displayNames.of(countryCode) ?? fallbackLabel(countryCode);
+				const label = getCountryLabel(countryCode);
 				const flagEmoji = getFlagEmoji(countryCode);
+				const decoratedLabel = formatCountryDisplay(countryCode);
 
 				return {
+					code: countryCode.toLowerCase(),
 					value: countryCode,
 					label,
-					searchText: `${countryCode} ${label} ${flagEmoji}`,
+					searchText: [
+						countryCode,
+						label,
+						flagEmoji,
+						decoratedLabel,
+						stripLeadingFlagEmoji(decoratedLabel),
+					].join(" "),
 				};
 			})
-			.sort((first, second) =>
-				first.label.localeCompare(second.label, locales[0]),
-			);
-	}, [countriesQuery.data, displayNames, locales]);
+			.sort((first, second) => first.label.localeCompare(second.label));
+	}, []);
+
+	const selectedOption =
+		options.find((option) => option.value === value?.toUpperCase()) ?? null;
+
+	const portalContainer =
+		(rootElement?.closest('[role="dialog"]') as HTMLElement | null) ??
+		undefined;
 
 	return (
-		<SearchableDropdown
-			className={className}
-			classNames={classNames}
-			disabled={disabled}
-			emptyMessage="No countries available."
-			id={id}
-			invalid={invalid}
-			loading={countriesQuery.isLoading}
-			loadingMessage="Loading countries..."
-			name={name}
-			noResultsMessage="No countries match your search."
-			onChange={onChange}
-			options={options}
-			placeholder={placeholder}
-			renderOption={(option) => {
-				const flagEmoji = getFlagEmoji(option.value);
-				return `${flagEmoji ? `${flagEmoji} ` : ""}${option.label}`;
-			}}
-			renderValue={(option) => {
-				const flagEmoji = getFlagEmoji(option.value);
-				return `${flagEmoji ? `${flagEmoji} ` : ""}${option.label}`;
-			}}
-			searchPlaceholder={searchPlaceholder}
-			value={value?.toUpperCase()}
-		/>
+		<div ref={setRootElement}>
+			<Combobox
+				items={options}
+				disabled={disabled}
+				id={id}
+				itemToStringLabel={(item) => item.label}
+				name={name}
+				onValueChange={(nextValue) => {
+					if (nextValue) {
+						onChange(nextValue.value);
+					}
+				}}
+				filter={(item, query) =>
+					item.searchText.toLowerCase().includes(query.trim().toLowerCase())
+				}
+				value={selectedOption}
+			>
+				<ComboboxTrigger
+					render={
+						<Button
+							className={`w-full justify-between ${className ?? ""}`}
+							variant="outline"
+						>
+							<span className="truncate text-left font-normal">
+								{selectedOption
+									? formatCountryDisplay(selectedOption.value)
+									: placeholder}
+							</span>
+						</Button>
+					}
+				/>
+				<ComboboxContent
+					collisionAvoidance={{
+						side: "shift",
+						align: "shift",
+						fallbackAxisSide: "none",
+					}}
+					container={portalContainer}
+				>
+					<ComboboxInput
+						placeholder="Search countries..."
+						showTrigger={false}
+					/>
+					<ComboboxEmpty>No countries match your search.</ComboboxEmpty>
+					<ComboboxList>
+						{(item) => (
+							<ComboboxItem key={item.value} value={item}>
+								<div className="flex min-w-0 flex-1 items-center gap-2">
+									<span className="shrink-0">{getFlagEmoji(item.value)}</span>
+									<span className="truncate">{item.label}</span>
+								</div>
+							</ComboboxItem>
+						)}
+					</ComboboxList>
+				</ComboboxContent>
+			</Combobox>
+		</div>
 	);
 }

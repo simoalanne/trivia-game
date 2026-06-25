@@ -3,7 +3,6 @@ import type {
 	ContractApiResponse,
 	DotPaths,
 } from "@contract-first-api/core";
-import countries from "./countries.ts";
 import gameplay from "./gameplay.ts";
 import questionsCrud from "./questionsCrud.ts";
 
@@ -26,6 +25,9 @@ export type {
 	TriviaCardFormat,
 } from "./questionsCrud.ts";
 export {
+	MAX_MULTIPLE_CHOICE_CHOICES,
+	MAX_TAGS_PER_CARD,
+	MIN_MULTIPLE_CHOICE_CHOICES,
 	questionCardInputSchema,
 	questionCardSchema,
 	triviaCardDifficultySchema,
@@ -37,7 +39,6 @@ export {
 export const contracts = {
 	...gameplay,
 	...questionsCrud,
-	...countries,
 };
 
 type AppContracts = typeof contracts;

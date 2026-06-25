@@ -17,6 +17,8 @@ type TriviaCardUiHint = Extract<
 
 type QuestionCardSettingsProps = {
 	card: QuestionCardInput;
+	canAddChoice: boolean;
+	canAddTag: boolean;
 	getFieldError: (...prefix: Array<string | number>) => string | undefined;
 	isSubmitting: boolean;
 	onAddChoice: () => void;
@@ -45,6 +47,8 @@ const openEndedUiHintOptions = [
 
 export default function QuestionCardSettings({
 	card,
+	canAddChoice,
+	canAddTag,
 	getFieldError,
 	isSubmitting,
 	onAddChoice,
@@ -111,7 +115,7 @@ export default function QuestionCardSettings({
 				</div>
 
 				<Field
-					description="Tags are optional but must be unique when provided."
+					description="Tags are optional, must be unique, and can have up to 3 items."
 					error={getFieldError("tags")}
 					label="Tags"
 				>
@@ -137,7 +141,7 @@ export default function QuestionCardSettings({
 							</div>
 						))}
 						<Button
-							disabled={isSubmitting}
+							disabled={isSubmitting || !canAddTag}
 							onClick={onAddTag}
 							size="sm"
 							variant="secondary"
@@ -179,12 +183,12 @@ export default function QuestionCardSettings({
 								<h2>Choices</h2>
 								<p>
 									Multiple choice cards share one choice list across all
-									entries.
+									entries. Add between 2 and 5 unique choices.
 								</p>
 							</div>
 							<button
 								className={styles.inlineAction}
-								disabled={isSubmitting}
+								disabled={isSubmitting || !canAddChoice}
 								onClick={onAddChoice}
 								type="button"
 							>

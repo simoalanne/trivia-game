@@ -175,17 +175,9 @@ function AnswerPanelContent({
 				<>
 					{answer.kind === "country" ? (
 						<CountryPicker
-							classNames={{
-								control: styles.countryPickerControl,
-								popover: styles.countryPickerPopover,
-								searchInput: styles.countryPickerSearch,
-								option: styles.countryPickerOption,
-								optionSelected: styles.countryPickerOptionSelected,
-							}}
 							disabled={isBusy}
 							onChange={setTextAnswer}
 							placeholder={answer.placeholder ?? "Country"}
-							searchPlaceholder="Search countries..."
 							value={textAnswer}
 						/>
 					) : (

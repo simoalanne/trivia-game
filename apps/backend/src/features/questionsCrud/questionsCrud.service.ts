@@ -1,4 +1,8 @@
-import type { QuestionCard, QuestionCardInput } from "@packages/contracts";
+import {
+	MAX_MULTIPLE_CHOICE_CHOICES,
+	type QuestionCard,
+	type QuestionCardInput,
+} from "@packages/contracts";
 import z from "zod";
 import { defineService } from "../../initServer.ts";
 import prisma from "../../prisma.ts";
@@ -134,10 +138,8 @@ const ollamaResponseToQuestionCardInput = (response: {
 	const uniqueNormalizedAnswers = new Set(
 		normalizedCardContent.entries.map((entry) => String(entry.answer)),
 	);
-	const MULTIPLE_CHOICE_MAX_CHOICES = 4;
-
-	// 3. if there are 4 or fewer unique text answers, it's a MULTIPLE_CHOICE question
-	if (uniqueNormalizedAnswers.size <= MULTIPLE_CHOICE_MAX_CHOICES) {
+	// 3. if there are 5 or fewer unique text answers, it's a MULTIPLE_CHOICE question
+	if (uniqueNormalizedAnswers.size <= MAX_MULTIPLE_CHOICE_CHOICES) {
 		return {
 			format: "MULTIPLE_CHOICE" as const,
 			prompt: normalizedCardContent.prompt,

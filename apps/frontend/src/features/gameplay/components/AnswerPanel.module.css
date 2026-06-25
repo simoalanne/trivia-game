@@ -188,46 +188,6 @@
 	color: #667085;
 }
 
-.countryPickerControl {
-	min-height: 52px;
-	border-color: #cfd6e4;
-	border-radius: 7px;
-	padding: 0 0.9rem;
-	color: #172033;
-	font-size: 17px;
-	font-weight: 800;
-}
-
-.countryPickerControl:hover:not(:disabled) {
-	border-color: #0b57e8;
-	background: #f8fbff;
-}
-
-.countryPickerPopover {
-	z-index: 30;
-	border-color: #cfd6e4;
-	border-radius: 0 0 7px 7px;
-	box-shadow: none;
-}
-
-.countryPickerSearch {
-	min-height: 44px;
-	border-color: #cfd6e4;
-	border-radius: 7px;
-	font-weight: 700;
-}
-
-.countryPickerOption {
-	border-radius: 0;
-	padding: 0.7rem 0.8rem;
-	font-weight: 750;
-}
-
-.countryPickerOptionSelected {
-	background: rgb(11 87 232 / 9%);
-	color: #0b57e8;
-}
-
 .panelFooter {
 	display: grid;
 	margin-top: 18px;

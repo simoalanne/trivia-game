@@ -6,6 +6,10 @@ const uniqueTrimmedStrings = (items: string[]) =>
 
 const nonEmptyTrimmedStringSchema = z.string().trim().min(1);
 
+export const MAX_TAGS_PER_CARD = 5;
+export const MIN_MULTIPLE_CHOICE_CHOICES = 2;
+export const MAX_MULTIPLE_CHOICE_CHOICES = 5;
+
 export const triviaCardDifficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
 export const triviaCardFormatSchema = z.enum([
 	"MULTIPLE_CHOICE",
@@ -47,6 +51,7 @@ const baseCardSchema = z.object({
 	difficulty: triviaCardDifficultySchema,
 	tags: z
 		.array(triviaTagSchema)
+		.max(MAX_TAGS_PER_CARD)
 		.refine(uniqueTrimmedStrings, "Tags must be unique"),
 });
 
@@ -55,7 +60,8 @@ const multipleChoiceQuestionCardInputSchema = baseCardSchema
 		format: z.literal("MULTIPLE_CHOICE"),
 		choices: z
 			.array(nonEmptyTrimmedStringSchema)
-			.min(2)
+			.min(MIN_MULTIPLE_CHOICE_CHOICES)
+			.max(MAX_MULTIPLE_CHOICE_CHOICES)
 			.refine(uniqueTrimmedStrings, "Choices must be unique"),
 		entries: z.array(multipleChoiceEntryInputSchema).min(2).max(10),
 	})

@@ -2,7 +2,6 @@ export { Button } from "./Button";
 export { ChipPicker } from "./ChipPicker";
 export { CountryPicker } from "./CountryPicker";
 export { Field } from "./Field";
-export { SearchableDropdown } from "./SearchableDropdown";
 export { Select } from "./Select";
 export { Sheet } from "./Sheet";
 export { SheetIconButton } from "./SheetIconButton";

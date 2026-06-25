@@ -3,6 +3,11 @@ import type {
 	QuestionCardInput,
 	TriviaCardFormat,
 } from "@packages/contracts";
+import {
+	MAX_MULTIPLE_CHOICE_CHOICES,
+	MAX_TAGS_PER_CARD,
+	MIN_MULTIPLE_CHOICE_CHOICES,
+} from "@packages/contracts";
 
 type MultipleChoiceQuestionCardInput = Extract<
 	QuestionCardInput,
@@ -20,6 +25,37 @@ type OrderItemsQuestionCardInput = Extract<
 	QuestionCardInput,
 	{ format: "ORDER_ITEMS" }
 >;
+
+const normalizeDraftListValue = (value: string) => value.trim().toLowerCase();
+const DEFAULT_COUNTRY_ANSWER_CODES = ["FI", "GB"] as const;
+const isValidCountryAnswerCode = (value: string) =>
+	/^[A-Z]{2}$/.test(value.trim().toUpperCase());
+
+const getDefaultOpenEndedAnswers = (uiHint?: "country") =>
+	uiHint === "country" ? [DEFAULT_COUNTRY_ANSWER_CODES[0]] : [""];
+
+export const createDefaultMultipleChoiceChoices = (
+	count = MIN_MULTIPLE_CHOICE_CHOICES,
+	existingChoices: string[] = [],
+) => {
+	const usedChoices = new Set(existingChoices.map(normalizeDraftListValue));
+	const nextChoices: string[] = [];
+	let choiceNumber = 1;
+
+	while (nextChoices.length < count) {
+		const candidate = `Choice ${choiceNumber}`;
+		choiceNumber += 1;
+
+		if (usedChoices.has(normalizeDraftListValue(candidate))) {
+			continue;
+		}
+
+		usedChoices.add(normalizeDraftListValue(candidate));
+		nextChoices.push(candidate);
+	}
+
+	return nextChoices;
+};
 
 const getSharedCardState = (card: QuestionCardInput | QuestionCard) => ({
 	prompt: card.prompt,
@@ -69,7 +105,7 @@ export const createEmptyQuestionCard = (
 				uiHint: undefined,
 				entries: Array.from({ length: entryCount }, () => ({
 					text: "",
-					answer: [""],
+					answer: getDefaultOpenEndedAnswers(),
 				})),
 			} satisfies OpenEndedQuestionCardInput;
 		case "ORDER_ITEMS":
@@ -86,7 +122,7 @@ export const createEmptyQuestionCard = (
 			return {
 				...baseCard,
 				format: "MULTIPLE_CHOICE",
-				choices: ["", ""],
+				choices: createDefaultMultipleChoiceChoices(),
 				entries: Array.from({ length: entryCount }, () => ({
 					text: "",
 					answer: "",
@@ -119,7 +155,11 @@ export const changeQuestionCardFormat = (
 				uiHint: card.format === "OPEN_ENDED" ? card.uiHint : undefined,
 				entries: Array.from({ length: entryCount }, (_, index) => ({
 					...getSharedEntryState(card, index),
-					answer: [""],
+					answer: getDefaultOpenEndedAnswers(
+						card.format === "OPEN_ENDED" && card.uiHint === "country"
+							? "country"
+							: undefined,
+					),
 				})),
 			} satisfies OpenEndedQuestionCardInput;
 		case "ORDER_ITEMS":
@@ -137,9 +177,10 @@ export const changeQuestionCardFormat = (
 				...sharedCard,
 				format: "MULTIPLE_CHOICE",
 				choices:
-					card.format === "MULTIPLE_CHOICE" && card.choices.length >= 2
+					card.format === "MULTIPLE_CHOICE" &&
+					card.choices.length >= MIN_MULTIPLE_CHOICE_CHOICES
 						? [...card.choices]
-						: ["", ""],
+						: createDefaultMultipleChoiceChoices(),
 				entries: Array.from({ length: entryCount }, (_, index) => ({
 					...getSharedEntryState(card, index),
 					answer: "",
@@ -220,7 +261,15 @@ export const addEntryToQuestionCard = (
 		case "OPEN_ENDED":
 			return {
 				...card,
-				entries: [...card.entries, { text: "", answer: [""] }],
+				entries: [
+					...card.entries,
+					{
+						text: "",
+						answer: getDefaultOpenEndedAnswers(
+							card.uiHint === "country" ? "country" : undefined,
+						),
+					},
+				],
 			} satisfies OpenEndedQuestionCardInput;
 		case "ORDER_ITEMS":
 			return {
@@ -237,6 +286,57 @@ export const addEntryToQuestionCard = (
 				entries: [...card.entries, { text: "", answer: "" }],
 			} satisfies MultipleChoiceQuestionCardInput;
 	}
+};
+
+export const updateOpenEndedQuestionCardUiHint = (
+	card: OpenEndedQuestionCardInput,
+	uiHint: OpenEndedQuestionCardInput["uiHint"],
+): OpenEndedQuestionCardInput => ({
+	...card,
+	uiHint,
+	entries: card.entries.map((entry) => {
+		if (uiHint !== "country") {
+			return entry;
+		}
+
+		const validAnswers = entry.answer
+			.map((answer) => answer.trim().toUpperCase())
+			.filter(isValidCountryAnswerCode);
+
+		return {
+			...entry,
+			answer: validAnswers.length > 0 ? validAnswers : ["FI"],
+		};
+	}),
+});
+
+export const addChoiceToQuestionCard = (
+	card: MultipleChoiceQuestionCardInput,
+): MultipleChoiceQuestionCardInput => {
+	if (card.choices.length >= MAX_MULTIPLE_CHOICE_CHOICES) {
+		return card;
+	}
+
+	return {
+		...card,
+		choices: [
+			...card.choices,
+			...createDefaultMultipleChoiceChoices(1, card.choices),
+		],
+	};
+};
+
+export const addTagToQuestionCard = (
+	card: QuestionCardInput,
+): QuestionCardInput => {
+	if (card.tags.length >= MAX_TAGS_PER_CARD) {
+		return card;
+	}
+
+	return {
+		...card,
+		tags: [...card.tags, ""],
+	};
 };
 
 export const removeEntryFromQuestionCard = (

@@ -20,14 +20,14 @@ export function ChipPicker({
 }: ChipPickerProps) {
 	return (
 		<div className={styles.grid}>
-			{options.map((option) => (
+			{options.map((option, index) => (
 				<button
 					aria-pressed={value === option.value}
 					className={`${styles.chip} ${
 						value === option.value ? styles.selectedChip : ""
 					}`}
 					disabled={disabled}
-					key={option.value}
+					key={`${option.value}-${index}`}
 					onClick={() => onChange(option.value)}
 					type="button"
 				>

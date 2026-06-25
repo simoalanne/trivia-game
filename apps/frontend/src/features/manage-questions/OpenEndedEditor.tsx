@@ -71,9 +71,6 @@ export default function OpenEndedEditor({
 						>
 							{card.uiHint === "country" ? (
 								<CountryPicker
-									invalid={Boolean(
-										getFieldError("entries", entryIndex, "answer", answerIndex),
-									)}
 									onChange={(value) =>
 										onEntryAcceptedAnswerChange(
 											entryIndex,
@@ -82,7 +79,6 @@ export default function OpenEndedEditor({
 										)
 									}
 									placeholder={`Country ${answerIndex + 1}`}
-									searchPlaceholder="Search countries..."
 									value={answer}
 								/>
 							) : (

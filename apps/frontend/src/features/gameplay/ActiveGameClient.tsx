@@ -5,6 +5,8 @@ import { CheckIcon, XIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components";
+import { formatCountryDisplay } from "@/components/countryDisplay";
+import { TriviaCard } from "@/components/TriviaCard";
 import styles from "./ActiveGamePage.module.css";
 import {
 	AnswerPanel,
@@ -14,7 +16,6 @@ import {
 	PlayerList,
 	type PlayerPosition,
 	type PlayerTone,
-	TriviaCard,
 } from "./components";
 import { useGameplaySocket } from "./useGameplaySocket";
 
@@ -55,16 +56,6 @@ type ActiveAnswerPanelState = {
 const getCurrentTurnPlayer = (gameState: GameplayState | null) =>
 	gameState?.players.find((player) => player.isPlayerTurn) ?? null;
 
-const fallbackCountryLabel = (countryCode: string) => countryCode.toUpperCase();
-
-const getBrowserLocales = () => {
-	if (typeof navigator === "undefined") {
-		return ["en"];
-	}
-
-	return navigator.languages.length > 0 ? navigator.languages : ["en"];
-};
-
 const normalizeResolvedAnswer = (
 	turnResolution: Extract<TurnResolvedMessage, { resolution: "submitted" }>,
 ) => {
@@ -75,16 +66,9 @@ const normalizeResolvedAnswer = (
 		};
 	}
 
-	const displayNames = new Intl.DisplayNames(getBrowserLocales(), {
-		type: "region",
-	});
-	const toCountryLabel = (countryCode: string) =>
-		displayNames.of(countryCode.toUpperCase()) ??
-		fallbackCountryLabel(countryCode);
-
 	return {
-		answer: toCountryLabel(turnResolution.answer),
-		correctAnswer: toCountryLabel(turnResolution.correctAnswer),
+		answer: formatCountryDisplay(turnResolution.answer),
+		correctAnswer: formatCountryDisplay(turnResolution.correctAnswer),
 	};
 };
 
@@ -190,6 +174,8 @@ export default function ActiveGameClient({ gameCode }: ActiveGameClientProps) {
 			id: String(entryIndex),
 			label: entry.text,
 			answer: entry.answer ?? undefined,
+			answerUiHint:
+				currentCard.uiHint === "COUNTRY" ? ("country" as const) : undefined,
 			disabled: entry.answer !== null || !canAnswer,
 			highlightColor: "blue",
 		})) ?? [];
