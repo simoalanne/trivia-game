@@ -67,8 +67,8 @@ export default function QuestionCardSettings({
 			<div className={styles.scrollBody}>
 				<Field error={getFieldError("prompt")} htmlFor="prompt" label="Prompt">
 					<textarea
-						className={`${styles.textarea} ${
-							getFieldError("prompt") ? styles.textareaInvalid : ""
+						className={`textarea min-h-32 w-full ${
+							getFieldError("prompt") ? "textarea-error" : ""
 						}`}
 						id="prompt"
 						onChange={(event) => onPromptChange(event.target.value)}

@@ -1,8 +1,8 @@
 import type { ButtonHTMLAttributes } from "react";
-import styles from "./Button.module.css";
+import { cn } from "@/lib/utils";
 
-type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
-type ButtonSize = "sm" | "md" | "lg";
+type ButtonVariant = "primary" | "secondary" | "ghost" | "danger" | "outline";
+type ButtonSize = "sm" | "md" | "lg" | "icon-xs" | "icon-sm";
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	variant?: ButtonVariant;
@@ -10,20 +10,20 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variantClassNames: Record<ButtonVariant, string> = {
-	primary: styles.buttonPrimary,
-	secondary: styles.buttonSecondary,
-	ghost: styles.buttonGhost,
-	danger: styles.buttonDanger,
+	primary: "btn-primary",
+	secondary: "",
+	ghost: "btn-ghost",
+	danger: "btn-error",
+	outline: "btn-outline",
 };
 
 const sizeClassNames: Record<ButtonSize, string> = {
-	sm: styles.buttonSmall,
-	md: styles.buttonMedium,
-	lg: styles.buttonLarge,
+	sm: "btn-sm",
+	md: "",
+	lg: "btn-lg",
+	"icon-xs": "h-8 min-h-8 w-8 p-0",
+	"icon-sm": "h-10 min-h-10 w-10 p-0",
 };
-
-const cx = (...classNames: Array<string | undefined>) =>
-	classNames.filter(Boolean).join(" ");
 
 export function Button({
 	className,
@@ -34,8 +34,8 @@ export function Button({
 }: ButtonProps) {
 	return (
 		<button
-			className={cx(
-				styles.button,
+			className={cn(
+				"btn",
 				variantClassNames[variant],
 				sizeClassNames[size],
 				className,

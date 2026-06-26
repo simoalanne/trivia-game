@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import styles from "./Field.module.css";
+import { cn } from "@/lib/utils";
 
 type FieldProps = {
 	children: ReactNode;
@@ -17,15 +17,22 @@ export function Field({
 	label,
 }: FieldProps) {
 	return (
-		<div className={styles.field}>
-			<label className={styles.fieldLabel} htmlFor={htmlFor}>
+		<div className="fieldset w-full gap-2">
+			<label
+				className="fieldset-legend text-sm font-semibold"
+				htmlFor={htmlFor}
+			>
 				{label}
 			</label>
 			{children}
 			{description ? (
-				<p className={styles.fieldDescription}>{description}</p>
+				<p className="label px-0 text-sm text-base-content/70">{description}</p>
 			) : null}
-			{error ? <p className={styles.fieldError}>{error}</p> : null}
+			{error ? (
+				<p className={cn("label px-0 text-sm font-semibold text-error")}>
+					{error}
+				</p>
+			) : null}
 		</div>
 	);
 }
