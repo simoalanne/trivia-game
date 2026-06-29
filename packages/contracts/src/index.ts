@@ -20,20 +20,19 @@ export {
 } from "./gameplay.ts";
 export type {
 	QuestionCard,
+	QuestionCardAnswerMode,
 	QuestionCardInput,
 	TriviaCardDifficulty,
-	TriviaCardFormat,
 } from "./questionsCrud.ts";
 export {
-	MAX_MULTIPLE_CHOICE_CHOICES,
+	MAX_ENTRIES_PER_CARD,
 	MAX_TAGS_PER_CARD,
-	MIN_MULTIPLE_CHOICE_CHOICES,
+	MIN_ENTRIES_PER_CARD,
+	questionCardAnswerModeSchema,
 	questionCardInputSchema,
 	questionCardSchema,
 	triviaCardDifficultySchema,
-	triviaCardFormatSchema,
 	triviaCardIdSchema,
-	triviaCardUiHintSchema,
 } from "./questionsCrud.ts";
 
 export const contracts = {

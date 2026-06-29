@@ -7,42 +7,22 @@ const uniqueTrimmedStrings = (items: string[]) =>
 const nonEmptyTrimmedStringSchema = z.string().trim().min(1);
 
 export const MAX_TAGS_PER_CARD = 5;
-export const MIN_MULTIPLE_CHOICE_CHOICES = 2;
-export const MAX_MULTIPLE_CHOICE_CHOICES = 5;
+export const MIN_ENTRIES_PER_CARD = 2;
+export const MAX_ENTRIES_PER_CARD = 10;
 
 export const triviaCardDifficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
-export const triviaCardFormatSchema = z.enum([
-	"MULTIPLE_CHOICE",
-	"TRUE_OR_FALSE",
-	"OPEN_ENDED",
-	"ORDER_ITEMS",
+export const questionCardAnswerModeSchema = z.enum([
+	"TEXT",
+	"CHOICES",
+	"COUNTRY",
 ]);
-export const triviaCardUiHintSchema = z.enum(["country"]);
 
 export const triviaTagSchema = nonEmptyTrimmedStringSchema;
 export const triviaCardIdSchema = z.coerce.number().int().positive();
 
-const baseEntrySchema = z.object({
+const triviaEntryInputSchema = z.object({
 	text: nonEmptyTrimmedStringSchema,
-});
-
-export const multipleChoiceEntryInputSchema = baseEntrySchema.extend({
 	answer: nonEmptyTrimmedStringSchema,
-});
-
-export const trueOrFalseEntryInputSchema = baseEntrySchema.extend({
-	answer: z.boolean(),
-});
-
-export const openEndedEntryInputSchema = baseEntrySchema.extend({
-	answer: z
-		.array(nonEmptyTrimmedStringSchema)
-		.min(1)
-		.refine(uniqueTrimmedStrings, "Accepted answers must be unique"),
-});
-
-export const orderItemsEntryInputSchema = baseEntrySchema.extend({
-	answer: z.number().int().positive(),
 });
 
 const baseCardSchema = z.object({
@@ -52,17 +32,29 @@ const baseCardSchema = z.object({
 		.array(triviaTagSchema)
 		.max(MAX_TAGS_PER_CARD)
 		.refine(uniqueTrimmedStrings, "Tags must be unique"),
+	entries: z
+		.array(triviaEntryInputSchema)
+		.min(MIN_ENTRIES_PER_CARD)
+		.max(MAX_ENTRIES_PER_CARD),
 });
 
-const multipleChoiceQuestionCardInputSchema = baseCardSchema
+const textQuestionCardInputSchema = baseCardSchema.extend({
+	answerMode: z.literal("TEXT"),
+});
+
+const countryQuestionCardInputSchema = baseCardSchema.extend({
+	answerMode: z.literal("COUNTRY"),
+});
+
+const choicesQuestionCardInputSchema = baseCardSchema
 	.extend({
-		format: z.literal("MULTIPLE_CHOICE"),
+		answerMode: z.literal("CHOICES"),
 		choices: z
 			.array(nonEmptyTrimmedStringSchema)
-			.min(MIN_MULTIPLE_CHOICE_CHOICES)
-			.max(MAX_MULTIPLE_CHOICE_CHOICES)
+			.min(MIN_ENTRIES_PER_CARD)
+			.max(MAX_ENTRIES_PER_CARD)
 			.refine(uniqueTrimmedStrings, "Choices must be unique"),
-		entries: z.array(multipleChoiceEntryInputSchema).min(2).max(10),
+		choicesAreUnique: z.boolean(),
 	})
 	.superRefine((value, context) => {
 		value.entries.forEach((entry, index) => {
@@ -74,79 +66,52 @@ const multipleChoiceQuestionCardInputSchema = baseCardSchema
 				});
 			}
 		});
-	});
 
-const trueOrFalseQuestionCardInputSchema = baseCardSchema.extend({
-	format: z.literal("TRUE_OR_FALSE"),
-	entries: z.array(trueOrFalseEntryInputSchema).min(2).max(10),
-});
+		if (!value.choicesAreUnique) {
+			return;
+		}
 
-const openEndedQuestionCardInputSchema = baseCardSchema.extend({
-	format: z.literal("OPEN_ENDED"),
-	uiHint: triviaCardUiHintSchema.optional(),
-	entries: z.array(openEndedEntryInputSchema).min(2).max(10),
-});
-
-const orderItemsQuestionCardInputSchema = baseCardSchema
-	.extend({
-		format: z.literal("ORDER_ITEMS"),
-		entries: z.array(orderItemsEntryInputSchema).min(2).max(10),
-	})
-	.superRefine((value, context) => {
-		const answers = value.entries.map((entry) => entry.answer);
-		const expectedAnswers = new Set(
-			Array.from({ length: value.entries.length }, (_, index) => index + 1),
-		);
-
-		if (answers.length !== new Set(answers).size) {
+		if (value.choices.length !== value.entries.length) {
 			context.addIssue({
 				code: z.ZodIssueCode.custom,
-				message: "Order answers must be unique",
-				path: ["entries"],
+				message: "Unique choice cards must define one choice per entry",
+				path: ["choices"],
 			});
 		}
 
-		answers.forEach((answer, index) => {
-			if (!expectedAnswers.has(answer)) {
-				context.addIssue({
-					code: z.ZodIssueCode.custom,
-					message: `Answer must be between 1 and ${value.entries.length}`,
-					path: ["entries", index, "answer"],
-				});
-			}
-		});
+		const answers = value.entries.map((entry) => entry.answer);
+		if (answers.length !== new Set(answers).size) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "Each answer must be used only once",
+				path: ["entries"],
+			});
+		}
 	});
 
-export const questionCardInputSchema = z.discriminatedUnion("format", [
-	multipleChoiceQuestionCardInputSchema,
-	trueOrFalseQuestionCardInputSchema,
-	openEndedQuestionCardInputSchema,
-	orderItemsQuestionCardInputSchema,
+export const questionCardInputSchema = z.discriminatedUnion("answerMode", [
+	textQuestionCardInputSchema,
+	countryQuestionCardInputSchema,
+	choicesQuestionCardInputSchema,
 ]);
 
-export const questionCardSchema = z.discriminatedUnion("format", [
-	multipleChoiceQuestionCardInputSchema.extend({
-		id: z.number().int().positive(),
-		updatedAt: z.string().datetime(),
-	}),
-	trueOrFalseQuestionCardInputSchema.extend({
-		id: z.number().int().positive(),
-		updatedAt: z.string().datetime(),
-	}),
-	openEndedQuestionCardInputSchema.extend({
-		id: z.number().int().positive(),
-		updatedAt: z.string().datetime(),
-	}),
-	orderItemsQuestionCardInputSchema.extend({
-		id: z.number().int().positive(),
-		updatedAt: z.string().datetime(),
-	}),
+const baseQuestionCardSchema = z.object({
+	id: z.number().int().positive(),
+	updatedAt: z.string().datetime(),
+});
+
+export const questionCardSchema = z.discriminatedUnion("answerMode", [
+	textQuestionCardInputSchema.extend(baseQuestionCardSchema.shape),
+	countryQuestionCardInputSchema.extend(baseQuestionCardSchema.shape),
+	choicesQuestionCardInputSchema.extend(baseQuestionCardSchema.shape),
 ]);
 
 export type QuestionCardInput = z.infer<typeof questionCardInputSchema>;
 export type QuestionCard = z.infer<typeof questionCardSchema>;
 export type TriviaCardDifficulty = z.infer<typeof triviaCardDifficultySchema>;
-export type TriviaCardFormat = z.infer<typeof triviaCardFormatSchema>;
+export type QuestionCardAnswerMode = z.infer<
+	typeof questionCardAnswerModeSchema
+>;
 
 export default defineContractTree({
 	questionsCrud: {

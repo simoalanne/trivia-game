@@ -17,12 +17,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum TriviaCardFormat {
-  MULTIPLE_CHOICE
-  TRUE_OR_FALSE
-  OPEN_ENDED
-  ORDER_ITEMS
-}
 
 enum TriviaCardDifficulty {
   EASY
@@ -32,7 +26,6 @@ enum TriviaCardDifficulty {
 
 model TriviaCard {
   id         Int                  @id @default(autoincrement())
-  format     TriviaCardFormat
   difficulty TriviaCardDifficulty
   /// [TriviaCardData]
   data       Json

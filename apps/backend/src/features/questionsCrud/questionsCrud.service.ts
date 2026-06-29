@@ -1,8 +1,4 @@
-import {
-	MAX_MULTIPLE_CHOICE_CHOICES,
-	type QuestionCard,
-	type QuestionCardInput,
-} from "@packages/contracts";
+import type { QuestionCard, QuestionCardInput } from "@packages/contracts";
 import z from "zod";
 import { defineService } from "../../initServer.ts";
 import prisma from "../../prisma.ts";
@@ -87,9 +83,9 @@ const ollamaResponseToQuestionCardInput = (response: {
 		entries: response.rings.map((ring) => {
 			const answer =
 				ring.outer === "true"
-					? true
+					? "True"
 					: ring.outer === "false"
-						? false
+						? "False"
 						: ring.outer.trim();
 			return {
 				text: ring.inner,
@@ -98,71 +94,64 @@ const ollamaResponseToQuestionCardInput = (response: {
 		}),
 	};
 	console.log("Normalized card content:", normalizedCardContent);
-	// 1. if all answers are boolean, it's a TRUE_OR_FALSE question
+	const uniqueNormalizedAnswers = Array.from(
+		new Set(normalizedCardContent.entries.map((entry) => entry.answer)),
+	);
+
 	if (
-		normalizedCardContent.entries.every(
-			(entry) => typeof entry.answer === "boolean",
+		uniqueNormalizedAnswers.length === 2 &&
+		uniqueNormalizedAnswers.every(
+			(answer) =>
+				answer.toLowerCase() === "true" || answer.toLowerCase() === "false",
 		)
 	) {
 		return {
-			format: "TRUE_OR_FALSE" as const,
+			answerMode: "CHOICES" as const,
 			prompt: normalizedCardContent.prompt,
 			difficulty: "MEDIUM" as const,
 			tags: [],
-			entries: normalizedCardContent.entries as {
-				text: string;
-				answer: boolean;
-			}[],
+			choices: ["True", "False"],
+			entries: normalizedCardContent.entries,
+			choicesAreUnique: false,
 		};
 	}
 
-	// 2. if all answers are strings that can be parsed as numbers from 1 to 10, it's an ORDER_ITEMS question
 	const oneToTenRegex = /^(?:[1-9]|10)$/;
 	if (
 		normalizedCardContent.entries.every((entry) =>
-			oneToTenRegex.test(entry.answer as string),
+			oneToTenRegex.test(entry.answer),
 		)
 	) {
 		return {
-			format: "ORDER_ITEMS" as const,
+			answerMode: "CHOICES" as const,
 			prompt: normalizedCardContent.prompt,
 			difficulty: "MEDIUM" as const,
 			tags: [],
-			entries: normalizedCardContent.entries.map((entry) => ({
-				...entry,
-				answer: Number(entry.answer),
-			})),
+			choices: normalizedCardContent.entries.map((entry) => entry.answer),
+			choicesAreUnique: true,
+			entries: normalizedCardContent.entries,
 		};
 	}
 
-	const uniqueNormalizedAnswers = new Set(
-		normalizedCardContent.entries.map((entry) => String(entry.answer)),
-	);
-	// 3. if there are 5 or fewer unique text answers, it's a MULTIPLE_CHOICE question
-	if (uniqueNormalizedAnswers.size <= MAX_MULTIPLE_CHOICE_CHOICES) {
+	const MAX_CHOICES_PER_CARD_IN_PROMPT = 5;
+	if (uniqueNormalizedAnswers.length <= MAX_CHOICES_PER_CARD_IN_PROMPT) {
 		return {
-			format: "MULTIPLE_CHOICE" as const,
+			answerMode: "CHOICES" as const,
 			prompt: normalizedCardContent.prompt,
 			difficulty: "MEDIUM" as const,
 			tags: [],
-			choices: Array.from(uniqueNormalizedAnswers),
-			entries: normalizedCardContent.entries as {
-				text: string;
-				answer: string;
-			}[],
+			choices: uniqueNormalizedAnswers,
+			entries: normalizedCardContent.entries,
+			choicesAreUnique: false,
 		};
 	}
 
-	// 4. otherwise, it's an OPEN_ENDED question
 	return {
-		format: "OPEN_ENDED" as const,
+		answerMode: "TEXT" as const,
 		prompt: normalizedCardContent.prompt,
 		difficulty: "MEDIUM" as const,
 		tags: [],
-		entries: normalizedCardContent.entries.map((entry) => ({
-			...entry,
-			answer: [String(entry.answer)],
-		})),
+		entries: normalizedCardContent.entries,
 	};
 };
 
@@ -243,83 +232,29 @@ const createQuestionCardDraftFromImage = async (
 const toQuestionCard = (
 	card: Awaited<ReturnType<typeof prisma.triviaCard.findFirstOrThrow>>,
 ): QuestionCard => {
-	switch (card.format) {
-		case "TRUE_OR_FALSE":
-			return {
-				id: card.id,
-				updatedAt: card.updatedAt.toISOString(),
-				format: card.format,
-				difficulty: card.difficulty,
-				tags: card.tags,
-				prompt: card.data.prompt,
-				entries: card.data.entries as Extract<
-					QuestionCard,
-					{ format: "TRUE_OR_FALSE" }
-				>["entries"],
-			};
-		case "OPEN_ENDED":
-			return {
-				id: card.id,
-				updatedAt: card.updatedAt.toISOString(),
-				format: card.format,
-				difficulty: card.difficulty,
-				tags: card.tags,
-				prompt: card.data.prompt,
-				uiHint: card.data.uiHint,
-				entries: card.data.entries as Extract<
-					QuestionCard,
-					{ format: "OPEN_ENDED" }
-				>["entries"],
-			};
-		case "ORDER_ITEMS":
-			return {
-				id: card.id,
-				updatedAt: card.updatedAt.toISOString(),
-				format: card.format,
-				difficulty: card.difficulty,
-				tags: card.tags,
-				prompt: card.data.prompt,
-				entries: card.data.entries as Extract<
-					QuestionCard,
-					{ format: "ORDER_ITEMS" }
-				>["entries"],
-			};
-		default:
-			return {
-				id: card.id,
-				updatedAt: card.updatedAt.toISOString(),
-				format: "MULTIPLE_CHOICE",
-				difficulty: card.difficulty,
-				tags: card.tags,
-				prompt: card.data.prompt,
-				choices: card.data.choices ?? [],
-				entries: card.data.entries as Extract<
-					QuestionCard,
-					{ format: "MULTIPLE_CHOICE" }
-				>["entries"],
-			};
+	const baseCard = {
+		id: card.id,
+		updatedAt: card.updatedAt.toISOString(),
+		difficulty: card.difficulty,
+		tags: card.tags,
+		prompt: card.data.prompt,
+		entries: card.data.entries as QuestionCard["entries"],
+	};
+
+	if (card.data.answerMode === "CHOICES") {
+		return {
+			...baseCard,
+			answerMode: "CHOICES",
+			choices: card.data.choices,
+			choicesAreUnique: card.data.choicesAreUnique,
+		};
 	}
-};
 
-const normalizePromptEnding = (card: QuestionCardInput) => {
-	const prompt = card.prompt.trim().replace(/[?!.:;]+$/u, "");
-	const ending = card.format === "ORDER_ITEMS" ? ":" : "?";
-	return `${prompt}${ending}`;
+	return {
+		...baseCard,
+		answerMode: card.data.answerMode,
+	};
 };
-
-const toTriviaCardCreateData = (card: QuestionCardInput) => ({
-	format: card.format,
-	difficulty: card.difficulty,
-	tags: card.tags,
-	data: {
-		prompt: normalizePromptEnding(card),
-		...(card.format === "OPEN_ENDED" && card.uiHint
-			? { uiHint: card.uiHint }
-			: {}),
-		entries: card.entries,
-		...(card.format === "MULTIPLE_CHOICE" ? { choices: card.choices } : {}),
-	},
-});
 
 const getQuestionCardById = async (id: number) => {
 	const card = await prisma.triviaCard.findUnique({
@@ -350,19 +285,35 @@ export default defineService("questionsCrud", {
 	},
 
 	async create(card) {
+		const cardData =
+			card.answerMode === "CHOICES"
+				? {
+						prompt: card.prompt,
+						answerMode: card.answerMode,
+						choices: card.choices,
+						choicesAreUnique: card.choicesAreUnique,
+						entries: card.entries,
+					}
+				: {
+						prompt: card.prompt,
+						answerMode: card.answerMode,
+						entries: card.entries,
+					};
 		const createdCard = await prisma.triviaCard.create({
-			data: toTriviaCardCreateData(card),
+			data: {
+				difficulty: card.difficulty,
+				tags: card.tags,
+				data: cardData,
+			},
 		});
 
 		return toQuestionCard(createdCard);
 	},
 
 	async update({ id, ...card }) {
-		await getQuestionCardById(id);
-
 		const updatedCard = await prisma.triviaCard.update({
 			where: { id },
-			data: toTriviaCardCreateData(card),
+			data: card,
 		});
 
 		return toQuestionCard(updatedCard);

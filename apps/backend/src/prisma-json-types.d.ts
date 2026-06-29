@@ -4,15 +4,33 @@ declare global {
 	namespace PrismaJson {
 		type TriviaEntry = {
 			text: string;
-			answer: string | string[] | boolean | number;
+			answer: string;
 		};
 
-		type TriviaCardData = {
+		type TextTriviaCardData = {
 			prompt: string;
-			uiHint?: "country";
+			answerMode: "TEXT";
 			entries: TriviaEntry[];
-			choices?: string[];
 		};
+
+		type CountryTriviaCardData = {
+			prompt: string;
+			answerMode: "COUNTRY";
+			entries: TriviaEntry[];
+		};
+
+		type ChoicesTriviaCardData = {
+			prompt: string;
+			answerMode: "CHOICES";
+			entries: TriviaEntry[];
+			choices: string[];
+			choicesAreUnique: boolean;
+		};
+
+		type TriviaCardData =
+			| TextTriviaCardData
+			| CountryTriviaCardData
+			| ChoicesTriviaCardData;
 
 		type LocalizedString = Record<string, string>;
 	}
