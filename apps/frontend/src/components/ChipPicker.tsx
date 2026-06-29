@@ -1,4 +1,4 @@
-import styles from "./ChipPicker.module.css";
+import { cn } from "@/lib/utils";
 
 type ChipOption = {
 	label: string;
@@ -19,13 +19,14 @@ export function ChipPicker({
 	disabled = false,
 }: ChipPickerProps) {
 	return (
-		<div className={styles.grid}>
+		<div className="grid grid-cols-1 gap-2 sm:grid-cols-[repeat(auto-fit,minmax(8.5rem,1fr))]">
 			{options.map((option, index) => (
 				<button
 					aria-pressed={value === option.value}
-					className={`${styles.chip} ${
-						value === option.value ? styles.selectedChip : ""
-					}`}
+					className={cn(
+						"btn min-h-12 whitespace-normal",
+						value === option.value ? "btn-primary" : "btn-outline",
+					)}
 					disabled={disabled}
 					key={`${option.value}-${index}`}
 					onClick={() => onChange(option.value)}

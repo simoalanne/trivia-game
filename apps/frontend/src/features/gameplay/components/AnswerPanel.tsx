@@ -1,10 +1,10 @@
 "use client";
 
-import { CheckIcon, LoaderCircleIcon, XIcon } from "lucide-react";
+import { CheckIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CountryPicker } from "@/components/CountryPicker";
 import { Sheet } from "@/components/Sheet";
-import styles from "./AnswerPanel.module.css";
+import { cn } from "@/lib/utils";
 
 type ChoiceAnswer = {
 	kind: "choices";
@@ -129,24 +129,25 @@ function AnswerPanelContent({
 			: "default";
 
 	return (
-		<div className={styles.answerPanel}>
-			<p className={styles.answerPrompt}>
+		<div className="grid gap-5">
+			<p className="max-w-prose text-base leading-snug font-semibold wrap-break-word">
 				{prompt ? <span>{prompt} </span> : null}
-				<strong>{title}</strong>
+				<strong className="text-primary font-bold">{title}</strong>
 			</p>
 
 			{answer.kind === "choices" ? (
 				<>
-					<div className={styles.choiceGrid}>
+					<div className="flex flex-wrap gap-2">
 						{answer.choices.map((choice) => {
 							const isSelected = selectedChip === choice;
 
 							return (
 								<button
 									aria-pressed={isSelected}
-									className={`${styles.choiceChip} ${
-										isSelected ? styles.choiceChipSelected : ""
-									}`}
+									className={cn(
+										"btn btn-lg h-auto min-h-10 rounded-full whitespace-normal",
+										isSelected ? "btn-primary" : "btn-outline",
+									)}
 									disabled={isBusy}
 									key={choice}
 									onClick={() => setSelectedChip(choice)}
@@ -182,10 +183,11 @@ function AnswerPanelContent({
 						/>
 					) : (
 						<input
-							className={styles.textInput}
+							className="input w-full"
 							disabled={isBusy}
 							onChange={(event) => setTextAnswer(event.target.value)}
 							placeholder={answer.placeholder ?? "Your answer"}
+							type="text"
 							value={textAnswer}
 						/>
 					)}
@@ -220,31 +222,41 @@ function PanelFooter({
 	onSubmit: () => void;
 	tone: "default" | "submitting" | "correct" | "wrong";
 }) {
+	const isResolved = tone === "correct" || tone === "wrong";
+	const isDisabled = disabled || !canSubmit;
+
 	return (
-		<div className={styles.panelFooter}>
+		<div className="grid">
 			<button
-				className={`${styles.primaryButton} ${
-					tone === "submitting"
-						? styles.primaryButtonSubmitting
-						: tone === "correct"
-							? styles.primaryButtonCorrect
-							: tone === "wrong"
-								? styles.primaryButtonWrong
-								: ""
-				}`}
-				disabled={disabled || !canSubmit}
-				onClick={onSubmit}
+				aria-disabled={isDisabled}
+				className={cn(
+					"btn btn-block",
+					tone === "correct"
+						? "btn-success"
+						: tone === "wrong"
+							? "btn-error"
+							: "btn-primary",
+				)}
+				disabled={!isResolved && isDisabled}
+				onClick={() => {
+					if (!isDisabled) {
+						onSubmit();
+					}
+				}}
 				type="button"
 			>
 				{tone === "submitting" ? (
-					<LoaderCircleIcon
+					<span
 						aria-hidden="true"
-						className={styles.primaryButtonSpinner}
-						size={18}
+						className="loading loading-spinner loading-sm"
 					/>
 				) : null}
-				{tone === "correct" ? <CheckIcon aria-hidden="true" size={18} /> : null}
-				{tone === "wrong" ? <XIcon aria-hidden="true" size={18} /> : null}
+				{tone === "correct" ? (
+					<CheckIcon aria-hidden="true" className="size-4" />
+				) : null}
+				{tone === "wrong" ? (
+					<XIcon aria-hidden="true" className="size-4" />
+				) : null}
 				{label}
 			</button>
 		</div>

@@ -6,9 +6,7 @@ import {
 	triviaCardDifficultySchema,
 	triviaCardFormatSchema,
 } from "@packages/contracts";
-import { Button, Field, TextInput } from "@/components";
 import { ChipPicker } from "@/components/ChipPicker";
-import styles from "./QuestionCardSettings.module.css";
 
 type TriviaCardUiHint = Extract<
 	QuestionCardInput,
@@ -63,9 +61,15 @@ export default function QuestionCardSettings({
 	onUiHintChange,
 }: QuestionCardSettingsProps) {
 	return (
-		<div className={styles.panel}>
-			<div className={styles.scrollBody}>
-				<Field error={getFieldError("prompt")} htmlFor="prompt" label="Prompt">
+		<div className="grid h-full min-h-0">
+			<div className="grid min-h-0 content-start gap-4 overflow-auto pr-1">
+				<fieldset className="fieldset w-full gap-2">
+					<label
+						className="fieldset-legend text-sm font-semibold"
+						htmlFor="prompt"
+					>
+						Prompt
+					</label>
 					<textarea
 						className={`textarea min-h-32 w-full ${
 							getFieldError("prompt") ? "textarea-error" : ""
@@ -76,14 +80,18 @@ export default function QuestionCardSettings({
 						rows={5}
 						value={card.prompt}
 					/>
-				</Field>
+					{getFieldError("prompt") ? (
+						<p className="label px-0 text-sm font-semibold text-error">
+							{getFieldError("prompt")}
+						</p>
+					) : null}
+				</fieldset>
 
-				<div className={styles.inlineFields}>
-					<Field
-						error={getFieldError("difficulty")}
-						htmlFor="difficulty"
-						label="Difficulty"
-					>
+				<div className="grid grid-cols-2 gap-4 max-[760px]:grid-cols-1">
+					<fieldset className="fieldset w-full gap-2">
+						<legend className="fieldset-legend text-sm font-semibold">
+							Difficulty
+						</legend>
 						<ChipPicker
 							onChange={(value) =>
 								onDifficultyChange(value as QuestionCardInput["difficulty"])
@@ -94,13 +102,17 @@ export default function QuestionCardSettings({
 							}))}
 							value={card.difficulty}
 						/>
-					</Field>
+						{getFieldError("difficulty") ? (
+							<p className="label px-0 text-sm font-semibold text-error">
+								{getFieldError("difficulty")}
+							</p>
+						) : null}
+					</fieldset>
 
-					<Field
-						error={getFieldError("format")}
-						htmlFor="format"
-						label="Question type"
-					>
+					<fieldset className="fieldset w-full gap-2">
+						<legend className="fieldset-legend text-sm font-semibold">
+							Question type
+						</legend>
 						<ChipPicker
 							onChange={(value) =>
 								onFormatChange(value as QuestionCardInput["format"])
@@ -111,56 +123,81 @@ export default function QuestionCardSettings({
 							}))}
 							value={card.format}
 						/>
-					</Field>
+						{getFieldError("format") ? (
+							<p className="label px-0 text-sm font-semibold text-error">
+								{getFieldError("format")}
+							</p>
+						) : null}
+					</fieldset>
 				</div>
 
-				<Field
-					description="Tags are optional, must be unique, and can have up to 3 items."
-					error={getFieldError("tags")}
-					label="Tags"
-				>
-					<div className={styles.listEditor}>
+				<fieldset className="fieldset w-full gap-2">
+					<legend className="fieldset-legend text-sm font-semibold">
+						Tags
+					</legend>
+					<div className="grid gap-3">
 						{card.tags.map((tag, tagIndex) => (
-							<div className={styles.rowEditor} key={`tag-${tagIndex}`}>
-								<TextInput
-									invalid={Boolean(getFieldError("tags", tagIndex))}
+							<div
+								className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 max-[760px]:grid-cols-1"
+								key={`tag-${tagIndex}`}
+							>
+								<input
+									aria-invalid={
+										Boolean(getFieldError("tags", tagIndex)) || undefined
+									}
+									className={`input w-full ${
+										getFieldError("tags", tagIndex) ? "input-error" : ""
+									}`}
 									onChange={(event) =>
 										onTagChange(tagIndex, event.target.value)
 									}
 									placeholder="Category tag"
 									value={tag}
 								/>
-								<Button
+								<button
+									className="btn btn-ghost btn-sm"
 									disabled={isSubmitting}
 									onClick={() => onRemoveTag(tagIndex)}
-									size="sm"
-									variant="ghost"
+									type="button"
 								>
 									Remove
-								</Button>
+								</button>
 							</div>
 						))}
-						<Button
+						<button
+							className="btn btn-sm"
 							disabled={isSubmitting || !canAddTag}
 							onClick={onAddTag}
-							size="sm"
-							variant="secondary"
+							type="button"
 						>
 							Add tag
-						</Button>
+						</button>
 					</div>
-				</Field>
+					<p className="label px-0 text-sm text-base-content/70">
+						Tags are optional, must be unique, and can have up to 3 items.
+					</p>
+					{getFieldError("tags") ? (
+						<p className="label px-0 text-sm font-semibold text-error">
+							{getFieldError("tags")}
+						</p>
+					) : null}
+				</fieldset>
 
 				{card.format === "OPEN_ENDED" ? (
-					<section className={styles.section} aria-label="Answer input">
-						<div className={styles.sectionHeader}>
+					<section className="grid gap-3" aria-label="Answer input">
+						<div className="flex flex-wrap items-end justify-between gap-3">
 							<div>
 								<h2>Answer input</h2>
-								<p>Choose how players enter answers during gameplay.</p>
+								<p className="text-base-content/70">
+									Choose how players enter answers during gameplay.
+								</p>
 							</div>
 						</div>
 
-						<Field error={getFieldError("uiHint")} label="Input style">
+						<fieldset className="fieldset w-full gap-2">
+							<legend className="fieldset-legend text-sm font-semibold">
+								Input style
+							</legend>
 							<ChipPicker
 								onChange={(value) =>
 									onUiHintChange(
@@ -172,22 +209,27 @@ export default function QuestionCardSettings({
 								options={openEndedUiHintOptions}
 								value={card.uiHint ?? "none"}
 							/>
-						</Field>
+							{getFieldError("uiHint") ? (
+								<p className="label px-0 text-sm font-semibold text-error">
+									{getFieldError("uiHint")}
+								</p>
+							) : null}
+						</fieldset>
 					</section>
 				) : null}
 
 				{card.format === "MULTIPLE_CHOICE" ? (
-					<section className={styles.section} aria-label="Choices">
-						<div className={styles.sectionHeader}>
+					<section className="grid gap-3" aria-label="Choices">
+						<div className="flex flex-wrap items-end justify-between gap-3">
 							<div>
 								<h2>Choices</h2>
-								<p>
+								<p className="text-base-content/70">
 									Multiple choice cards share one choice list across all
 									entries. Add between 2 and 5 unique choices.
 								</p>
 							</div>
 							<button
-								className={styles.inlineAction}
+								className="btn btn-sm"
 								disabled={isSubmitting || !canAddChoice}
 								onClick={onAddChoice}
 								type="button"
@@ -196,11 +238,20 @@ export default function QuestionCardSettings({
 							</button>
 						</div>
 
-						<div className={styles.listEditor}>
+						<div className="grid gap-3">
 							{card.choices.map((choice, choiceIndex) => (
-								<div className={styles.rowEditor} key={`choice-${choiceIndex}`}>
-									<TextInput
-										invalid={Boolean(getFieldError("choices", choiceIndex))}
+								<div
+									className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 max-[760px]:grid-cols-1"
+									key={`choice-${choiceIndex}`}
+								>
+									<input
+										aria-invalid={
+											Boolean(getFieldError("choices", choiceIndex)) ||
+											undefined
+										}
+										className={`input w-full ${
+											getFieldError("choices", choiceIndex) ? "input-error" : ""
+										}`}
 										onChange={(event) =>
 											onChoiceChange(choiceIndex, event.target.value)
 										}
@@ -208,7 +259,7 @@ export default function QuestionCardSettings({
 										value={choice}
 									/>
 									<button
-										className={styles.inlineRemove}
+										className="btn btn-ghost btn-sm"
 										disabled={isSubmitting || card.choices.length <= 2}
 										onClick={() => onRemoveChoice(choiceIndex)}
 										type="button"

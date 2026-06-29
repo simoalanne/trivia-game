@@ -1,7 +1,7 @@
 "use client";
 
 import type { QuestionCardInput } from "@packages/contracts";
-import { ChipPicker, Field } from "@/components";
+import { ChipPicker } from "@/components";
 import QuestionEntryEditorLayout from "./QuestionEntryEditorLayout";
 import { useQuestionEditorArrowNavigation } from "./useQuestionEditorArrowNavigation";
 
@@ -49,11 +49,10 @@ export default function OrderItemsEditor({
 			prompt={card.prompt}
 			text={entry.text}
 		>
-			<Field
-				description="Each position should be used once across the card."
-				error={getFieldError("entries", entryIndex, "answer")}
-				label="Correct position"
-			>
+			<fieldset className="fieldset w-full gap-2">
+				<legend className="fieldset-legend text-sm font-semibold">
+					Correct position
+				</legend>
 				<ChipPicker
 					disabled={isSubmitting}
 					onChange={(answer) => onEntryAnswerChange(entryIndex, Number(answer))}
@@ -63,7 +62,15 @@ export default function OrderItemsEditor({
 					}))}
 					value={String(entry.answer)}
 				/>
-			</Field>
+				<p className="label px-0 text-sm text-base-content/70">
+					Each position should be used once across the card.
+				</p>
+				{getFieldError("entries", entryIndex, "answer") ? (
+					<p className="label px-0 text-sm font-semibold text-error">
+						{getFieldError("entries", entryIndex, "answer")}
+					</p>
+				) : null}
+			</fieldset>
 		</QuestionEntryEditorLayout>
 	);
 }

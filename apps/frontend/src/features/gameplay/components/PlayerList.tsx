@@ -1,24 +1,11 @@
-import styles from "./PlayerList.module.css";
-
-export type PlayerTone = "blue" | "red" | "green" | "gold";
-export type PlayerPosition =
-	| "topLeft"
-	| "topRight"
-	| "bottomLeft"
-	| "bottomRight";
-
 export type PlayerListItem = {
 	id: string;
 	name: string;
-	score: number;
-	tone: PlayerTone;
-	position: PlayerPosition;
-	isYou?: boolean;
-	isCurrentTurn?: boolean;
-	statusLabel?: string;
+	totalPoints: number;
+	roundPoints: number;
 };
 
-type PlayerCardProps = {
+type PlayerDisplayProps = {
 	player: PlayerListItem;
 };
 
@@ -26,39 +13,43 @@ type PlayerListProps = {
 	players: PlayerListItem[];
 };
 
-const cx = (...classNames: Array<string | false | undefined>) =>
-	classNames.filter(Boolean).join(" ");
-
 export function PlayerList({ players }: PlayerListProps) {
 	return (
-		<div className={styles.players}>
+		<div className="grid gap-4">
 			{players.map((player) => (
-				<PlayerCard key={player.id} player={player} />
+				<PlayerDisplay key={player.id} player={player} />
 			))}
 		</div>
 	);
 }
 
-export function PlayerCard({ player }: PlayerCardProps) {
+export function PlayerDisplay({ player }: PlayerDisplayProps) {
+	const initial = player.name.trim().charAt(0).toUpperCase() || "?";
+
 	return (
-		<div
-			className={cx(
-				styles.player,
-				styles[player.position],
-				styles[player.tone],
-				player.isYou && styles.isYou,
-				player.isCurrentTurn && styles.isCurrentTurn,
-			)}
-		>
-			<span className={styles.playerName}>
-				{player.isYou ? "You" : player.name}
-			</span>
-			<div className={styles.playerScoreLine}>
-				<strong>{player.score.toString().padStart(3, "0")}</strong>
-				{player.statusLabel ? (
-					<span className={styles.playerStatus}>{player.statusLabel}</span>
-				) : null}
+		<article className="grid min-w-38 gap-2">
+			<div className="flex items-center gap-3">
+				<div className="avatar avatar-placeholder">
+					<div className="w-10 rounded-full bg-neutral text-neutral-content">
+						<span className="text-sm font-bold">{initial}</span>
+					</div>
+				</div>
+
+				<div className="min-w-0">
+					<p className="truncate text-sm font-semibold">{player.name}</p>
+				</div>
 			</div>
-		</div>
+
+			<div className="border-base-content/20 flex items-center gap-3 border-t pt-2 text-xs">
+				<span>
+					<span className="opacity-60">Total: </span>
+					<strong className="font-mono text-sm">{player.totalPoints}</strong>
+				</span>
+				<span>
+					<span className="opacity-60">Round: </span>
+					<strong className="font-mono text-sm">{player.roundPoints}</strong>
+				</span>
+			</div>
+		</article>
 	);
 }

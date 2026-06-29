@@ -1,9 +1,7 @@
 "use client";
 
 import type { QuestionCardInput } from "@packages/contracts";
-import { Button, Field, TextInput } from "@/components";
 import { CountryPicker } from "@/components/CountryPicker";
-import styles from "./QuestionEntryEditor.module.css";
 import QuestionEntryEditorLayout from "./QuestionEntryEditorLayout";
 import { useQuestionEditorArrowNavigation } from "./useQuestionEditorArrowNavigation";
 
@@ -59,14 +57,14 @@ export default function OpenEndedEditor({
 			prompt={card.prompt}
 			text={entry.text}
 		>
-			<Field
-				error={getFieldError("entries", entryIndex, "answer")}
-				label="Accepted answers"
-			>
-				<div className={styles.listEditor}>
+			<fieldset className="fieldset w-full gap-2">
+				<legend className="fieldset-legend text-sm font-semibold">
+					Accepted answers
+				</legend>
+				<div className="grid gap-3">
 					{entry.answer.map((answer, answerIndex) => (
 						<div
-							className={styles.rowEditor}
+							className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 max-[760px]:grid-cols-1"
 							key={`accepted-answer-${entryIndex}-${answerIndex}`}
 						>
 							{card.uiHint === "country" ? (
@@ -82,10 +80,22 @@ export default function OpenEndedEditor({
 									value={answer}
 								/>
 							) : (
-								<TextInput
-									invalid={Boolean(
-										getFieldError("entries", entryIndex, "answer", answerIndex),
-									)}
+								<input
+									aria-invalid={
+										Boolean(
+											getFieldError(
+												"entries",
+												entryIndex,
+												"answer",
+												answerIndex,
+											),
+										) || undefined
+									}
+									className={`input w-full ${
+										getFieldError("entries", entryIndex, "answer", answerIndex)
+											? "input-error"
+											: ""
+									}`}
 									onChange={(event) =>
 										onEntryAcceptedAnswerChange(
 											entryIndex,
@@ -98,22 +108,22 @@ export default function OpenEndedEditor({
 								/>
 							)}
 							{card.uiHint !== "country" && (
-								<Button
+								<button
+									className="btn btn-ghost btn-sm"
 									disabled={isSubmitting || entry.answer.length <= 1}
 									onClick={() =>
 										onRemoveAcceptedAnswer(entryIndex, answerIndex)
 									}
-									size="sm"
-									variant="ghost"
+									type="button"
 								>
 									Remove
-								</Button>
+								</button>
 							)}
 						</div>
 					))}
 					{card.uiHint !== "country" && (
 						<button
-							className={styles.inlineAction}
+							className="btn btn-sm"
 							disabled={isSubmitting}
 							onClick={() => onAddAcceptedAnswer(entryIndex)}
 							type="button"
@@ -122,7 +132,12 @@ export default function OpenEndedEditor({
 						</button>
 					)}
 				</div>
-			</Field>
+				{getFieldError("entries", entryIndex, "answer") ? (
+					<p className="label px-0 text-sm font-semibold text-error">
+						{getFieldError("entries", entryIndex, "answer")}
+					</p>
+				) : null}
+			</fieldset>
 		</QuestionEntryEditorLayout>
 	);
 }

@@ -2,9 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { Button } from "@/components";
 import { useGameplaySocket } from "@/features/gameplay/useGameplaySocket";
-import styles from "./LobbyPage.module.css";
+import { GameCode } from "../gameplay/components";
 
 type LobbyClientProps = {
 	gameCode: string;
@@ -31,56 +30,67 @@ export default function LobbyClient({ gameCode }: LobbyClientProps) {
 	}, [gameCodePath, gameState?.gameState, router]);
 
 	return (
-		<main className={styles.page}>
-			<section className={styles.lobby} aria-labelledby="lobby-title">
-				<div className={styles.header}>
+		<main className="px-4 py-8 sm:px-8 lg:px-12">
+			<section
+				className="mx-auto grid max-w-4xl gap-6"
+				aria-labelledby="lobby-title"
+			>
+				<div className="flex items-start justify-between gap-4 max-sm:grid">
 					<div>
-						<p className={styles.kicker}>Lobby</p>
-						<h1 id="lobby-title">Waiting for players</h1>
+						<p className="mb-2 font-bold text-primary">Lobby</p>
+						<h1 id="lobby-title" className="text-5xl leading-none font-bold">
+							Waiting for players
+						</h1>
 					</div>
-					<div className={styles.codeBlock}>
-						<span>Game code</span>
-						<strong>{gameCode.toUpperCase()}</strong>
-					</div>
+					<GameCode code={gameCode} />
 				</div>
-				{error ? <p className={styles.errorMessage}>{error}</p> : null}
+				{error ? (
+					<p role="alert" className="alert alert-error alert-soft">
+						{error}
+					</p>
+				) : null}
 
-				<ul className={styles.playerList} aria-label="Players in lobby">
+				<ul className="list gap-2" aria-label="Players in lobby">
 					{gameState?.players.map((player) => (
 						<li
-							className={`${styles.playerRow} ${
-								player.id === playerId ? styles.currentPlayer : ""
+							className={`list-row border border-base-300 bg-base-100 ${
+								player.id === playerId ? "border-primary" : ""
 							}`}
 							key={player.id}
 						>
-							<div>
+							<div className="grid gap-1">
 								<strong>{player.name}</strong>
-								<span>
+								<span className="font-mono text-sm text-base-content/70">
 									{player.isHost ? "Host" : "Player"}
 									{player.id === playerId ? " - You" : ""}
 								</span>
 							</div>
 							<span
 								className={
-									player.isReady ? styles.readyBadge : styles.waitingBadge
+									player.isReady
+										? "badge badge-primary badge-soft"
+										: "badge badge-ghost"
 								}
 							>
 								{player.isReady ? "Ready" : "Waiting"}
 							</span>
 						</li>
 					)) ?? (
-						<li className={styles.playerRow}>
-							<div>
+						<li className="list-row border border-base-300 bg-base-100">
+							<div className="grid gap-1">
 								<strong>Connecting</strong>
-								<span>Loading players</span>
+								<span className="font-mono text-sm text-base-content/70">
+									Loading players
+								</span>
 							</div>
-							<span className={styles.waitingBadge}>Waiting</span>
+							<span className="badge badge-ghost">Waiting</span>
 						</li>
 					)}
 				</ul>
 
-				<div className={styles.actions}>
-					<Button
+				<div className="flex flex-wrap gap-3">
+					<button
+						className="btn btn-primary"
 						disabled={!canSend}
 						onClick={() =>
 							currentPlayer &&
@@ -89,16 +99,18 @@ export default function LobbyClient({ gameCode }: LobbyClientProps) {
 								state: !currentPlayer.isReady,
 							})
 						}
+						type="button"
 					>
 						{currentPlayer?.isReady ? "Cancel ready" : "Ready up"}
-					</Button>
-					<Button
+					</button>
+					<button
+						className="btn"
 						disabled={!canSend || !currentPlayer?.isHost || !allReady}
 						onClick={() => send({ type: "startGame" })}
-						variant="secondary"
+						type="button"
 					>
 						Start game
-					</Button>
+					</button>
 				</div>
 			</section>
 		</main>

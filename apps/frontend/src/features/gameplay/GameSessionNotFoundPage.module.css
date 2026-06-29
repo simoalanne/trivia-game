@@ -2,22 +2,22 @@
 	display: grid;
 	place-items: start center;
 	min-height: calc(100vh - 4rem);
-	padding: clamp(var(--space-4), 5vw, var(--space-7));
+	padding: clamp(1rem, 5vw, 3rem);
 }
 
 .panel {
 	display: grid;
-	gap: var(--space-4);
+	gap: 1rem;
 	width: min(100%, 36rem);
-	border: 1px solid var(--color-border);
-	border-radius: var(--radius-lg);
-	background: var(--color-surface);
-	padding: clamp(var(--space-4), 4vw, var(--space-6));
+	border: 1px solid var(--color-base-300);
+	border-radius: var(--radius-box);
+	background: var(--color-base-100);
+	padding: clamp(1rem, 4vw, 2rem);
 }
 
 .kicker {
 	margin: 0;
-	color: var(--color-danger);
+	color: var(--color-error);
 	font-weight: 750;
 }
 
@@ -29,7 +29,7 @@
 
 .panel p:not(.kicker) {
 	margin: 0;
-	color: var(--color-text-muted);
+	color: color-mix(in srgb, var(--color-base-content) 65%, transparent);
 }
 
 .link {
@@ -38,14 +38,18 @@
 	justify-content: center;
 	width: fit-content;
 	min-height: 2.5rem;
-	border-radius: var(--radius-md);
-	background: var(--color-accent);
-	padding: 0 var(--space-4);
-	color: var(--color-accent-contrast);
+	border-radius: var(--radius-field);
+	background: var(--color-primary);
+	padding: 0 1rem;
+	color: var(--color-primary-content);
 	font-weight: 650;
 	text-decoration: none;
 }
 
 .link:hover {
-	background: var(--color-accent-hover);
+	background: color-mix(
+		in srgb,
+		var(--color-primary) 88%,
+		var(--color-neutral)
+	);
 }

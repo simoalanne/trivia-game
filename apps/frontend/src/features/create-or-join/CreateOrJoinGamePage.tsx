@@ -8,9 +8,7 @@ import {
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { Button, Field, TextInput } from "@/components";
 import { useApiClient } from "@/lib/apiClientProvider";
-import styles from "./CreateOrJoinGamePage.module.css";
 import { saveGameSessionCookie } from "./gameSessionCookie";
 
 type Mode = "create" | "join";
@@ -82,101 +80,134 @@ export default function CreateOrJoinGamePage() {
 	};
 
 	return (
-		<main className={styles.page}>
-			<section className={styles.panel} aria-labelledby="create-join-title">
-				<div className={styles.header}>
-					<p className={styles.kicker}>Setup</p>
-					<h1 id="create-join-title">Create or join a game</h1>
-					<p>
-						Start playing either by creating your own game lobby or joining an
-						existing one with a game code from your friend.
-					</p>
-				</div>
-
-				<div
-					className={styles.tabs}
-					role="tablist"
-					aria-label="Game setup mode"
-				>
-					<button
-						aria-selected={mode === "create"}
-						className={styles.tab}
-						onClick={() => {
-							setMode("create");
-						}}
-						role="tab"
-						type="button"
-					>
-						Create
-					</button>
-					<button
-						aria-selected={mode === "join"}
-						className={styles.tab}
-						onClick={() => {
-							setMode("join");
-						}}
-						role="tab"
-						type="button"
-					>
-						Join
-					</button>
-				</div>
-
-				<form className={styles.form} onSubmit={handleSubmit}>
-					<Field htmlFor="playerName" label="Player name">
-						<TextInput
-							id="playerName"
-							maxLength={20}
-							onChange={(event) => setPlayerName(event.target.value)}
-							placeholder="Your nickname"
-							type="text"
-							value={playerName}
-						/>
-					</Field>
-
-					{mode === "join" && (
-						<Field htmlFor="gameCode" label="Game code">
-							<TextInput
-								id="gameCode"
-								onChange={(event) => setGameCode(event.target.value)}
-								placeholder="Code from host"
-								type="text"
-								value={gameCode}
-							/>
-						</Field>
-					)}
-
-					{mode === "create" && (
-						<Field
-							htmlFor="turnDurationSeconds"
-							label={`Turn timer: ${
-								turnDurationSeconds === 0 ? "Off" : `${turnDurationSeconds}s`
-							}`}
+		<main className="grid min-h-[calc(100vh-4rem)] place-items-start justify-items-center px-4 py-8 sm:px-8 lg:px-12">
+			<section
+				className="card card-border w-full max-w-[34rem] bg-base-100"
+				aria-labelledby="create-join-title"
+			>
+				<div className="card-body gap-6">
+					<div className="grid gap-2">
+						<p className="font-bold text-primary">Setup</p>
+						<h1
+							id="create-join-title"
+							className="text-4xl leading-none font-bold"
 						>
-							<input
-								className={styles.rangeInput}
-								id="turnDurationSeconds"
-								max={gameplayTurnTimeoutSecondsMax}
-								min={gameplayTurnTimeoutSecondsMin}
-								onChange={(event) =>
-									setTurnDurationSeconds(Number(event.target.value))
-								}
-								type="range"
-								value={turnDurationSeconds}
-							/>
-						</Field>
-					)}
-
-					{activeError ? (
-						<p className={styles.errorMessage}>{activeError.message}</p>
-					) : null}
-
-					<div className={styles.actions}>
-						<Button disabled={isSubmitting} type="submit">
-							{mode === "create" ? "Create new lobby" : "Join lobby"}
-						</Button>
+							Create or join a game
+						</h1>
+						<p className="text-base-content/70">
+							Start playing either by creating your own game lobby or joining an
+							existing one with a game code from your friend.
+						</p>
 					</div>
-				</form>
+
+					<div
+						className="tabs tabs-box grid grid-cols-2"
+						role="tablist"
+						aria-label="Game setup mode"
+					>
+						<button
+							aria-selected={mode === "create"}
+							className={`tab ${mode === "create" ? "tab-active" : ""}`}
+							onClick={() => {
+								setMode("create");
+							}}
+							role="tab"
+							type="button"
+						>
+							Create
+						</button>
+						<button
+							aria-selected={mode === "join"}
+							className={`tab ${mode === "join" ? "tab-active" : ""}`}
+							onClick={() => {
+								setMode("join");
+							}}
+							role="tab"
+							type="button"
+						>
+							Join
+						</button>
+					</div>
+
+					<form className="grid gap-4" onSubmit={handleSubmit}>
+						<fieldset className="fieldset w-full gap-2">
+							<label
+								className="fieldset-legend text-sm font-semibold"
+								htmlFor="playerName"
+							>
+								Player name
+							</label>
+							<input
+								className="input w-full"
+								id="playerName"
+								maxLength={20}
+								onChange={(event) => setPlayerName(event.target.value)}
+								placeholder="Your nickname"
+								type="text"
+								value={playerName}
+							/>
+						</fieldset>
+
+						{mode === "join" && (
+							<fieldset className="fieldset w-full gap-2">
+								<label
+									className="fieldset-legend text-sm font-semibold"
+									htmlFor="gameCode"
+								>
+									Game code
+								</label>
+								<input
+									className="input w-full"
+									id="gameCode"
+									onChange={(event) => setGameCode(event.target.value)}
+									placeholder="Code from host"
+									type="text"
+									value={gameCode}
+								/>
+							</fieldset>
+						)}
+
+						{mode === "create" && (
+							<fieldset className="fieldset w-full gap-2">
+								<label
+									className="fieldset-legend text-sm font-semibold"
+									htmlFor="turnDurationSeconds"
+								>
+									{`Turn timer: ${
+										turnDurationSeconds === 0
+											? "Off"
+											: `${turnDurationSeconds}s`
+									}`}
+								</label>
+								<input
+									className="range range-primary"
+									id="turnDurationSeconds"
+									max={gameplayTurnTimeoutSecondsMax}
+									min={gameplayTurnTimeoutSecondsMin}
+									onChange={(event) =>
+										setTurnDurationSeconds(Number(event.target.value))
+									}
+									type="range"
+									value={turnDurationSeconds}
+								/>
+							</fieldset>
+						)}
+
+						{activeError ? (
+							<p className="text-error font-semibold">{activeError.message}</p>
+						) : null}
+
+						<div className="flex flex-wrap items-center gap-3">
+							<button
+								className="btn btn-primary"
+								disabled={isSubmitting}
+								type="submit"
+							>
+								{mode === "create" ? "Create new lobby" : "Join lobby"}
+							</button>
+						</div>
+					</form>
+				</div>
 			</section>
 		</main>
 	);

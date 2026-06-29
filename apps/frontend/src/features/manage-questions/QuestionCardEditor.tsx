@@ -10,7 +10,6 @@ import { ArrowLeft, ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-	Button,
 	Sheet,
 	SheetIconButton,
 	TriviaCard,
@@ -19,7 +18,6 @@ import {
 import MultipleChoiceEditor from "./MultipleChoiceEditor";
 import OpenEndedEditor from "./OpenEndedEditor";
 import OrderItemsEditor from "./OrderItemsEditor";
-import styles from "./QuestionCardEditor.module.css";
 import QuestionCardSettings from "./QuestionCardSettings";
 import {
 	addChoiceToQuestionCard,
@@ -443,15 +441,21 @@ export default function QuestionCardEditor({
 		) : null;
 
 	return (
-		<section className={styles.panel} aria-labelledby="question-editor-title">
-			<div className={styles.header}>
+		<section
+			className="grid w-full max-w-5xl gap-6"
+			aria-labelledby="question-editor-title"
+		>
+			<div>
 				<div>
-					<h1 id="question-editor-title">
+					<h1
+						id="question-editor-title"
+						className="text-3xl leading-tight font-bold"
+					>
 						{mode === "create" ? "Create question" : "Edit question"}
 					</h1>
 				</div>
 			</div>
-			<div className={styles.canvas}>
+			<div className="py-2 sm:py-4">
 				<TriviaCard
 					centerHint="Card settings"
 					items={wheelItems}
@@ -475,7 +479,7 @@ export default function QuestionCardEditor({
 			</div>
 
 			{validationMessages.length > 0 ? (
-				<div className={styles.validationSummary}>
+				<div className="alert alert-error alert-soft grid gap-2">
 					<p>Fix these issues before saving:</p>
 					<ul>
 						{validationMessages.map((message) => (
@@ -486,21 +490,27 @@ export default function QuestionCardEditor({
 			) : null}
 
 			{submitError ? (
-				<p className={styles.errorMessage}>{submitError}</p>
+				<p className="text-error font-semibold">{submitError}</p>
 			) : null}
 
-			<div className={styles.actions}>
-				<Button disabled={isSubmitting} onClick={handleSubmit}>
+			<div className="flex flex-wrap items-center gap-3">
+				<button
+					className="btn btn-primary"
+					disabled={isSubmitting}
+					onClick={handleSubmit}
+					type="button"
+				>
 					{mode === "create" ? "Create question" : "Save changes"}
-				</Button>
-				<Button
+				</button>
+				<button
+					className="btn"
 					disabled={isSubmitting || !hasUnsavedChanges}
 					onClick={resetDraft}
-					variant="secondary"
+					type="button"
 				>
 					Reset
-				</Button>
-				<Link className={styles.secondaryLink} href={cancelHref}>
+				</button>
+				<Link className="btn" href={cancelHref}>
 					Cancel
 				</Link>
 			</div>
@@ -600,31 +610,31 @@ export default function QuestionCardEditor({
 				}
 				footer={
 					openSheet === "card" ? (
-						<div className={styles.sheetFooterActions}>
-							<Button
+						<div className="flex w-full flex-wrap justify-center gap-3">
+							<button
+								className="btn btn-sm"
 								disabled={isSubmitting || card.entries.length >= 10}
 								onClick={() =>
 									setCard((current) => addEntryToQuestionCard(current))
 								}
-								size="sm"
-								variant="secondary"
+								type="button"
 							>
 								Add entry
-							</Button>
-							<Button
+							</button>
+							<button
+								className="btn btn-sm"
 								disabled={card.entries.length === 0}
 								onClick={() => {
 									setSelectedEntryIndex((current) => current ?? 0);
 									setOpenSheet("entry");
 								}}
-								size="sm"
-								variant="secondary"
+								type="button"
 							>
 								Entries
-							</Button>
+							</button>
 						</div>
 					) : openSheet === "entry" ? (
-						<div className={styles.sheetFooterSpread}>
+						<div className="grid w-full grid-cols-[auto_1fr_auto] items-center gap-3">
 							<SheetIconButton
 								aria-label="Previous entry"
 								icon={<ArrowLeft size={18} strokeWidth={2.4} />}
@@ -638,13 +648,13 @@ export default function QuestionCardEditor({
 									);
 								}}
 							/>
-							<Button
+							<button
+								className="btn btn-sm justify-self-center"
 								onClick={() => setOpenSheet("card")}
-								size="sm"
-								variant="secondary"
+								type="button"
 							>
 								Settings
-							</Button>
+							</button>
 							<SheetIconButton
 								aria-label="Next entry"
 								icon={<ArrowRight size={18} strokeWidth={2.4} />}

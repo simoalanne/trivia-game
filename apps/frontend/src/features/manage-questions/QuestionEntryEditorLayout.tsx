@@ -1,8 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Field, TextInput } from "@/components";
-import styles from "./QuestionEntryEditor.module.css";
 
 type QuestionEntryEditorLayoutProps = {
 	children: ReactNode;
@@ -26,42 +24,69 @@ export default function QuestionEntryEditorLayout({
 	text,
 }: QuestionEntryEditorLayoutProps) {
 	return (
-		<div className={styles.scrollBody}>
-			<p className={styles.metaText}>
+		<div className="grid content-start gap-4">
+			<p className="text-sm text-base-content/70">
 				{prompt.trim() || "Set a card prompt from the center of the wheel."}
 			</p>
 
-			<Field
-				error={getFieldError("entries", entryIndex, "text")}
-				htmlFor="entry-text"
-				label={`Entry ${entryIndex + 1} text`}
-			>
-				<TextInput
+			<fieldset className="fieldset w-full gap-2">
+				<label
+					className="fieldset-legend text-sm font-semibold"
+					htmlFor="entry-text"
+				>
+					{`Entry ${entryIndex + 1} text`}
+				</label>
+				<input
+					aria-invalid={
+						Boolean(getFieldError("entries", entryIndex, "text")) || undefined
+					}
+					className={`input w-full ${
+						getFieldError("entries", entryIndex, "text") ? "input-error" : ""
+					}`}
 					id="entry-text"
-					invalid={Boolean(getFieldError("entries", entryIndex, "text"))}
 					onChange={(event) =>
 						onEntryTextChange(entryIndex, event.target.value)
 					}
 					placeholder="What players see for this slot"
 					value={text}
 				/>
-			</Field>
+				{getFieldError("entries", entryIndex, "text") ? (
+					<p className="label px-0 text-sm font-semibold text-error">
+						{getFieldError("entries", entryIndex, "text")}
+					</p>
+				) : null}
+			</fieldset>
 
-			<Field
-				error={getFieldError("entries", entryIndex, "explanation")}
-				htmlFor="entry-explanation"
-				label="Explanation"
-			>
-				<TextInput
+			<fieldset className="fieldset w-full gap-2">
+				<label
+					className="fieldset-legend text-sm font-semibold"
+					htmlFor="entry-explanation"
+				>
+					Explanation
+				</label>
+				<input
+					aria-invalid={
+						Boolean(getFieldError("entries", entryIndex, "explanation")) ||
+						undefined
+					}
+					className={`input w-full ${
+						getFieldError("entries", entryIndex, "explanation")
+							? "input-error"
+							: ""
+					}`}
 					id="entry-explanation"
-					invalid={Boolean(getFieldError("entries", entryIndex, "explanation"))}
 					onChange={(event) =>
 						onEntryExplanationChange(entryIndex, event.target.value)
 					}
 					placeholder="Optional explanation shown after answering"
 					value={explanation ?? ""}
 				/>
-			</Field>
+				{getFieldError("entries", entryIndex, "explanation") ? (
+					<p className="label px-0 text-sm font-semibold text-error">
+						{getFieldError("entries", entryIndex, "explanation")}
+					</p>
+				) : null}
+			</fieldset>
 
 			{children}
 		</div>

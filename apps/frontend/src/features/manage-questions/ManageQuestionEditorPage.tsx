@@ -1,11 +1,8 @@
 "use client";
 
 import type { QuestionCardInput } from "@packages/contracts";
-import { useRouter } from "next/navigation";
 import { type ChangeEvent, useState } from "react";
-import { Button } from "@/components";
 import { useApiClient } from "@/lib/apiClientProvider";
-import styles from "./ManageQuestionEditorPage.module.css";
 import QuestionCardEditor from "./QuestionCardEditor";
 import {
 	createEmptyQuestionCard,
@@ -25,7 +22,6 @@ export default function ManageQuestionEditorPage({
 	questionId,
 }: ManageQuestionEditorPageProps) {
 	const api = useApiClient();
-	const router = useRouter();
 	const [importError, setImportError] = useState<string>();
 	const [isImporting, setIsImporting] = useState(false);
 	const [draftValue, setDraftValue] = useState<QuestionCardInput | null>(null);
@@ -100,82 +96,86 @@ export default function ManageQuestionEditorPage({
 
 	if (mode === "edit" && !hasValidQuestionId) {
 		return (
-			<main className={styles.page}>
-				<p className={styles.errorMessage}>Question id is invalid.</p>
+			<main className="grid gap-6 px-4 py-8 sm:px-8 lg:px-12">
+				<p className="text-error font-semibold">Question id is invalid.</p>
 			</main>
 		);
 	}
 
 	if (mode === "edit" && questionQuery.isLoading) {
 		return (
-			<main className={styles.page}>
-				<p className={styles.statusMessage}>Loading question...</p>
+			<main className="grid gap-6 px-4 py-8 sm:px-8 lg:px-12">
+				<p>Loading question...</p>
 			</main>
 		);
 	}
 
 	if (mode === "edit" && questionQuery.error) {
 		return (
-			<main className={styles.page}>
-				<p className={styles.errorMessage}>{questionQuery.error.message}</p>
+			<main className="grid gap-6 px-4 py-8 sm:px-8 lg:px-12">
+				<p className="text-error font-semibold">
+					{questionQuery.error.message}
+				</p>
 			</main>
 		);
 	}
 
 	return (
-		<main className={styles.page}>
+		<main className="grid gap-6 px-4 py-8 sm:px-8 lg:px-12">
 			{mode === "create" ? (
 				<section
-					className={styles.importPanel}
+					className="card card-border bg-base-100"
 					aria-labelledby="image-import-title"
 				>
-					<div className={styles.importHeader}>
-						<div>
-							<h2 id="image-import-title">Draft From Card Image</h2>
-							<p>
-								Upload a JPEG or PNG card image and we&apos;ll ask the local
-								Ollama model to build a reviewable draft.
-							</p>
-						</div>
-						<label className={styles.uploadButton}>
+					<div className="card-body gap-4">
+						<div className="flex flex-wrap items-center justify-between gap-4">
+							<div>
+								<h2 id="image-import-title" className="card-title">
+									Draft From Card Image
+								</h2>
+								<p className="text-base-content/70">
+									Upload a JPEG or PNG card image and we&apos;ll ask the local
+									Ollama model to build a reviewable draft.
+								</p>
+							</div>
 							<input
 								accept="image/jpeg,image/png"
-								className={styles.uploadInput}
+								className="file-input"
 								disabled={isImporting}
 								onChange={handleImageSelected}
 								type="file"
 							/>
-							<span>{isImporting ? "Analyzing image..." : "Choose image"}</span>
-						</label>
-					</div>
-
-					{isImporting ? (
-						<p className={styles.statusMessage}>
-							Generating a question draft from the uploaded card...
-						</p>
-					) : null}
-
-					{importError ? (
-						<p className={styles.errorMessage}>{importError}</p>
-					) : null}
-
-					{draftValue ? (
-						<div className={styles.importActions}>
-							<p className={styles.statusMessage}>
-								Image draft loaded into the editor below. Review before saving.
-							</p>
-							<Button
-								onClick={() => {
-									setDraftValue(createDefaultQuestionCard());
-									setImportError(undefined);
-								}}
-								size="sm"
-								variant="secondary"
-							>
-								Reset draft
-							</Button>
 						</div>
-					) : null}
+
+						{isImporting ? (
+							<p>Generating a question draft from the uploaded card...</p>
+						) : null}
+
+						{importError ? (
+							<p role="alert" className="alert alert-error alert-soft">
+								{importError}
+							</p>
+						) : null}
+
+						{draftValue ? (
+							<div className="flex flex-wrap items-center gap-3">
+								<p>
+									Image draft loaded into the editor below. Review before
+									saving.
+								</p>
+								<button
+									className="btn btn-sm"
+									onClick={() => {
+										setDraftValue(createDefaultQuestionCard());
+										setImportError(undefined);
+									}}
+									type="button"
+								>
+									Reset draft
+								</button>
+							</div>
+						) : null}
+					</div>
 				</section>
 			) : null}
 

@@ -1,7 +1,7 @@
 "use client";
 
 import type { QuestionCardInput } from "@packages/contracts";
-import { ChipPicker, Field } from "@/components";
+import { ChipPicker } from "@/components";
 import QuestionEntryEditorLayout from "./QuestionEntryEditorLayout";
 import { useQuestionEditorArrowNavigation } from "./useQuestionEditorArrowNavigation";
 
@@ -54,10 +54,10 @@ export default function TrueOrFalseEditor({
 			prompt={card.prompt}
 			text={entry.text}
 		>
-			<Field
-				error={getFieldError("entries", entryIndex, "answer")}
-				label="Correct answer"
-			>
+			<fieldset className="fieldset w-full gap-2">
+				<legend className="fieldset-legend text-sm font-semibold">
+					Correct answer
+				</legend>
 				<ChipPicker
 					disabled={isSubmitting}
 					onChange={(answer) =>
@@ -66,7 +66,12 @@ export default function TrueOrFalseEditor({
 					options={trueOrFalseOptions}
 					value={entry.answer ? "true" : "false"}
 				/>
-			</Field>
+				{getFieldError("entries", entryIndex, "answer") ? (
+					<p className="label px-0 text-sm font-semibold text-error">
+						{getFieldError("entries", entryIndex, "answer")}
+					</p>
+				) : null}
+			</fieldset>
 		</QuestionEntryEditorLayout>
 	);
 }
