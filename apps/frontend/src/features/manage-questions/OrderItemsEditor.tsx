@@ -16,7 +16,6 @@ type OrderItemsEditorProps = {
 	getFieldError: (...prefix: Array<string | number>) => string | undefined;
 	isSubmitting: boolean;
 	onEntryAnswerChange: (entryIndex: number, answer: number) => void;
-	onEntryExplanationChange: (entryIndex: number, value: string) => void;
 	onEntryTextChange: (entryIndex: number, value: string) => void;
 	open: boolean;
 };
@@ -27,7 +26,6 @@ export default function OrderItemsEditor({
 	getFieldError,
 	isSubmitting,
 	onEntryAnswerChange,
-	onEntryExplanationChange,
 	onEntryTextChange,
 	open,
 }: OrderItemsEditorProps) {
@@ -42,9 +40,7 @@ export default function OrderItemsEditor({
 	return (
 		<QuestionEntryEditorLayout
 			entryIndex={entryIndex}
-			explanation={entry.explanation}
 			getFieldError={getFieldError}
-			onEntryExplanationChange={onEntryExplanationChange}
 			onEntryTextChange={onEntryTextChange}
 			prompt={card.prompt}
 			text={entry.text}

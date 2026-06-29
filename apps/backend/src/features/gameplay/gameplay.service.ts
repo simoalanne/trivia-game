@@ -26,7 +26,6 @@ type TriviaSourceCardEntry = {
 	id: string;
 	text: string;
 	answer: PrismaJson.TriviaEntry["answer"];
-	explanation: string | null;
 };
 
 type ActiveRound = {
@@ -235,7 +234,6 @@ const pickNextCard = async (excludedIds: number[] = []) => {
 				id: String(index),
 				text: entry.text,
 				answer: entry.answer,
-				explanation: entry.explanation ?? null,
 			})),
 		),
 		choices: getBaseChoices(nextCard),
@@ -299,7 +297,6 @@ const buildClientGameState = (gameSession: GameSession): GameplayState => {
 								? entry.answer.join(", ")
 								: String(entry.answer)
 							: null,
-						explanation: isAnswered ? entry.explanation : null,
 					};
 				}),
 				choices: getAvailableChoices(activeRound),

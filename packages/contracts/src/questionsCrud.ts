@@ -24,7 +24,6 @@ export const triviaCardIdSchema = z.coerce.number().int().positive();
 
 const baseEntrySchema = z.object({
 	text: nonEmptyTrimmedStringSchema,
-	explanation: z.string().trim().min(1).optional(),
 });
 
 export const multipleChoiceEntryInputSchema = baseEntrySchema.extend({

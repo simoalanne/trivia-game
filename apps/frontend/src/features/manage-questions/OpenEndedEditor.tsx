@@ -21,7 +21,6 @@ type OpenEndedEditorProps = {
 		answerIndex: number,
 		value: string,
 	) => void;
-	onEntryExplanationChange: (entryIndex: number, value: string) => void;
 	onEntryTextChange: (entryIndex: number, value: string) => void;
 	onRemoveAcceptedAnswer: (entryIndex: number, answerIndex: number) => void;
 	open: boolean;
@@ -34,7 +33,6 @@ export default function OpenEndedEditor({
 	isSubmitting,
 	onAddAcceptedAnswer,
 	onEntryAcceptedAnswerChange,
-	onEntryExplanationChange,
 	onEntryTextChange,
 	onRemoveAcceptedAnswer,
 	open,
@@ -50,9 +48,7 @@ export default function OpenEndedEditor({
 	return (
 		<QuestionEntryEditorLayout
 			entryIndex={entryIndex}
-			explanation={entry.explanation}
 			getFieldError={getFieldError}
-			onEntryExplanationChange={onEntryExplanationChange}
 			onEntryTextChange={onEntryTextChange}
 			prompt={card.prompt}
 			text={entry.text}

@@ -22,7 +22,6 @@ export const gamestateSchema = z.object({
 				z.object({
 					text: z.string(),
 					answer: z.string().nullable(),
-					explanation: z.string().nullable(),
 				}),
 			),
 			choices: z.array(z.string()).nullable(),

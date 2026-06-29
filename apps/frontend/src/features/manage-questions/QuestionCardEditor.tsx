@@ -277,17 +277,6 @@ export default function QuestionCardEditor({
 		);
 	};
 
-	const updateEntryExplanation = (entryIndex: number, value: string) => {
-		const explanation = value || undefined;
-
-		setCard((current) =>
-			updateEntryAtIndex(current, entryIndex, (entry) => ({
-				...entry,
-				explanation,
-			})),
-		);
-	};
-
 	const wheelItems = card.entries.map(
 		(entry, entryIndex) =>
 			({
@@ -325,7 +314,6 @@ export default function QuestionCardEditor({
 								: current,
 						)
 					}
-					onEntryExplanationChange={updateEntryExplanation}
 					onEntryTextChange={updateEntryText}
 					open={openSheet === "entry"}
 				/>
@@ -345,7 +333,6 @@ export default function QuestionCardEditor({
 								: current,
 						)
 					}
-					onEntryExplanationChange={updateEntryExplanation}
 					onEntryTextChange={updateEntryText}
 					open={openSheet === "entry"}
 				/>
@@ -365,7 +352,6 @@ export default function QuestionCardEditor({
 								: current,
 						)
 					}
-					onEntryExplanationChange={updateEntryExplanation}
 					onEntryTextChange={updateEntryText}
 					open={openSheet === "entry"}
 				/>
@@ -408,7 +394,6 @@ export default function QuestionCardEditor({
 								: current,
 						)
 					}
-					onEntryExplanationChange={updateEntryExplanation}
 					onEntryTextChange={updateEntryText}
 					onRemoveAcceptedAnswer={(entryIndex, answerIndex) =>
 						setCard((current) => {

@@ -174,11 +174,11 @@
 		"data": {
 			"prompt": "Order these countries by year of their first FIFA World Cup win (earliest → latest).",
 			"entries": [
-				{ "text": "Uruguay", "answer": 1, "explanation": "First win: 1930" },
-				{ "text": "Italy", "answer": 2, "explanation": "First win: 1934" },
-				{ "text": "Brazil", "answer": 3, "explanation": "First win: 1958" },
-				{ "text": "England", "answer": 4, "explanation": "First win: 1966" },
-				{ "text": "Argentina", "answer": 5, "explanation": "First win: 1978" }
+				{ "text": "Uruguay", "answer": 1 },
+				{ "text": "Italy", "answer": 2 },
+				{ "text": "Brazil", "answer": 3 },
+				{ "text": "England", "answer": 4 },
+				{ "text": "Argentina", "answer": 5 }
 			]
 		}
 	},
@@ -339,56 +339,16 @@
 		"data": {
 			"prompt": "Order these footballers by total career goals, from most to least.",
 			"entries": [
-				{
-					"text": "Erwin Helmchen",
-					"answer": 1,
-					"explanation": "Career total: 989+ goals"
-				},
-				{
-					"text": "Cristiano Ronaldo",
-					"answer": 2,
-					"explanation": "Career total: 956 goals"
-				},
-				{
-					"text": "Josef Bican",
-					"answer": 3,
-					"explanation": "Career total: 950+ goals"
-				},
-				{
-					"text": "Ronnie Rooke",
-					"answer": 4,
-					"explanation": "Career total: 934+ goals"
-				},
-				{
-					"text": "Lionel Messi",
-					"answer": 5,
-					"explanation": "Career total: 901 goals"
-				},
-				{
-					"text": "Jimmy Jones",
-					"answer": 6,
-					"explanation": "Career total: 840+ goals"
-				},
-				{
-					"text": "Ferenc Puskás",
-					"answer": 7,
-					"explanation": "Career total: 802 goals"
-				},
-				{
-					"text": "Ferenc Deák",
-					"answer": 8,
-					"explanation": "Career total: 795+ goals"
-				},
-				{
-					"text": "Abe Lenstra",
-					"answer": 9,
-					"explanation": "Career total: 790+ goals"
-				},
-				{
-					"text": "Romário",
-					"answer": 10,
-					"explanation": "Career total: 785 goals"
-				}
+				{ "text": "Erwin Helmchen", "answer": 1 },
+				{ "text": "Cristiano Ronaldo", "answer": 2 },
+				{ "text": "Josef Bican", "answer": 3 },
+				{ "text": "Ronnie Rooke", "answer": 4 },
+				{ "text": "Lionel Messi", "answer": 5 },
+				{ "text": "Jimmy Jones", "answer": 6 },
+				{ "text": "Ferenc Puskás", "answer": 7 },
+				{ "text": "Ferenc Deák", "answer": 8 },
+				{ "text": "Abe Lenstra", "answer": 9 },
+				{ "text": "Romário", "answer": 10 }
 			]
 		}
 	}

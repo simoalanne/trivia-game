@@ -74,7 +74,6 @@ const getSharedEntryState = (
 
 	return {
 		text: entry?.text ?? "",
-		explanation: entry?.explanation,
 	};
 };
 
@@ -200,7 +199,6 @@ export const toQuestionCardInput = (card: QuestionCard): QuestionCardInput => {
 				entries: card.entries.map((entry) => ({
 					text: entry.text,
 					answer: entry.answer,
-					explanation: entry.explanation,
 				})),
 			} satisfies TrueOrFalseQuestionCardInput;
 		case "OPEN_ENDED":
@@ -213,7 +211,6 @@ export const toQuestionCardInput = (card: QuestionCard): QuestionCardInput => {
 				entries: card.entries.map((entry) => ({
 					text: entry.text,
 					answer: [...entry.answer],
-					explanation: entry.explanation,
 				})),
 			} satisfies OpenEndedQuestionCardInput;
 		case "ORDER_ITEMS":
@@ -225,7 +222,6 @@ export const toQuestionCardInput = (card: QuestionCard): QuestionCardInput => {
 				entries: card.entries.map((entry) => ({
 					text: entry.text,
 					answer: entry.answer,
-					explanation: entry.explanation,
 				})),
 			} satisfies OrderItemsQuestionCardInput;
 		case "MULTIPLE_CHOICE":
@@ -239,7 +235,6 @@ export const toQuestionCardInput = (card: QuestionCard): QuestionCardInput => {
 				entries: card.entries.map((entry) => ({
 					text: entry.text,
 					answer: entry.answer,
-					explanation: entry.explanation,
 				})),
 			} satisfies MultipleChoiceQuestionCardInput;
 	}

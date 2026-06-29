@@ -16,7 +16,6 @@ type TrueOrFalseEditorProps = {
 	getFieldError: (...prefix: Array<string | number>) => string | undefined;
 	isSubmitting: boolean;
 	onEntryAnswerChange: (entryIndex: number, answer: boolean) => void;
-	onEntryExplanationChange: (entryIndex: number, value: string) => void;
 	onEntryTextChange: (entryIndex: number, value: string) => void;
 	open: boolean;
 };
@@ -32,7 +31,6 @@ export default function TrueOrFalseEditor({
 	getFieldError,
 	isSubmitting,
 	onEntryAnswerChange,
-	onEntryExplanationChange,
 	onEntryTextChange,
 	open,
 }: TrueOrFalseEditorProps) {
@@ -47,9 +45,7 @@ export default function TrueOrFalseEditor({
 	return (
 		<QuestionEntryEditorLayout
 			entryIndex={entryIndex}
-			explanation={entry.explanation}
 			getFieldError={getFieldError}
-			onEntryExplanationChange={onEntryExplanationChange}
 			onEntryTextChange={onEntryTextChange}
 			prompt={card.prompt}
 			text={entry.text}

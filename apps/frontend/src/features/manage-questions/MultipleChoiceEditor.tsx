@@ -17,7 +17,6 @@ type MultipleChoiceEditorProps = {
 	isSubmitting: boolean;
 	open: boolean;
 	onEntryAnswerChange: (entryIndex: number, answer: string) => void;
-	onEntryExplanationChange: (entryIndex: number, value: string) => void;
 	onEntryTextChange: (entryIndex: number, value: string) => void;
 };
 
@@ -28,7 +27,6 @@ export default function MultipleChoiceEditor({
 	isSubmitting,
 	open,
 	onEntryAnswerChange,
-	onEntryExplanationChange,
 	onEntryTextChange,
 }: MultipleChoiceEditorProps) {
 	const entry = card.entries[entryIndex];
@@ -42,9 +40,7 @@ export default function MultipleChoiceEditor({
 	return (
 		<QuestionEntryEditorLayout
 			entryIndex={entryIndex}
-			explanation={entry.explanation}
 			getFieldError={getFieldError}
-			onEntryExplanationChange={onEntryExplanationChange}
 			onEntryTextChange={onEntryTextChange}
 			prompt={card.prompt}
 			text={entry.text}

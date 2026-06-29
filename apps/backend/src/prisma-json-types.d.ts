@@ -5,7 +5,6 @@ declare global {
 		type TriviaEntry = {
 			text: string;
 			answer: string | string[] | boolean | number;
-			explanation?: string;
 		};
 
 		type TriviaCardData = {
