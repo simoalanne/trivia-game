@@ -128,15 +128,19 @@ export const questionCardInputSchema = z.discriminatedUnion("format", [
 export const questionCardSchema = z.discriminatedUnion("format", [
 	multipleChoiceQuestionCardInputSchema.extend({
 		id: z.number().int().positive(),
+		updatedAt: z.string().datetime(),
 	}),
 	trueOrFalseQuestionCardInputSchema.extend({
 		id: z.number().int().positive(),
+		updatedAt: z.string().datetime(),
 	}),
 	openEndedQuestionCardInputSchema.extend({
 		id: z.number().int().positive(),
+		updatedAt: z.string().datetime(),
 	}),
 	orderItemsQuestionCardInputSchema.extend({
 		id: z.number().int().positive(),
+		updatedAt: z.string().datetime(),
 	}),
 ]);
 

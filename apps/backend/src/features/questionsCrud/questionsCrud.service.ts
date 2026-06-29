@@ -247,6 +247,7 @@ const toQuestionCard = (
 		case "TRUE_OR_FALSE":
 			return {
 				id: card.id,
+				updatedAt: card.updatedAt.toISOString(),
 				format: card.format,
 				difficulty: card.difficulty,
 				tags: card.tags,
@@ -259,6 +260,7 @@ const toQuestionCard = (
 		case "OPEN_ENDED":
 			return {
 				id: card.id,
+				updatedAt: card.updatedAt.toISOString(),
 				format: card.format,
 				difficulty: card.difficulty,
 				tags: card.tags,
@@ -272,6 +274,7 @@ const toQuestionCard = (
 		case "ORDER_ITEMS":
 			return {
 				id: card.id,
+				updatedAt: card.updatedAt.toISOString(),
 				format: card.format,
 				difficulty: card.difficulty,
 				tags: card.tags,
@@ -284,6 +287,7 @@ const toQuestionCard = (
 		default:
 			return {
 				id: card.id,
+				updatedAt: card.updatedAt.toISOString(),
 				format: "MULTIPLE_CHOICE",
 				difficulty: card.difficulty,
 				tags: card.tags,
