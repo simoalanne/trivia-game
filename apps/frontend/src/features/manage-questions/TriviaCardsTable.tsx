@@ -2,14 +2,13 @@
 
 import type { QuestionCard } from "@packages/contracts";
 import { PencilIcon, Trash2 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useDeferredValue, useState } from "react";
 
 type TriviaCardsTableProps = {
 	triviaCards: QuestionCard[];
 	isDeleting?: boolean;
 	onDelete: (triviaCard: QuestionCard) => void;
+	onEdit: (triviaCard: QuestionCard) => void;
 };
 
 const TRIVIA_CARDS_PER_PAGE = 10;
@@ -48,9 +47,9 @@ const updatedAtFormatter = new Intl.DateTimeFormat("en-GB", {
 export default function TriviaCardsTable({
 	triviaCards,
 	isDeleting = false,
+	onEdit,
 	onDelete,
 }: TriviaCardsTableProps) {
-	const router = useRouter();
 	const [promptSearch, setPromptSearch] = useState("");
 	const [page, setPage] = useState(1);
 	const deferredPromptSearch = useDeferredValue(promptSearch);
@@ -73,10 +72,6 @@ export default function TriviaCardsTable({
 	const pageEnd = filteredTriviaCards.length
 		? Math.min(startIndex + TRIVIA_CARDS_PER_PAGE, filteredTriviaCards.length)
 		: 0;
-
-	const navigateToEditPage = (triviaCardId: number) => {
-		router.push(`/manage-questions/edit/${triviaCardId}`);
-	};
 
 	const pageButtons = Array.from(
 		{ length: totalPages },
@@ -119,18 +114,7 @@ export default function TriviaCardsTable({
 					<tbody>
 						{paginatedTriviaCards.length ? (
 							paginatedTriviaCards.map((triviaCard) => (
-								<tr
-									key={triviaCard.id}
-									className="cursor-pointer transition-colors hover:bg-base-200"
-									onClick={() => navigateToEditPage(triviaCard.id)}
-									onKeyDown={(event) => {
-										if (event.key === "Enter" || event.key === " ") {
-											event.preventDefault();
-											navigateToEditPage(triviaCard.id);
-										}
-									}}
-									tabIndex={0}
-								>
+								<tr key={triviaCard.id}>
 									<td className="whitespace-nowrap font-medium">
 										{triviaCard.id}
 									</td>
@@ -161,16 +145,17 @@ export default function TriviaCardsTable({
 									</td>
 									<td>
 										<div className="flex justify-end gap-2">
-											<Link
+											<button
 												aria-label={`Edit trivia card ${triviaCard.id}`}
 												className="btn btn-sm btn-ghost btn-square"
-												href={`/manage-questions/edit/${triviaCard.id}`}
 												onClick={(event) => {
 													event.stopPropagation();
+													onEdit(triviaCard);
 												}}
+												type="button"
 											>
 												<PencilIcon aria-hidden="true" className="size-4" />
-											</Link>
+											</button>
 											<button
 												aria-label={`Delete trivia card ${triviaCard.id}`}
 												className="btn btn-sm btn-ghost btn-square"

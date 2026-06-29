@@ -1,6 +1,6 @@
 import { VisuallyHidden } from "radix-ui";
 import type { ButtonHTMLAttributes, ReactNode } from "react";
-import styles from "./Sheet.module.css";
+import styles from "./Modal.module.css";
 
 type SheetIconButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 	icon: ReactNode;

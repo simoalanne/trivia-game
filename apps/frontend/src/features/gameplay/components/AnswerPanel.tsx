@@ -3,7 +3,7 @@
 import { CheckIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CountryPicker } from "@/components/CountryPicker";
-import { Sheet } from "@/components/Sheet";
+import { Modal } from "@/components/Modal";
 import { cn } from "@/lib/utils";
 
 type ChoiceAnswer = {
@@ -64,7 +64,7 @@ export function AnswerPanel({
 	}, [answerResetKey]);
 
 	return (
-		<Sheet
+		<Modal
 			content={
 				answer ? (
 					<AnswerPanelContent

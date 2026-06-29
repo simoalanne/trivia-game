@@ -10,7 +10,7 @@ import { ArrowLeft, ArrowRight, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
-	Sheet,
+	Modal,
 	SheetIconButton,
 	TriviaCard,
 	type TriviaCardItem,
@@ -500,7 +500,7 @@ export default function QuestionCardEditor({
 				</Link>
 			</div>
 
-			<Sheet
+			<Modal
 				content={
 					openSheet === "card" ? (
 						<QuestionCardSettings

@@ -1,13 +1,18 @@
 "use client";
 
 import type { QuestionCard } from "@packages/contracts";
-import Link from "next/link";
+import { useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
+import QuestionCardModal from "./QuestionCardModal";
 import TriviaCardsTable from "./TriviaCardsTable";
 
 export default function ManageQuestionsListPage() {
 	const api = useApiClient();
 	const questions = api.questionsCrud.list.useQuery();
+	const [editorQuestion, setEditorQuestion] = useState<QuestionCard | null>(
+		null,
+	);
+	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 	const deleteQuestion = api.questionsCrud.delete.useMutation({
 		onSuccess: (deletedQuestion) => {
 			api.questionsCrud.list.setData(
@@ -47,12 +52,16 @@ export default function ManageQuestionsListPage() {
 							Add and maintain the trivia cards that power live gameplay.
 						</p>
 					</div>
-					<Link
+					<button
 						className="btn btn-primary w-full sm:w-auto"
-						href="/manage-questions/create"
+						onClick={() => {
+							setEditorQuestion(null);
+							setIsCreateModalOpen(true);
+						}}
+						type="button"
 					>
 						Create Trivia Card
-					</Link>
+					</button>
 				</div>
 
 				{questions.isLoading ? <p>Loading questions...</p> : null}
@@ -69,18 +78,41 @@ export default function ManageQuestionsListPage() {
 
 				{questions.data ? (
 					<TriviaCardsTable
+						onEdit={(question) => {
+							setEditorQuestion(question);
+							setIsCreateModalOpen(false);
+						}}
 						isDeleting={deleteQuestion.isPending}
 						onDelete={handleDelete}
 						triviaCards={questions.data}
 					/>
 				) : questions.isLoading ? null : (
 					<TriviaCardsTable
+						onEdit={(question) => {
+							setEditorQuestion(question);
+							setIsCreateModalOpen(false);
+						}}
 						isDeleting={deleteQuestion.isPending}
 						onDelete={handleDelete}
 						triviaCards={[]}
 					/>
 				)}
 			</section>
+			<QuestionCardModal
+				open={isCreateModalOpen}
+				setOpen={(open) => {
+					setIsCreateModalOpen(open);
+				}}
+			/>
+			<QuestionCardModal
+				open={editorQuestion !== null}
+				question={editorQuestion}
+				setOpen={(open) => {
+					if (!open) {
+						setEditorQuestion(null);
+					}
+				}}
+			/>
 		</main>
 	);
 }
