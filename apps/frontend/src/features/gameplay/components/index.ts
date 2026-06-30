@@ -1,5 +1,5 @@
 export type { TriviaCardItem } from "@/components";
-export type { AnswerPanelAnswer, AnswerPanelResult } from "./AnswerPanel";
+export type { AnswerPanelResult } from "./AnswerPanel";
 export { AnswerPanel } from "./AnswerPanel";
 export {
 	AnswerResolutionToast,

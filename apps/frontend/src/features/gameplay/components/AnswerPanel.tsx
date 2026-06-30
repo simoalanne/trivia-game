@@ -1,30 +1,11 @@
 "use client";
 
+import type { GameplayState } from "@packages/contracts";
 import { CheckIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CountryPicker } from "@/components/CountryPicker";
 import { Modal } from "@/components/Modal";
 import { cn } from "@/lib/utils";
-
-type ChoiceAnswer = {
-	kind: "choices";
-	choices: string[];
-	onSubmit: (answer: string) => void;
-};
-
-type TextAnswer = {
-	kind: "text";
-	placeholder?: string;
-	onSubmit: (answer: string) => void;
-};
-
-type CountryAnswer = {
-	kind: "country";
-	placeholder?: string;
-	onSubmit: (answer: string) => void;
-};
-
-export type AnswerPanelAnswer = ChoiceAnswer | TextAnswer | CountryAnswer;
 
 export type AnswerPanelResult = {
 	answer: string;
@@ -32,30 +13,33 @@ export type AnswerPanelResult = {
 };
 
 type AnswerPanelProps = {
+	card: NonNullable<GameplayState["card"]> | null;
+	entryIndex: number | null;
 	open: boolean;
 	setOpen: (open: boolean) => void;
-	title?: string;
-	prompt?: string;
-	answer: AnswerPanelAnswer | null;
+	onSubmit: (entryIndex: number, answer: string) => void;
 	disabled?: boolean;
 	result?: AnswerPanelResult | null;
 	submitting?: boolean;
 };
 
 export function AnswerPanel({
+	card,
+	entryIndex,
 	open,
 	setOpen,
-	title,
-	prompt,
-	answer,
+	onSubmit,
 	disabled = false,
 	result = null,
 	submitting = false,
 }: AnswerPanelProps) {
 	const [selectedChip, setSelectedChip] = useState<string | null>(null);
 	const [textAnswer, setTextAnswer] = useState("");
-	const trimmedPrompt = prompt?.trim();
-	const answerResetKey = answer ? `${answer.kind}:${title}` : "empty";
+	const selectedEntry =
+		card !== null && entryIndex !== null ? (card.entries[entryIndex] ?? null) : null;
+	const trimmedPrompt = card?.prompt.trim();
+	const answerResetKey =
+		card && selectedEntry ? `${card.answerMode}:${selectedEntry.text}` : "empty";
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset answer controls when the selected prompt changes.
 	useEffect(() => {
@@ -66,10 +50,12 @@ export function AnswerPanel({
 	return (
 		<Modal
 			content={
-				answer ? (
+				card && selectedEntry && entryIndex !== null ? (
 					<AnswerPanelContent
-						answer={answer}
+						card={card}
 						disabled={disabled}
+						entryIndex={entryIndex}
+						onSubmit={onSubmit}
 						prompt={trimmedPrompt}
 						result={result}
 						selectedChip={selectedChip}
@@ -77,11 +63,11 @@ export function AnswerPanel({
 						setTextAnswer={setTextAnswer}
 						submitting={submitting}
 						textAnswer={textAnswer}
-						title={title ?? ""}
+						title={selectedEntry.text}
 					/>
 				) : null
 			}
-			open={open && Boolean(answer)}
+			open={open && Boolean(card) && Boolean(selectedEntry)}
 			setOpen={setOpen}
 			title="Answer the question"
 		/>
@@ -91,8 +77,10 @@ export function AnswerPanel({
 function AnswerPanelContent({
 	title,
 	prompt,
-	answer,
+	card,
 	disabled,
+	entryIndex,
+	onSubmit,
 	result,
 	selectedChip,
 	setSelectedChip,
@@ -102,8 +90,10 @@ function AnswerPanelContent({
 }: {
 	title: string;
 	prompt?: string;
-	answer: AnswerPanelAnswer;
+	card: NonNullable<GameplayState["card"]>;
 	disabled: boolean;
+	entryIndex: number;
+	onSubmit: (entryIndex: number, answer: string) => void;
 	result: AnswerPanelResult | null;
 	selectedChip: string | null;
 	setSelectedChip: (value: string | null) => void;
@@ -135,10 +125,10 @@ function AnswerPanelContent({
 				<strong className="text-primary font-bold">{title}</strong>
 			</p>
 
-			{answer.kind === "choices" ? (
+			{card.answerMode === "CHOICES" ? (
 				<>
 					<div className="flex flex-wrap gap-2">
-						{answer.choices.map((choice) => {
+						{card.choices.map((choice) => {
 							const isSelected = selectedChip === choice;
 
 							return (
@@ -164,7 +154,7 @@ function AnswerPanelContent({
 						label={submitButtonLabel}
 						onSubmit={() => {
 							if (selectedChip) {
-								answer.onSubmit(selectedChip);
+								onSubmit(entryIndex, selectedChip);
 							}
 						}}
 						tone={submitButtonTone}
@@ -172,13 +162,13 @@ function AnswerPanelContent({
 				</>
 			) : null}
 
-			{answer.kind === "text" || answer.kind === "country" ? (
+			{card.answerMode !== "CHOICES" ? (
 				<>
-					{answer.kind === "country" ? (
+					{card.answerMode === "COUNTRY" ? (
 						<CountryPicker
 							disabled={isBusy}
 							onChange={setTextAnswer}
-							placeholder={answer.placeholder ?? "Country"}
+							placeholder="Country"
 							value={textAnswer}
 						/>
 					) : (
@@ -186,7 +176,7 @@ function AnswerPanelContent({
 							className="input w-full"
 							disabled={isBusy}
 							onChange={(event) => setTextAnswer(event.target.value)}
-							placeholder={answer.placeholder ?? "Your answer"}
+							placeholder="Your answer"
 							type="text"
 							value={textAnswer}
 						/>
@@ -198,7 +188,7 @@ function AnswerPanelContent({
 						onSubmit={() => {
 							const trimmedAnswer = textAnswer.trim();
 							if (trimmedAnswer) {
-								answer.onSubmit(trimmedAnswer);
+								onSubmit(entryIndex, trimmedAnswer);
 							}
 						}}
 						tone={submitButtonTone}

@@ -9,7 +9,6 @@ import { TriviaCard } from "@/components/TriviaCard";
 import styles from "./ActiveGamePage.module.css";
 import {
 	AnswerPanel,
-	type AnswerPanelAnswer,
 	type AnswerPanelResult,
 	AnswerResolutionToast,
 	GameplaySidebar,
@@ -19,78 +18,8 @@ import { useGameplaySocket } from "./useGameplaySocket";
 
 const answerResolutionDurationMs = 1200;
 
-type AnswerPanelConfig =
-	| {
-			kind: "choices";
-			choices: string[];
-	  }
-	| {
-			kind: "text";
-			placeholder: string;
-	  }
-	| {
-			kind: "country";
-			placeholder: string;
-	  };
-
-type ActiveAnswerPanelState = {
-	entryIndex: number;
-	prompt: string;
-	title: string;
-	answerConfig: AnswerPanelConfig;
-};
-
 const getCurrentTurnPlayer = (gameState: GameplayState | null) =>
 	gameState?.players.find((player) => player.isPlayerTurn) ?? null;
-
-const createAnswerPanelState = (
-	card: NonNullable<GameplayState["card"]>,
-	entryIndex: number,
-): ActiveAnswerPanelState => ({
-	answerConfig: card.choices?.length
-		? {
-				kind: "choices",
-				choices: card.choices,
-			}
-		: card.uiHint === "COUNTRY"
-			? {
-					kind: "country",
-					placeholder: "Country",
-				}
-			: {
-					kind: "text",
-					placeholder: "Your answer",
-				},
-	entryIndex,
-	prompt: card.prompt,
-	title: card.entries[entryIndex]?.text ?? "",
-});
-
-const toAnswerPanelAnswer = (
-	panelState: ActiveAnswerPanelState,
-	onSubmit: (answer: string) => void,
-): AnswerPanelAnswer => {
-	switch (panelState.answerConfig.kind) {
-		case "choices":
-			return {
-				kind: "choices",
-				choices: panelState.answerConfig.choices,
-				onSubmit,
-			};
-		case "country":
-			return {
-				kind: "country",
-				placeholder: panelState.answerConfig.placeholder,
-				onSubmit,
-			};
-		case "text":
-			return {
-				kind: "text",
-				placeholder: panelState.answerConfig.placeholder,
-				onSubmit,
-			};
-	}
-};
 
 export default function ActiveGamePage() {
 	const { gameCode } = useParams<{ gameCode: string }>();
@@ -103,8 +32,9 @@ export default function ActiveGamePage() {
 		playerId,
 		send,
 	} = useGameplaySocket(gameCode);
-	const [activeAnswerPanel, setActiveAnswerPanel] =
-		useState<ActiveAnswerPanelState | null>(null);
+	const [activeAnswerEntryIndex, setActiveAnswerEntryIndex] = useState<
+		number | null
+	>(null);
 	const [isAnswerPanelOpen, setIsAnswerPanelOpen] = useState(false);
 	const [isSubmittingAnswer, setIsSubmittingAnswer] = useState(false);
 	const [answerPanelResult, setAnswerPanelResult] =
@@ -137,17 +67,19 @@ export default function ActiveGamePage() {
 			label: entry.text,
 			answer: entry.answer ?? undefined,
 			answerUiHint:
-				currentCard.uiHint === "COUNTRY" ? ("country" as const) : undefined,
+				currentCard.answerMode === "COUNTRY"
+					? ("country" as const)
+					: undefined,
 			disabled: entry.answer !== null || !canAnswer,
 			highlightColor: "blue",
 		})) ?? [];
 
 	const selectedEntry =
-		activeAnswerPanel && currentCard
-			? (currentCard.entries[activeAnswerPanel.entryIndex] ?? null)
+		activeAnswerEntryIndex !== null && currentCard
+			? (currentCard.entries[activeAnswerEntryIndex] ?? null)
 			: null;
 	const canAnswerSelectedEntry = Boolean(
-		activeAnswerPanel &&
+		activeAnswerEntryIndex !== null &&
 			selectedEntry &&
 			selectedEntry.answer === null &&
 			canAnswer &&
@@ -160,7 +92,7 @@ export default function ActiveGamePage() {
 		setIsAnswerPanelOpen(false);
 		setIsSubmittingAnswer(false);
 		setAnswerPanelResult(null);
-		setActiveAnswerPanel(null);
+		setActiveAnswerEntryIndex(null);
 
 		if (!clearOpenedEntry) {
 			return;
@@ -187,10 +119,6 @@ export default function ActiveGamePage() {
 		}
 
 		const nextOpenedEntryIndex = Number(itemId);
-		const nextAnswerPanelState = createAnswerPanelState(
-			currentCard,
-			nextOpenedEntryIndex,
-		);
 		const didSend = send({
 			type: "setOpenedEntry",
 			entryIndex: nextOpenedEntryIndex,
@@ -200,7 +128,7 @@ export default function ActiveGamePage() {
 			return;
 		}
 
-		setActiveAnswerPanel(nextAnswerPanelState);
+		setActiveAnswerEntryIndex(nextOpenedEntryIndex);
 		setAnswerPanelResult(null);
 		setIsSubmittingAnswer(false);
 		setIsAnswerPanelOpen(true);
@@ -220,7 +148,7 @@ export default function ActiveGamePage() {
 			return;
 		}
 
-		setActiveAnswerPanel(null);
+		setActiveAnswerEntryIndex(null);
 		setIsAnswerPanelOpen(false);
 	}, [answerPanelResult, isSubmittingAnswer, openedEntryIndex]);
 
@@ -406,17 +334,12 @@ export default function ActiveGamePage() {
 						</div>
 
 						<AnswerPanel
-							answer={
-								activeAnswerPanel
-									? toAnswerPanelAnswer(activeAnswerPanel, (answer) =>
-											submitAnswer(activeAnswerPanel.entryIndex, answer),
-										)
-									: null
-							}
+							card={currentCard}
+							entryIndex={activeAnswerEntryIndex}
 							result={answerPanelResult}
 							disabled={!canAnswerSelectedEntry}
 							open={isAnswerPanelOpen}
-							prompt={activeAnswerPanel?.prompt}
+							onSubmit={submitAnswer}
 							setOpen={(open) => {
 								if (open) {
 									setIsAnswerPanelOpen(true);
@@ -426,7 +349,6 @@ export default function ActiveGamePage() {
 								closeAnswerPanel(true);
 							}}
 							submitting={isSubmittingAnswer}
-							title={activeAnswerPanel?.title}
 						/>
 					</>
 				)}

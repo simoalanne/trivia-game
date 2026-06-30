@@ -1,32 +1,36 @@
 import z from "zod";
 import { defineContractTree } from "./initContracts.ts";
+import { questionCardAnswerModeSchema } from "./questionsCrud.ts";
 
 export const gameplayTurnTimeoutSecondsMin = 0;
 export const gameplayTurnTimeoutSecondsMax = 60;
 export const gameplayTurnTimeoutSecondsDefault = 30;
 
-const gameplayUiHintSchema = z.enum([
-	"MULTIPLE_CHOICE",
-	"TRUE_OR_FALSE",
-	"OPEN_ENDED",
-	"ORDER_ITEMS",
-	"COUNTRY",
+const gameplayCardEntrySchema = z.object({
+	text: z.string(),
+	answer: z.string().nullable(),
+});
+
+const gameplayBaseCardSchema = z.object({
+	prompt: z.string(),
+	entries: z.array(gameplayCardEntrySchema),
+});
+
+const gameplayCardSchema = z.discriminatedUnion("answerMode", [
+	gameplayBaseCardSchema.extend({
+		answerMode: z.literal("TEXT"),
+	}),
+	gameplayBaseCardSchema.extend({
+		answerMode: z.literal("COUNTRY"),
+	}),
+	gameplayBaseCardSchema.extend({
+		answerMode: z.literal("CHOICES"),
+		choices: z.array(z.string()),
+	}),
 ]);
 
 export const gamestateSchema = z.object({
-	card: z
-		.object({
-			uiHint: gameplayUiHintSchema,
-			prompt: z.string(),
-			entries: z.array(
-				z.object({
-					text: z.string(),
-					answer: z.string().nullable(),
-				}),
-			),
-			choices: z.array(z.string()).nullable(),
-		})
-		.nullable(),
+	card: gameplayCardSchema.nullable(),
 	players: z.array(
 		z.object({
 			id: z.string(),
@@ -82,7 +86,7 @@ const turnResolvedMessageSchema = z.discriminatedUnion("resolution", [
 		resolution: z.literal("submitted"),
 		playerId: z.string(),
 		playerName: z.string(),
-		uiHint: gameplayUiHintSchema,
+		answerMode: questionCardAnswerModeSchema,
 		entryIndex: z.int(),
 		entryText: z.string(),
 		prompt: z.string(),

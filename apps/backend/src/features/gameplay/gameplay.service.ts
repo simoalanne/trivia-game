@@ -3,7 +3,6 @@ import type {
 	GameplayState,
 	TurnResolvedMessage,
 } from "@packages/contracts";
-import type { TriviaCardFormat } from "../../../generated/prisma/client.ts";
 import { defineService } from "../../initServer.ts";
 import prismaClient from "../../prisma.ts";
 import { NotFoundError } from "../../utils/NotFoundError.ts";
@@ -28,15 +27,25 @@ type TriviaSourceCardEntry = {
 	answer: PrismaJson.TriviaEntry["answer"];
 };
 
-type ActiveRound = {
+type BaseActiveRound = {
 	id: number;
-	format: TriviaCardFormat;
 	prompt: string;
-	uiHint: PrismaJson.TriviaCardData["uiHint"] | null;
 	entries: TriviaSourceCardEntry[];
-	choices: string[] | null;
 	answeredEntryIds: Set<string>;
 };
+
+type ActiveRound =
+	| (BaseActiveRound & {
+			answerMode: "TEXT";
+	  })
+	| (BaseActiveRound & {
+			answerMode: "COUNTRY";
+	  })
+	| (BaseActiveRound & {
+			answerMode: "CHOICES";
+			choices: string[];
+			choicesAreUnique: boolean;
+	  });
 
 type GameSession = {
 	gameCode: string;
@@ -55,7 +64,6 @@ type GameSession = {
 
 type DbTriviaSourceCard = {
 	id: number;
-	format: TriviaCardFormat;
 	data: PrismaJson.TriviaCardData;
 };
 
@@ -88,36 +96,23 @@ const createPlayer = (name: string, isHost: boolean = false): GamePlayer => ({
 const isAnswerCorrect = (
 	expectedAnswer: PrismaJson.TriviaEntry["answer"],
 	submittedAnswer: string,
+) =>
+	expectedAnswer.trim().toLowerCase() === submittedAnswer.trim().toLowerCase();
+
+const getAvailableChoices = (
+	card: Extract<ActiveRound, { answerMode: "CHOICES" }>,
 ) => {
-	const candidates = Array.isArray(expectedAnswer)
-		? expectedAnswer
-		: [expectedAnswer];
-	return candidates
-		.map((answer) => String(answer).trim().toLowerCase())
-		.includes(submittedAnswer.trim().toLowerCase());
-};
-
-const getAvailableChoices = (card: ActiveRound) => {
-	if (card.format === "OPEN_ENDED") {
-		return null;
-	}
-	if (card.format === "TRUE_OR_FALSE") {
-		return ["true", "false"];
-	}
-
-	if (card.format === "ORDER_ITEMS") {
+	if (card.choicesAreUnique) {
 		const consumedChoices = new Set(
 			card.entries
 				.filter((entry) => card.answeredEntryIds.has(entry.id))
-				.map((entry) => String(entry.answer)),
+				.map((entry) => entry.answer),
 		);
-
-		if (!card.choices) throw new Error("ORDER_ITEMS card must have choices");
 
 		return card.choices.filter((choice) => !consumedChoices.has(choice));
 	}
 
-	return card.choices ?? null;
+	return card.choices;
 };
 
 const shuffleArray = <T>(array: T[]) => {
@@ -196,24 +191,9 @@ const advanceGame = async (gameSession: GameSession) => {
 	}
 };
 
-const getBaseChoices = (dbCard: DbTriviaSourceCard) => {
-	if (dbCard.format === "OPEN_ENDED") {
-		return null;
-	}
-	if (dbCard.format === "TRUE_OR_FALSE") {
-		return ["true", "false"];
-	}
-
-	if (dbCard.format === "ORDER_ITEMS") {
-		return dbCard.data.entries.map((_, index) => String(index + 1));
-	}
-
-	return dbCard.data.choices ?? null;
-};
-
 const pickNextCard = async (excludedIds: number[] = []) => {
 	const [nextCard] = (await prismaClient.$queryRawUnsafe(`
-		SELECT "id", "format", "data"
+		SELECT "id", "data"
 		FROM "TriviaCard"
 		${excludedIds.length > 0 ? `WHERE id NOT IN (${excludedIds.join(",")})` : ""}
 		ORDER BY RANDOM()
@@ -224,11 +204,9 @@ const pickNextCard = async (excludedIds: number[] = []) => {
 		return null;
 	}
 
-	return {
+	const baseRound = {
 		id: nextCard.id,
-		format: nextCard.format,
 		prompt: nextCard.data.prompt,
-		uiHint: nextCard.data.uiHint ?? null,
 		entries: shuffleArray(
 			nextCard.data.entries.map((entry, index) => ({
 				id: String(index),
@@ -236,9 +214,28 @@ const pickNextCard = async (excludedIds: number[] = []) => {
 				answer: entry.answer,
 			})),
 		),
-		choices: getBaseChoices(nextCard),
 		answeredEntryIds: new Set<string>(),
 	};
+
+	switch (nextCard.data.answerMode) {
+		case "TEXT":
+			return {
+				...baseRound,
+				answerMode: "TEXT" as const,
+			};
+		case "COUNTRY":
+			return {
+				...baseRound,
+				answerMode: "COUNTRY" as const,
+			};
+		case "CHOICES":
+			return {
+				...baseRound,
+				answerMode: "CHOICES" as const,
+				choices: nextCard.data.choices,
+				choicesAreUnique: nextCard.data.choicesAreUnique,
+			};
+	}
 };
 
 const endRound = async (gameSession: GameSession) => {
@@ -285,22 +282,30 @@ const buildClientGameState = (gameSession: GameSession): GameplayState => {
 	const activeRound = gameSession.currentRound;
 	const card = !activeRound
 		? null
-		: {
-				uiHint: activeRound.uiHint ? ("COUNTRY" as const) : activeRound.format,
-				prompt: activeRound.prompt,
-				entries: activeRound.entries.map((entry) => {
-					const isAnswered = activeRound.answeredEntryIds.has(entry.id);
-					return {
-						text: entry.text,
-						answer: isAnswered
-							? Array.isArray(entry.answer)
-								? entry.answer.join(", ")
-								: String(entry.answer)
-							: null,
-					};
-				}),
-				choices: getAvailableChoices(activeRound),
-			};
+		: activeRound.answerMode === "CHOICES"
+			? {
+					answerMode: "CHOICES" as const,
+					prompt: activeRound.prompt,
+					entries: activeRound.entries.map((entry) => {
+						const isAnswered = activeRound.answeredEntryIds.has(entry.id);
+						return {
+							text: entry.text,
+							answer: isAnswered ? entry.answer : null,
+						};
+					}),
+					choices: getAvailableChoices(activeRound),
+				}
+			: {
+					answerMode: activeRound.answerMode,
+					prompt: activeRound.prompt,
+					entries: activeRound.entries.map((entry) => {
+						const isAnswered = activeRound.answeredEntryIds.has(entry.id);
+						return {
+							text: entry.text,
+							answer: isAnswered ? entry.answer : null,
+						};
+					}),
+				};
 
 	return {
 		card,
@@ -548,16 +553,14 @@ const submitAnswer = (
 		type: "turnResolved",
 		resolution: "submitted",
 		answer,
-		correctAnswer: Array.isArray(entry.answer)
-			? entry.answer.join(", ")
-			: String(entry.answer),
+		correctAnswer: entry.answer,
 		entryIndex,
 		entryText: entry.text,
 		isCorrect,
 		playerId,
 		playerName: currentPlayer.name,
 		prompt: currentRound.prompt,
-		uiHint: currentRound.uiHint ? ("COUNTRY" as const) : currentRound.format,
+		answerMode: currentRound.answerMode,
 	};
 };
 

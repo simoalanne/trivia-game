@@ -15,7 +15,7 @@ type AnswerResolutionToastProps = {
 };
 
 const normalizeResolvedAnswer = (turnResolution: SubmittedResolution) => {
-	if (turnResolution.uiHint !== "COUNTRY") {
+	if (turnResolution.answerMode !== "COUNTRY") {
 		return {
 			answer: turnResolution.answer,
 			correctAnswer: turnResolution.correctAnswer,
