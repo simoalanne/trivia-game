@@ -96,7 +96,7 @@ export default function TriviaCardsTable({
 				</fieldset>
 			</div>
 
-			<div className="min-w-0 max-w-full overflow-x-auto overflow-y-auto h-[min(60vh,36rem)] bg-base-100 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+			<div className="min-w-0 max-w-full overflow-x-auto overflow-y-auto h-[min(60vh,36rem)] bg-base-100 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
 				<table className="table table-pin-rows min-w-max">
 					<thead>
 						<tr>
