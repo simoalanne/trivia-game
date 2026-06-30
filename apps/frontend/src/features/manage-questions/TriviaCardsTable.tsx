@@ -13,11 +13,10 @@ type TriviaCardsTableProps = {
 
 const TRIVIA_CARDS_PER_PAGE = 10;
 
-const triviaCardFormatLabels: Record<QuestionCard["format"], string> = {
-	MULTIPLE_CHOICE: "Multiple choice",
-	TRUE_OR_FALSE: "True or false",
-	OPEN_ENDED: "Open ended",
-	ORDER_ITEMS: "Order items",
+const answerModeLabels: Record<QuestionCard["answerMode"], string> = {
+	TEXT: "Text",
+	CHOICES: "Choices",
+	COUNTRY: "Country",
 };
 
 const difficultyBadgeClassNames: Record<QuestionCard["difficulty"], string> = {
@@ -32,11 +31,10 @@ const difficultyLabels: Record<QuestionCard["difficulty"], string> = {
 	HARD: "Hard",
 };
 
-const formatBadgeClassNames: Record<QuestionCard["format"], string> = {
-	MULTIPLE_CHOICE: "badge badge-primary badge-soft",
-	TRUE_OR_FALSE: "badge badge-secondary badge-soft",
-	OPEN_ENDED: "badge badge-info badge-soft",
-	ORDER_ITEMS: "badge badge-accent badge-soft",
+const answerModeBadgeClassNames: Record<QuestionCard["answerMode"], string> = {
+	TEXT: "badge badge-info badge-soft",
+	CHOICES: "badge badge-primary badge-soft",
+	COUNTRY: "badge badge-secondary badge-soft",
 };
 
 const updatedAtFormatter = new Intl.DateTimeFormat("en-GB", {
@@ -103,7 +101,7 @@ export default function TriviaCardsTable({
 							<th scope="col">Id</th>
 							<th scope="col">Prompt</th>
 							<th scope="col">Difficulty</th>
-							<th scope="col">Question format</th>
+							<th scope="col">Answer mode</th>
 							<th scope="col">Entries</th>
 							<th scope="col">Updated</th>
 							<th scope="col" className="w-1 whitespace-nowrap">
@@ -133,8 +131,12 @@ export default function TriviaCardsTable({
 										</span>
 									</td>
 									<td className="whitespace-nowrap">
-										<span className={formatBadgeClassNames[triviaCard.format]}>
-											{triviaCardFormatLabels[triviaCard.format]}
+										<span
+											className={
+												answerModeBadgeClassNames[triviaCard.answerMode]
+											}
+										>
+											{answerModeLabels[triviaCard.answerMode]}
 										</span>
 									</td>
 									<td className="whitespace-nowrap">
