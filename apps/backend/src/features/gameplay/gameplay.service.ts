@@ -3,7 +3,7 @@ import type {
 	GameplayState,
 	TurnResolvedMessage,
 } from "@packages/contracts";
-import { defineService } from "../../initServer.ts";
+import { defineService, throwKnownError } from "../../initServer.ts";
 import prismaClient from "../../prisma.ts";
 import { NotFoundError } from "../../utils/NotFoundError.ts";
 
@@ -82,13 +82,23 @@ const sendToPlayers = (
 	});
 };
 
-const createPlayer = (name: string, isHost: boolean = false): GamePlayer => ({
+const createPlayer = ({
+	name,
+	isHost = false,
+	isParticipatingInCurrentRound = true,
+	isReady = false,
+}: {
+	name: string;
+	isHost?: boolean;
+	isParticipatingInCurrentRound?: boolean;
+	isReady?: boolean;
+}): GamePlayer => ({
 	id: crypto.randomUUID(),
 	name,
 	isHost,
-	isReady: false,
+	isReady,
 	isPlayerTurn: false,
-	isParticipatingInCurrentRound: true,
+	isParticipatingInCurrentRound,
 	totalPoints: 0,
 	roundPoints: 0,
 });
@@ -322,11 +332,29 @@ const buildClientGameState = (gameSession: GameSession): GameplayState => {
 };
 
 const addPlayer = (gameSession: GameSession, name: string) => {
-	if (gameSession.gameState !== "NOT_STARTED") {
-		throw new Error("Cannot join a game that has already started");
+	if (gameSession.gameState === "FINISHED") {
+		throw new Error("Cannot join a game that has already finished");
 	}
 
-	const player = createPlayer(name);
+	if (
+		gameSession.players.some(
+			(player) => player.name.toLowerCase() === name.toLowerCase(),
+		)
+	) {
+		throwKnownError({ code: "PLAYER_NAME_TAKEN" });
+	}
+
+	const MAX_PLAYERS_IN_GAME = 4;
+
+	if (gameSession.players.length >= MAX_PLAYERS_IN_GAME) {
+		throwKnownError({ code: "GAME_FULL" });
+	}
+
+	const player = createPlayer({
+		name,
+		isParticipatingInCurrentRound: gameSession.gameState === "IN_PROGRESS",
+		isReady: gameSession.gameState !== "NOT_STARTED",
+	});
 	gameSession.players.push(player);
 	return player;
 };
@@ -361,6 +389,21 @@ const disconnectPlayerSocket = (
 
 	player.socket = undefined;
 	return true;
+};
+
+const getNextParticipatingPlayer = (
+	gameSession: GameSession,
+	startIndex: number,
+) => {
+	for (let offset = 0; offset < gameSession.players.length; offset += 1) {
+		const candidate =
+			gameSession.players[(startIndex + offset) % gameSession.players.length];
+		if (candidate?.isParticipatingInCurrentRound) {
+			return candidate;
+		}
+	}
+
+	return null;
 };
 
 const buildOpenedEntryState = (gameSession: GameSession) =>
@@ -441,6 +484,20 @@ const sendTurnResolved = (
 	turnResolution: TurnResolvedMessage,
 ) => {
 	sendToPlayers(gameSession, turnResolution);
+};
+
+const sendPlayersUpdate = (
+	gameSession: GameSession,
+	update: Pick<GamePlayer, "id" | "name"> & {
+		kind: "join" | "leave";
+	},
+) => {
+	sendToPlayers(gameSession, {
+		type: "playersUpdate",
+		kind: update.kind,
+		playerId: update.id,
+		playerName: update.name,
+	});
 };
 
 const handleTurnTimedOut = async (
@@ -594,6 +651,78 @@ const setOpenedEntry = (
 	gameSession.openedEntryIndex = entryIndex;
 };
 
+const leaveGame = async (gameSession: GameSession, playerId: string) => {
+	const playerIndex = gameSession.players.findIndex(
+		(player) => player.id === playerId,
+	);
+	if (playerIndex === -1) {
+		return false;
+	}
+
+	const [leavingPlayer] = gameSession.players.splice(playerIndex, 1);
+	if (!leavingPlayer) {
+		return false;
+	}
+
+	if (gameSession.players.length === 0) {
+		clearTurnTimeout(gameSession);
+		gameSession.turnRemainingMs = null;
+		gameSession.turnExpiresAt = null;
+		gameSession.isTurnPaused = false;
+		gameSession.openedEntryIndex = null;
+		gameStore.delete(gameSession.gameCode);
+		return true;
+	}
+
+	sendPlayersUpdate(gameSession, {
+		...leavingPlayer,
+		kind: "leave",
+	});
+
+	if (leavingPlayer.isHost) {
+		const nextHost = gameSession.players[0];
+		if (nextHost) {
+			nextHost.isHost = true;
+		}
+	}
+
+	if (gameSession.gameState !== "IN_PROGRESS") {
+		return true;
+	}
+
+	if (!leavingPlayer.isPlayerTurn) {
+		return true;
+	}
+
+	const currentRound = getCurrentRoundOrThrow(gameSession);
+	clearTurnTimeout(gameSession);
+	gameSession.turnRemainingMs = null;
+	gameSession.isTurnPaused = false;
+	gameSession.openedEntryIndex = null;
+	gameSession.players.forEach((player) => {
+		player.isPlayerTurn = false;
+	});
+
+	const nextPlayer = getNextParticipatingPlayer(gameSession, playerIndex);
+	if (
+		currentRound.answeredEntryIds.size === currentRound.entries.length ||
+		!nextPlayer
+	) {
+		await endRound(gameSession);
+		return true;
+	}
+
+	nextPlayer.isPlayerTurn = true;
+	scheduleTurnTimeout(gameSession);
+	return true;
+};
+
+const handleLeaveGame = async (gameSession: GameSession, playerId: string) => {
+	await leaveGame(gameSession, playerId);
+	sendGameStateUpdate(gameSession);
+	sendOpenedEntryState(gameSession);
+};
+
 const getGameSession = (gameCode: string) =>
 	gameStore.get(gameCode.toLowerCase());
 
@@ -613,7 +742,12 @@ export default defineService("gameplay", {
 			).join(""),
 			currentRound: null,
 			openedEntryIndex: null,
-			players: [createPlayer(playerName, true)],
+			players: [
+				createPlayer({
+					name: playerName,
+					isHost: true,
+				}),
+			],
 			gameState: "NOT_STARTED" as const,
 			round: 1,
 			playedThroughCardIds: [],
@@ -637,17 +771,36 @@ export default defineService("gameplay", {
 	async join({ gameCode, playerName }) {
 		const gameSession = requireGameSession(gameCode);
 		const newPlayer = addPlayer(gameSession, playerName);
+		sendPlayersUpdate(gameSession, {
+			...newPlayer,
+			kind: "join",
+		});
+		sendGameStateUpdate(gameSession);
+		sendOpenedEntryState(gameSession);
 		return { playerId: newPlayer.id };
 	},
 
-	async verifySession({ gameCode, playerId }) {
+	async leave({ gameCode, playerId }) {
 		const gameSession = requireGameSession(gameCode);
 
 		if (!hasPlayer(gameSession, playerId)) {
 			throw new NotFoundError("Player not found in game");
 		}
 
+		await handleLeaveGame(gameSession, playerId);
 		return { ok: true as const };
+	},
+
+	async verifyGame({ gameCode, playerId }) {
+		const gameSession = requireGameSession(gameCode);
+
+		if (playerId && !hasPlayer(gameSession, playerId)) {
+			throw new NotFoundError("Player not found in game");
+		}
+
+		return {
+			gameState: gameSession.gameState,
+		};
 	},
 
 	async play({ gameCode, playerId, socket }) {
@@ -698,6 +851,11 @@ export default defineService("gameplay", {
 					doneAnswering(gameSession, playerId);
 					await advanceGame(gameSession);
 					break;
+				}
+				case "leaveGame": {
+					await handleLeaveGame(gameSession, playerId);
+					socket.close(1000, "Player left game");
+					return;
 				}
 				case "setOpenedEntry": {
 					setOpenedEntry(gameSession, playerId, message.data.entryIndex);

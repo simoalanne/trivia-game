@@ -3,7 +3,9 @@ import type { contracts } from "@packages/contracts";
 
 type RequestContext = Record<string, unknown>;
 
-export const { defineService, defineMiddleware, createRouter } = initServer<
-	typeof contracts,
-	RequestContext
->();
+export const {
+	defineService,
+	defineMiddleware,
+	createRouter,
+	throwKnownError,
+} = initServer<typeof contracts, RequestContext>();

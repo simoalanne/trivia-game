@@ -5,13 +5,19 @@ import { useEffect, useRef, useState } from "react";
 
 type GameCodeProps = {
 	code: string;
+	copyValue?: string;
 	label?: string;
 	onCopy?: (code: string) => void;
 };
 
 const copiedStateDurationMs = 2200;
 
-export function GameCode({ code, label = "Game code", onCopy }: GameCodeProps) {
+export function GameCode({
+	code,
+	copyValue,
+	label = "Game code",
+	onCopy,
+}: GameCodeProps) {
 	const normalizedCode = code.toUpperCase();
 	const [copied, setCopied] = useState(false);
 	const resetCopiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
@@ -27,10 +33,14 @@ export function GameCode({ code, label = "Game code", onCopy }: GameCodeProps) {
 	}, []);
 
 	const copyCode = () => {
+		const resolvedCopyValue = copyValue?.startsWith("/")
+			? new URL(copyValue, window.location.origin).toString()
+			: (copyValue ?? normalizedCode);
+
 		if (onCopy) {
-			onCopy(normalizedCode);
+			onCopy(resolvedCopyValue);
 		} else {
-			void navigator.clipboard?.writeText(normalizedCode);
+			void navigator.clipboard?.writeText(resolvedCopyValue);
 		}
 
 		setCopied(true);

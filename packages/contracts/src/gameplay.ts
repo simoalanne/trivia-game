@@ -71,6 +71,9 @@ const gameplayClientMessageSchema = z.discriminatedUnion("type", [
 		type: z.literal("doneAnswering"),
 	}),
 	z.object({
+		type: z.literal("leaveGame"),
+	}),
+	z.object({
 		type: z.literal("setOpenedEntry"),
 		entryIndex: z.int().nullable(),
 	}),
@@ -102,12 +105,20 @@ const turnResolvedMessageSchema = z.discriminatedUnion("resolution", [
 	}),
 ]);
 
+const playersUpdateMessageSchema = z.object({
+	type: z.literal("playersUpdate"),
+	kind: z.enum(["join", "leave"]),
+	playerId: z.string(),
+	playerName: z.string(),
+});
+
 const gameplayServerMessageSchema = z.union([
 	z.object({
 		type: z.literal("gameStateUpdate"),
 		gameState: gamestateSchema,
 	}),
 	turnResolvedMessageSchema,
+	playersUpdateMessageSchema,
 	z.object({
 		type: z.literal("openedEntryUpdate"),
 		entryIndex: z.int().nullable(),
@@ -128,6 +139,10 @@ export type GamestateMessage = Extract<
 export type TurnResolvedMessage = Extract<
 	GameplayServerMessage,
 	{ type: "turnResolved" }
+>;
+export type PlayersUpdateMessage = Extract<
+	GameplayServerMessage,
+	{ type: "playersUpdate" }
 >;
 
 export default defineContractTree({
@@ -162,18 +177,45 @@ export default defineContractTree({
 			response: z.object({
 				playerId: z.string(),
 			}),
+			errors: [
+				z.object({
+					code: z
+						.literal("PLAYER_NAME_TAKEN")
+						.describe(
+							"The player name is already taken in this game. Names are case-insensitive and must be unique.",
+						),
+				}),
+				z.object({
+					code: z
+						.literal("GAME_FULL")
+						.describe("The game is full and cannot accept new players."),
+				}),
+			],
 		},
-		verifySession: {
-			path: "/gameplay/verify-session",
-			method: "GET",
+		leave: {
+			path: "/gameplay/leave",
+			method: "POST",
 			request: {
-				query: z.object({
+				body: z.object({
 					gameCode: z.string().min(1).trim(),
 					playerId: z.string(),
 				}),
 			},
 			response: z.object({
 				ok: z.literal(true),
+			}),
+		},
+		verifyGame: {
+			path: "/gameplay/verify-game",
+			method: "GET",
+			request: {
+				query: z.object({
+					gameCode: z.string().min(1).trim(),
+					playerId: z.string().optional(),
+				}),
+			},
+			response: z.object({
+				gameState: z.enum(["NOT_STARTED", "IN_PROGRESS", "FINISHED"]),
 			}),
 		},
 		play: {

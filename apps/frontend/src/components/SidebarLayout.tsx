@@ -53,7 +53,7 @@ export function SidebarLayout({
 							<XIcon aria-hidden="true" className="size-4" />
 							<VisuallyHidden.Root>Close sidebar</VisuallyHidden.Root>
 						</Dialog.Close>
-						{sidebar}
+						<div className="pt-14">{sidebar}</div>
 					</Dialog.Content>
 				</Dialog.Portal>
 			</Dialog.Root>

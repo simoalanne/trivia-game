@@ -11,6 +11,7 @@ export type {
 	GameplayServerMessage,
 	GameplayState,
 	GamestateMessage,
+	PlayersUpdateMessage,
 	TurnResolvedMessage,
 } from "./gameplay.ts";
 export {

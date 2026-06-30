@@ -1,13 +1,14 @@
-import { PauseIcon, PlayIcon } from "lucide-react";
-import Link from "next/link";
+import { LogOutIcon, PauseIcon, PlayIcon } from "lucide-react";
 import { GameCode } from "./GameCode";
 import { PlayerList, type PlayerListItem } from "./PlayerList";
 
 type GameplaySidebarProps = {
 	canTogglePause: boolean;
 	gameCode: string;
+	inviteHref: string;
+	isLeavingGame: boolean;
 	isTurnPaused: boolean;
-	lobbyHref: string;
+	onLeaveGame: () => void;
 	onTogglePause: () => void;
 	players: PlayerListItem[];
 };
@@ -15,26 +16,22 @@ type GameplaySidebarProps = {
 export function GameplaySidebar({
 	canTogglePause,
 	gameCode,
+	inviteHref,
+	isLeavingGame,
 	isTurnPaused,
-	lobbyHref,
+	onLeaveGame,
 	onTogglePause,
 	players,
 }: GameplaySidebarProps) {
 	return (
 		<div className="grid gap-6 p-5">
-			<div className="flex items-center justify-between gap-3">
-				<Link className="text-lg font-bold" href={lobbyHref}>
-					TriviaGame
-				</Link>
-			</div>
-
 			<section className="grid gap-3">
 				<h2 className="text-sm font-semibold opacity-70">Players</h2>
 				<PlayerList players={players} />
 			</section>
 
 			<section className="border-base-300 grid gap-3 border-t pt-5">
-				<GameCode code={gameCode} label="Share code" />
+				<GameCode code={gameCode} copyValue={inviteHref} label="Copy invite" />
 
 				{canTogglePause ? (
 					<button
@@ -50,6 +47,16 @@ export function GameplaySidebar({
 						{isTurnPaused ? "Resume timer" : "Pause timer"}
 					</button>
 				) : null}
+
+				<button
+					className="btn btn-error btn-soft btn-sm btn-block mt-2"
+					disabled={isLeavingGame}
+					onClick={onLeaveGame}
+					type="button"
+				>
+					<LogOutIcon aria-hidden="true" className="size-4" />
+					Leave game
+				</button>
 			</section>
 		</div>
 	);

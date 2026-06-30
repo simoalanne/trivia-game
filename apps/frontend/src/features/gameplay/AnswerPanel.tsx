@@ -36,10 +36,14 @@ export function AnswerPanel({
 	const [selectedChip, setSelectedChip] = useState<string | null>(null);
 	const [textAnswer, setTextAnswer] = useState("");
 	const selectedEntry =
-		card !== null && entryIndex !== null ? (card.entries[entryIndex] ?? null) : null;
+		card !== null && entryIndex !== null
+			? (card.entries[entryIndex] ?? null)
+			: null;
 	const trimmedPrompt = card?.prompt.trim();
 	const answerResetKey =
-		card && selectedEntry ? `${card.answerMode}:${selectedEntry.text}` : "empty";
+		card && selectedEntry
+			? `${card.answerMode}:${selectedEntry.text}`
+			: "empty";
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset answer controls when the selected prompt changes.
 	useEffect(() => {

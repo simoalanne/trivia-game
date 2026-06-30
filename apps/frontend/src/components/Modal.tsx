@@ -15,6 +15,8 @@ export type ModalProps = {
 	leadingIcon?: ReactNode;
 	size?: "md" | "lg";
 	mobileSheet?: boolean;
+	showCloseButton?: boolean;
+	dismissible?: boolean;
 };
 
 export function Modal({
@@ -28,6 +30,8 @@ export function Modal({
 	leadingIcon,
 	size = "md",
 	mobileSheet = true,
+	showCloseButton = true,
+	dismissible = true,
 }: ModalProps) {
 	const resolvedContent = children ?? content;
 
@@ -40,6 +44,16 @@ export function Modal({
 					className={`${styles.content} ${
 						size === "lg" ? styles.contentSizeLg : styles.contentSizeMd
 					} ${mobileSheet ? styles.contentMobileSheet : ""}`.trim()}
+					onEscapeKeyDown={(event) => {
+						if (!dismissible) {
+							event.preventDefault();
+						}
+					}}
+					onInteractOutside={(event) => {
+						if (!dismissible) {
+							event.preventDefault();
+						}
+					}}
 				>
 					<div
 						className={`${styles.header} ${
@@ -63,10 +77,12 @@ export function Modal({
 								</Dialog.Description>
 							) : null}
 						</div>
-						<Dialog.Close className={styles.closeButton} type="button">
-							<span aria-hidden="true">&times;</span>
-							<VisuallyHidden.Root>Close</VisuallyHidden.Root>
-						</Dialog.Close>
+						{showCloseButton ? (
+							<Dialog.Close className={styles.closeButton} type="button">
+								<span aria-hidden="true">&times;</span>
+								<VisuallyHidden.Root>Close</VisuallyHidden.Root>
+							</Dialog.Close>
+						) : null}
 					</div>
 					<div className={styles.body}>{resolvedContent}</div>
 					{footer ? <div className={styles.footer}>{footer}</div> : null}

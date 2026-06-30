@@ -12,7 +12,7 @@ export default function LandingPage() {
 					Start a room, gather players, and start playing.
 				</h1>
 				<div className="flex flex-wrap justify-center gap-3">
-					<Link className="btn btn-primary" href="/play">
+					<Link className="btn btn-primary" href="/lobby">
 						Start playing
 					</Link>
 				</div>
