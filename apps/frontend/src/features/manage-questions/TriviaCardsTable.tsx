@@ -1,7 +1,7 @@
 "use client";
 
 import type { QuestionCard } from "@packages/contracts";
-import { PencilIcon, Trash2 } from "lucide-react";
+import { Eye, PencilIcon, Trash2 } from "lucide-react";
 import { useDeferredValue, useState } from "react";
 
 type TriviaCardsTableProps = {
@@ -9,6 +9,7 @@ type TriviaCardsTableProps = {
 	isDeleting?: boolean;
 	onDelete: (triviaCard: QuestionCard) => void;
 	onEdit: (triviaCard: QuestionCard) => void;
+	onPreview: (triviaCard: QuestionCard) => void;
 };
 
 const TRIVIA_CARDS_PER_PAGE = 10;
@@ -47,6 +48,7 @@ export default function TriviaCardsTable({
 	isDeleting = false,
 	onEdit,
 	onDelete,
+	onPreview,
 }: TriviaCardsTableProps) {
 	const [promptSearch, setPromptSearch] = useState("");
 	const [page, setPage] = useState(1);
@@ -112,7 +114,13 @@ export default function TriviaCardsTable({
 					<tbody>
 						{paginatedTriviaCards.length ? (
 							paginatedTriviaCards.map((triviaCard) => (
-								<tr key={triviaCard.id}>
+								<tr
+									key={triviaCard.id}
+									className="cursor-pointer hover:bg-base-200/70"
+									onClick={() => {
+										onPreview(triviaCard);
+									}}
+								>
 									<td className="whitespace-nowrap font-medium">
 										{triviaCard.id}
 									</td>
@@ -147,6 +155,17 @@ export default function TriviaCardsTable({
 									</td>
 									<td>
 										<div className="flex justify-end gap-2">
+											<button
+												aria-label={`Preview trivia card ${triviaCard.id}`}
+												className="btn btn-sm btn-ghost btn-square"
+												onClick={(event) => {
+													event.stopPropagation();
+													onPreview(triviaCard);
+												}}
+												type="button"
+											>
+												<Eye aria-hidden="true" className="size-4" />
+											</button>
 											<button
 												aria-label={`Edit trivia card ${triviaCard.id}`}
 												className="btn btn-sm btn-ghost btn-square"

@@ -16,6 +16,7 @@ type TriviaCardProps = {
 	items: TriviaCardItem[];
 	selectedItemId: string | null;
 	onSelectedItemChange: (itemId: string | null) => void;
+	readOnly?: boolean;
 	showSelectedStyling?: boolean;
 	centerHint?: string;
 	concealUnselectedAnswers?: boolean;
@@ -84,6 +85,7 @@ export function TriviaCard({
 	items,
 	selectedItemId,
 	onSelectedItemChange,
+	readOnly = false,
 	showSelectedStyling = true,
 	centerHint,
 	concealUnselectedAnswers = false,
@@ -131,7 +133,7 @@ export function TriviaCard({
 					);
 				})}
 
-				{onCenterClick ? (
+				{onCenterClick && !readOnly ? (
 					<button
 						className={`${styles.question} ${styles.questionButton}`}
 						onClick={onCenterClick}
@@ -152,21 +154,44 @@ export function TriviaCard({
 						concealUnselectedAnswers && !selected && !item.disabled;
 					const layout = getRadialLayout(index, items.length);
 
+					const itemClassName = `${styles.item} ${selectedClassName} ${
+						item.variant === "action" ? styles.itemAction : ""
+					}`;
+					const itemStyle = {
+						"--x": `${layout.x}%`,
+						"--y": `${layout.y}%`,
+						"--item-max-width": `${layout.maxWidth}px`,
+						"--item-transform": layout.itemTransform,
+					} as CSSProperties;
+					const itemContent = (
+						<>
+							<span className={styles.itemLabel}>{item.label}</span>
+							{formatItemAnswer(item) ? (
+								<span
+									className={`${styles.itemAnswer} ${
+										hideAnswer ? styles.itemAnswerHidden : ""
+									}`}
+								>
+									{formatItemAnswer(item)}
+								</span>
+							) : null}
+						</>
+					);
+
+					if (readOnly) {
+						return (
+							<div key={item.id} className={itemClassName} style={itemStyle}>
+								{itemContent}
+							</div>
+						);
+					}
+
 					return (
 						<button
 							disabled={item.disabled}
 							key={item.id}
-							className={`${styles.item} ${selectedClassName} ${
-								item.variant === "action" ? styles.itemAction : ""
-							}`}
-							style={
-								{
-									"--x": `${layout.x}%`,
-									"--y": `${layout.y}%`,
-									"--item-max-width": `${layout.maxWidth}px`,
-									"--item-transform": layout.itemTransform,
-								} as CSSProperties
-							}
+							className={itemClassName}
+							style={itemStyle}
 							onClick={() =>
 								onSelectedItemChange(
 									item.variant === "action"
@@ -178,16 +203,7 @@ export function TriviaCard({
 							}
 							type="button"
 						>
-							<span className={styles.itemLabel}>{item.label}</span>
-							{formatItemAnswer(item) ? (
-								<span
-									className={`${styles.itemAnswer} ${
-										hideAnswer ? styles.itemAnswerHidden : ""
-									}`}
-								>
-									{formatItemAnswer(item)}
-								</span>
-							) : null}
+							{itemContent}
 						</button>
 					);
 				})}

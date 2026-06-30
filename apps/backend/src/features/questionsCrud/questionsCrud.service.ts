@@ -52,7 +52,7 @@ Return:
 - rings: the surrounding text-answer pairs in positional order around the circle. there is always exactly 10 pairs.
 
 For each rings item:
-- outer: the text FARTHER from the center. return the text as is. if there is a true/false icon, return "true" or "false" as a string.
+- outer: the text FARTHER from the center. return the text as is. if there is a true/false icon, return "true" or "false" as a string. if the text is a country name e.g. "Suomi" or "suomalainen" return it's alpha-2 country code e.g. "FI" as a string.
 - inner: the paired inner-ring text CLOSER to the center. return the text as is.
 - pair outer and inner values using a black connector line that visually links them
 - the 10 pairs divide the circle into 10 equal angular slices around the center
@@ -97,6 +97,16 @@ const ollamaResponseToQuestionCardInput = (response: {
 	const uniqueNormalizedAnswers = Array.from(
 		new Set(normalizedCardContent.entries.map((entry) => entry.answer)),
 	);
+
+	if (uniqueNormalizedAnswers.every((answer) => answer.length === 2)) {
+		return {
+			answerMode: "COUNTRY" as const,
+			prompt: normalizedCardContent.prompt,
+			difficulty: "MEDIUM" as const,
+			tags: [],
+			entries: normalizedCardContent.entries,
+		};
+	}
 
 	if (
 		uniqueNormalizedAnswers.length === 2 &&
@@ -311,9 +321,28 @@ export default defineService("questionsCrud", {
 	},
 
 	async update({ id, ...card }) {
+		const cardData =
+			card.answerMode === "CHOICES"
+				? {
+						prompt: card.prompt,
+						answerMode: card.answerMode,
+						choices: card.choices,
+						choicesAreUnique: card.choicesAreUnique,
+						entries: card.entries,
+					}
+				: {
+						prompt: card.prompt,
+						answerMode: card.answerMode,
+						entries: card.entries,
+					};
+
 		const updatedCard = await prisma.triviaCard.update({
 			where: { id },
-			data: card,
+			data: {
+				difficulty: card.difficulty,
+				tags: card.tags,
+				data: cardData,
+			},
 		});
 
 		return toQuestionCard(updatedCard);

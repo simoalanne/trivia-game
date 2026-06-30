@@ -4,12 +4,16 @@ import type { QuestionCard } from "@packages/contracts";
 import { useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
 import QuestionCardModal from "./QuestionCardModal";
+import QuestionCardPreviewModal from "./QuestionCardPreviewModal";
 import TriviaCardsTable from "./TriviaCardsTable";
 
 export default function ManageQuestionsListPage() {
 	const api = useApiClient();
 	const questions = api.questionsCrud.list.useQuery();
 	const [editorQuestion, setEditorQuestion] = useState<QuestionCard | null>(
+		null,
+	);
+	const [previewQuestion, setPreviewQuestion] = useState<QuestionCard | null>(
 		null,
 	);
 	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -80,20 +84,32 @@ export default function ManageQuestionsListPage() {
 					<TriviaCardsTable
 						onEdit={(question) => {
 							setEditorQuestion(question);
+							setPreviewQuestion(null);
 							setIsCreateModalOpen(false);
 						}}
 						isDeleting={deleteQuestion.isPending}
 						onDelete={handleDelete}
+						onPreview={(question) => {
+							setPreviewQuestion(question);
+							setEditorQuestion(null);
+							setIsCreateModalOpen(false);
+						}}
 						triviaCards={questions.data}
 					/>
 				) : questions.isLoading ? null : (
 					<TriviaCardsTable
 						onEdit={(question) => {
 							setEditorQuestion(question);
+							setPreviewQuestion(null);
 							setIsCreateModalOpen(false);
 						}}
 						isDeleting={deleteQuestion.isPending}
 						onDelete={handleDelete}
+						onPreview={(question) => {
+							setPreviewQuestion(question);
+							setEditorQuestion(null);
+							setIsCreateModalOpen(false);
+						}}
 						triviaCards={[]}
 					/>
 				)}
@@ -110,6 +126,15 @@ export default function ManageQuestionsListPage() {
 				setOpen={(open) => {
 					if (!open) {
 						setEditorQuestion(null);
+					}
+				}}
+			/>
+			<QuestionCardPreviewModal
+				open={previewQuestion !== null}
+				question={previewQuestion}
+				setOpen={(open) => {
+					if (!open) {
+						setPreviewQuestion(null);
 					}
 				}}
 			/>
