@@ -118,14 +118,6 @@
 }
 
 .selected .itemLabel {
-	background: linear-gradient(
-		110deg,
-		rgb(11 87 232 / 10%) 0%,
-		rgb(255 255 255 / 45%) 18%,
-		rgb(11 87 232 / 18%) 36%,
-		rgb(11 87 232 / 12%) 60%,
-		rgb(11 87 232 / 10%) 100%
-	);
 	box-shadow:
 		0 0 0 1px rgb(11 87 232 / 20%),
 		0 12px 30px rgb(11 87 232 / 16%);
@@ -133,14 +125,6 @@
 }
 
 .selected .itemAnswerHidden {
-	background: linear-gradient(
-		110deg,
-		rgb(11 87 232 / 12%) 0%,
-		rgb(255 255 255 / 26%) 18%,
-		rgb(11 87 232 / 20%) 36%,
-		rgb(11 87 232 / 14%) 60%,
-		rgb(11 87 232 / 12%) 100%
-	);
 	color: transparent;
 }
 
@@ -165,12 +149,6 @@
 	white-space: nowrap;
 }
 
-.selected .itemLabel,
-.selected .itemAnswerHidden {
-	background-size: 250% 100%;
-	animation: selectedShimmer 1.4s linear infinite;
-}
-
 .itemAction .itemLabel {
 	font-size: clamp(16px, 3.1cqw, 24px);
 }
@@ -192,23 +170,6 @@
 	transition:
 		background 200ms ease,
 		color 200ms ease;
-}
-
-@keyframes selectedShimmer {
-	0% {
-		background-position: 200% 50%;
-	}
-
-	100% {
-		background-position: 0% 50%;
-	}
-}
-
-@media (prefers-reduced-motion: reduce) {
-	.selected .itemLabel,
-	.selected .itemAnswerHidden {
-		animation: none;
-	}
 }
 
 @media (max-width: 980px) {

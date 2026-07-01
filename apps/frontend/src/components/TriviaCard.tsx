@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { cn } from "@/lib/utils";
 import { formatCountryDisplay } from "./countryDisplay";
 import styles from "./TriviaCard.module.css";
 
@@ -148,8 +149,8 @@ export function TriviaCard({
 				{items.map((item, index) => {
 					const selected =
 						item.variant !== "action" && item.id === selectedItemId;
-					const selectedClassName =
-						selected && showSelectedStyling ? styles.selected : "";
+					const showSelectedEffect = selected && showSelectedStyling;
+					const selectedClassName = showSelectedEffect ? styles.selected : "";
 					const hideAnswer =
 						concealUnselectedAnswers && !selected && !item.disabled;
 					const layout = getRadialLayout(index, items.length);
@@ -163,15 +164,20 @@ export function TriviaCard({
 						"--item-max-width": `${layout.maxWidth}px`,
 						"--item-transform": layout.itemTransform,
 					} as CSSProperties;
+					const itemLabelClassName = cn(
+						styles.itemLabel,
+						showSelectedEffect && "skeleton",
+					);
+					const itemAnswerClassName = cn(
+						styles.itemAnswer,
+						hideAnswer && styles.itemAnswerHidden,
+						showSelectedEffect && hideAnswer && "skeleton",
+					);
 					const itemContent = (
 						<>
-							<span className={styles.itemLabel}>{item.label}</span>
+							<span className={itemLabelClassName}>{item.label}</span>
 							{formatItemAnswer(item) ? (
-								<span
-									className={`${styles.itemAnswer} ${
-										hideAnswer ? styles.itemAnswerHidden : ""
-									}`}
-								>
+								<span className={itemAnswerClassName}>
 									{formatItemAnswer(item)}
 								</span>
 							) : null}
