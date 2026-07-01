@@ -3,12 +3,12 @@
 	z-index: 2;
 	display: grid;
 	place-items: center;
-	padding-inline: 16px;
+	padding-inline: clamp(16px, 4vw, 32px);
 }
 
 .wheel {
 	position: relative;
-	width: min(620px, 100%);
+	width: min(780px, 100%);
 	aspect-ratio: 1;
 }
 
@@ -88,14 +88,14 @@
 	left: var(--x);
 	z-index: 3;
 	display: grid;
-	max-width: min(var(--item-max-width), clamp(88px, 24cqw, 150px));
+	width: min(var(--item-max-width), clamp(104px, 26cqw, 280px));
 	gap: clamp(3px, 1cqw, 6px);
 	border: 0;
 	background: transparent;
 	padding: 0;
 	color: #101828;
 	font: inherit;
-	text-align: center;
+	text-align: var(--item-text-align, center);
 	cursor: pointer;
 	transition:
 		color 160ms ease,
@@ -174,13 +174,25 @@
 
 @media (max-width: 980px) {
 	.wheel {
-		width: min(560px, 100%);
+		width: min(620px, 100%);
+	}
+
+	.item {
+		width: min(var(--item-max-width), clamp(96px, 24cqw, 220px));
 	}
 }
 
 @media (max-width: 640px) {
+	.wheelArea {
+		padding-inline: 20px;
+	}
+
 	.wheel {
-		width: min(100%, calc(100vw - 28px));
+		width: min(100%, calc(100vw - 48px));
+	}
+
+	.item {
+		width: min(var(--item-max-width), clamp(84px, 22cqw, 160px));
 	}
 
 	.spoke {

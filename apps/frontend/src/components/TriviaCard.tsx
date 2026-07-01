@@ -36,20 +36,50 @@ const labelAnchorRadius =
 	wheelGeometry.lineLength +
 	wheelGeometry.lineGap;
 
+function getItemBaseMaxWidth(count: number) {
+	if (count <= 5) {
+		return 300;
+	}
+
+	if (count <= 7) {
+		return 260;
+	}
+
+	if (count <= 9) {
+		return 225;
+	}
+
+	return 190;
+}
+
 function getRadialLayout(index: number, count: number) {
 	const startAngle = -90;
 	const radiusX = labelAnchorRadius;
 	const radiusY = labelAnchorRadius;
-	const maxWidth = 200;
 	const safeCount = Math.max(count, 1);
 	const angle = startAngle + index * (360 / safeCount);
 	const radians = (angle * Math.PI) / 180;
+	const normalized = ((angle % 360) + 360) % 360;
+	const baseMaxWidth = getItemBaseMaxWidth(count);
+	const isSideSlot =
+		normalized < 70 ||
+		normalized > 290 ||
+		(normalized > 110 && normalized < 250);
+	const maxWidth = Math.round(baseMaxWidth * (isSideSlot ? 1.15 : 0.9));
+	const angleFromTop = (normalized + 90) % 360;
+	const textAlign =
+		angleFromTop > 0 && angleFromTop < 180
+			? "left"
+			: angleFromTop > 180 && angleFromTop < 360
+				? "right"
+				: "center";
 
 	return {
 		angle,
 		maxWidth,
 		itemTransform: getItemTransform(angle),
 		spokeLength: wheelGeometry.lineLength,
+		textAlign,
 		x: center.x + Math.cos(radians) * radiusX,
 		y: center.y + Math.sin(radians) * radiusY,
 	};
@@ -162,6 +192,7 @@ export function TriviaCard({
 						"--x": `${layout.x}%`,
 						"--y": `${layout.y}%`,
 						"--item-max-width": `${layout.maxWidth}px`,
+						"--item-text-align": layout.textAlign,
 						"--item-transform": layout.itemTransform,
 					} as CSSProperties;
 					const itemLabelClassName = cn(
