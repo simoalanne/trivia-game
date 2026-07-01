@@ -84,6 +84,10 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 		Boolean(currentPlayer?.isPlayerTurn) &&
 		Boolean(currentPlayer?.isParticipatingInCurrentRound) &&
 		!gameState?.isTurnPaused;
+	const waitingForNextRoundReason =
+		gameState?.gameState === "IN_PROGRESS"
+			? (currentPlayer?.waitingForNextRoundReason ?? null)
+			: null;
 	const turnTimeoutEnabled = (gameState?.turnDurationSeconds ?? 0) > 0;
 	const canTogglePause =
 		connectionState === "open" &&
@@ -513,6 +517,7 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 						canSend={canSend}
 						currentCard={currentCard}
 						currentPlayer={currentPlayer}
+						waitingForNextRoundReason={waitingForNextRoundReason}
 						isAnswerPanelOpen={isAnswerPanelOpen}
 						isSubmittingAnswer={isSubmittingAnswer}
 						openedEntryIndex={openedEntryIndex}

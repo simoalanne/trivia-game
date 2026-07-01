@@ -16,6 +16,7 @@ type GamePlayer = {
 	isReady: boolean;
 	isPlayerTurn: boolean;
 	isParticipatingInCurrentRound: boolean;
+	waitingForNextRoundReason: "JOINED_MID_ROUND" | "DONE_ANSWERING" | null;
 	totalPoints: number;
 	roundPoints: number;
 	socket?: unknown;
@@ -87,11 +88,13 @@ const createPlayer = ({
 	isHost = false,
 	isParticipatingInCurrentRound = true,
 	isReady = false,
+	waitingForNextRoundReason = null,
 }: {
 	name: string;
 	isHost?: boolean;
 	isParticipatingInCurrentRound?: boolean;
 	isReady?: boolean;
+	waitingForNextRoundReason?: GamePlayer["waitingForNextRoundReason"];
 }): GamePlayer => ({
 	id: crypto.randomUUID(),
 	name,
@@ -99,6 +102,7 @@ const createPlayer = ({
 	isReady,
 	isPlayerTurn: false,
 	isParticipatingInCurrentRound,
+	waitingForNextRoundReason,
 	totalPoints: 0,
 	roundPoints: 0,
 });
@@ -255,6 +259,7 @@ const endRound = async (gameSession: GameSession) => {
 		player.totalPoints += player.roundPoints;
 		player.roundPoints = 0;
 		player.isParticipatingInCurrentRound = true;
+		player.waitingForNextRoundReason = null;
 		player.isPlayerTurn = false;
 	});
 	clearTurnTimeout(gameSession);
@@ -352,8 +357,10 @@ const addPlayer = (gameSession: GameSession, name: string) => {
 
 	const player = createPlayer({
 		name,
-		isParticipatingInCurrentRound: gameSession.gameState === "IN_PROGRESS",
+		isParticipatingInCurrentRound: gameSession.gameState !== "IN_PROGRESS",
 		isReady: gameSession.gameState !== "NOT_STARTED",
+		waitingForNextRoundReason:
+			gameSession.gameState === "IN_PROGRESS" ? "JOINED_MID_ROUND" : null,
 	});
 	gameSession.players.push(player);
 	return player;
@@ -516,6 +523,7 @@ const handleTurnTimedOut = async (
 	gameSession.isTurnPaused = false;
 	gameSession.openedEntryIndex = null;
 	currentPlayer.isParticipatingInCurrentRound = false;
+	currentPlayer.waitingForNextRoundReason = null;
 
 	sendTurnResolved(gameSession, {
 		type: "turnResolved",
@@ -577,6 +585,8 @@ const startGame = async (gameSession: GameSession) => {
 	gameSession.currentRound = nextCard;
 	gameSession.openedEntryIndex = null;
 	gameSession.players.forEach((player, index) => {
+		player.isParticipatingInCurrentRound = true;
+		player.waitingForNextRoundReason = null;
 		player.isPlayerTurn = index === 0;
 	});
 	scheduleTurnTimeout(gameSession, initialTurnTimeoutGraceSeconds);
@@ -627,6 +637,7 @@ const doneAnswering = (gameSession: GameSession, playerId: string) => {
 	gameSession.turnRemainingMs = null;
 	gameSession.isTurnPaused = false;
 	currentPlayer.isParticipatingInCurrentRound = false;
+	currentPlayer.waitingForNextRoundReason = "DONE_ANSWERING";
 	gameSession.openedEntryIndex = null;
 };
 

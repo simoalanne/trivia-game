@@ -29,6 +29,9 @@ type GameplayInProgressViewProps = {
 	triviaItems: TriviaCardItems;
 	turnPlayer: GameplayState["players"][number] | null;
 	turnTimeoutEnabled: boolean;
+	waitingForNextRoundReason:
+		| GameplayState["players"][number]["waitingForNextRoundReason"]
+		| null;
 };
 
 export default function GameplayInProgressView({
@@ -52,7 +55,15 @@ export default function GameplayInProgressView({
 	triviaItems,
 	turnPlayer,
 	turnTimeoutEnabled,
+	waitingForNextRoundReason,
 }: GameplayInProgressViewProps) {
+	const waitingMessage =
+		waitingForNextRoundReason === "JOINED_MID_ROUND"
+			? "The game is already started. You get to play when the next round begins."
+			: waitingForNextRoundReason === "DONE_ANSWERING"
+				? "You ended your turn for this round."
+				: null;
+
 	return (
 		<>
 			<header className="mx-auto flex w-full max-w-5xl justify-center">
@@ -74,6 +85,15 @@ export default function GameplayInProgressView({
 					) : null}
 				</div>
 			</header>
+
+			{waitingMessage ? (
+				<section className={styles.waitingNotice}>
+					<div role="alert" className="alert alert-info">
+						<span className="badge badge-info badge-sm">Waiting</span>
+						<span>{waitingMessage}</span>
+					</div>
+				</section>
+			) : null}
 
 			<section className={styles.stage} aria-label="Current trivia card">
 				<TriviaCard

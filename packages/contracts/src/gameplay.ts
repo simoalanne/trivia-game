@@ -16,6 +16,10 @@ const gameplayBaseCardSchema = z.object({
 	entries: z.array(gameplayCardEntrySchema),
 });
 
+const gameplayPlayerWaitingReasonSchema = z
+	.enum(["JOINED_MID_ROUND", "DONE_ANSWERING"])
+	.nullable();
+
 const gameplayCardSchema = z.discriminatedUnion("answerMode", [
 	gameplayBaseCardSchema.extend({
 		answerMode: z.literal("TEXT"),
@@ -39,6 +43,7 @@ export const gamestateSchema = z.object({
 			isReady: z.boolean(),
 			isPlayerTurn: z.boolean(),
 			isParticipatingInCurrentRound: z.boolean(),
+			waitingForNextRoundReason: gameplayPlayerWaitingReasonSchema,
 			totalPoints: z.int(),
 			roundPoints: z.int(),
 		}),

@@ -43,6 +43,11 @@
 	padding: 10px 0 36px;
 }
 
+.waitingNotice {
+	width: min(720px, calc(100vw - 32px));
+	margin: 24px auto 0;
+}
+
 .gameActions {
 	display: flex;
 	justify-content: center;
@@ -94,6 +99,11 @@
 		gap: 26px;
 		margin-top: 26px;
 		padding-bottom: 28px;
+	}
+
+	.waitingNotice {
+		width: min(720px, 100%);
+		margin-top: 18px;
 	}
 }
 
