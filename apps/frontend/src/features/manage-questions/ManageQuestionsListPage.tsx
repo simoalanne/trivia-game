@@ -7,16 +7,15 @@ import QuestionCardModal from "./QuestionCardModal";
 import QuestionCardPreviewModal from "./QuestionCardPreviewModal";
 import TriviaCardsTable from "./TriviaCardsTable";
 
+type OpenModal = "editor" | "preview" | null;
+
 export default function ManageQuestionsListPage() {
 	const api = useApiClient();
 	const questions = api.questionsCrud.list.useQuery();
-	const [editorQuestion, setEditorQuestion] = useState<QuestionCard | null>(
+	const [selectedQuestion, setSelectedQuestion] = useState<QuestionCard | null>(
 		null,
 	);
-	const [previewQuestion, setPreviewQuestion] = useState<QuestionCard | null>(
-		null,
-	);
-	const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+	const [openModal, setOpenModal] = useState<OpenModal>(null);
 	const deleteQuestion = api.questionsCrud.delete.useMutation({
 		onSuccess: (deletedQuestion) => {
 			api.questionsCrud.list.setData(
@@ -36,6 +35,11 @@ export default function ManageQuestionsListPage() {
 		}
 
 		deleteQuestion.mutate({ id: question.id });
+	};
+
+	const handlePreview = (question: QuestionCard) => {
+		setSelectedQuestion(question);
+		setOpenModal("preview");
 	};
 
 	return (
@@ -59,16 +63,14 @@ export default function ManageQuestionsListPage() {
 					<button
 						className="btn btn-primary w-full sm:w-auto"
 						onClick={() => {
-							setEditorQuestion(null);
-							setIsCreateModalOpen(true);
+							setSelectedQuestion(null);
+							setOpenModal("editor");
 						}}
 						type="button"
 					>
 						Create Trivia Card
 					</button>
 				</div>
-
-				{questions.isLoading ? <p>Loading questions...</p> : null}
 
 				{questions.error ? (
 					<p className="text-error font-semibold">{questions.error.message}</p>
@@ -80,61 +82,34 @@ export default function ManageQuestionsListPage() {
 					</p>
 				) : null}
 
-				{questions.data ? (
-					<TriviaCardsTable
-						onEdit={(question) => {
-							setEditorQuestion(question);
-							setPreviewQuestion(null);
-							setIsCreateModalOpen(false);
-						}}
-						isDeleting={deleteQuestion.isPending}
-						onDelete={handleDelete}
-						onPreview={(question) => {
-							setPreviewQuestion(question);
-							setEditorQuestion(null);
-							setIsCreateModalOpen(false);
-						}}
-						triviaCards={questions.data}
-					/>
-				) : questions.isLoading ? null : (
-					<TriviaCardsTable
-						onEdit={(question) => {
-							setEditorQuestion(question);
-							setPreviewQuestion(null);
-							setIsCreateModalOpen(false);
-						}}
-						isDeleting={deleteQuestion.isPending}
-						onDelete={handleDelete}
-						onPreview={(question) => {
-							setPreviewQuestion(question);
-							setEditorQuestion(null);
-							setIsCreateModalOpen(false);
-						}}
-						triviaCards={[]}
-					/>
-				)}
+				<TriviaCardsTable
+					onEdit={(question) => {
+						setSelectedQuestion(question);
+						setOpenModal("editor");
+					}}
+					isDeleting={deleteQuestion.isPending}
+					isLoading={questions.isLoading}
+					onDelete={handleDelete}
+					onPreview={handlePreview}
+					onRowClick={handlePreview}
+					triviaCards={questions.data ?? []}
+				/>
 			</section>
 			<QuestionCardModal
-				open={isCreateModalOpen}
-				setOpen={(open) => {
-					setIsCreateModalOpen(open);
-				}}
-			/>
-			<QuestionCardModal
-				open={editorQuestion !== null}
-				question={editorQuestion}
+				open={openModal === "editor"}
+				question={selectedQuestion}
 				setOpen={(open) => {
 					if (!open) {
-						setEditorQuestion(null);
+						setOpenModal(null);
 					}
 				}}
 			/>
 			<QuestionCardPreviewModal
-				open={previewQuestion !== null}
-				question={previewQuestion}
+				open={openModal === "preview"}
+				question={selectedQuestion}
 				setOpen={(open) => {
 					if (!open) {
-						setPreviewQuestion(null);
+						setOpenModal(null);
 					}
 				}}
 			/>

@@ -6,13 +6,16 @@ import { useDeferredValue, useState } from "react";
 
 type TriviaCardsTableProps = {
 	triviaCards: QuestionCard[];
+	isLoading?: boolean;
 	isDeleting?: boolean;
 	onDelete: (triviaCard: QuestionCard) => void;
 	onEdit: (triviaCard: QuestionCard) => void;
+	onRowClick: (triviaCard: QuestionCard) => void;
 	onPreview: (triviaCard: QuestionCard) => void;
 };
 
 const TRIVIA_CARDS_PER_PAGE = 10;
+const SKELETON_ROW_COUNT = 10;
 
 const answerModeLabels: Record<QuestionCard["answerMode"], string> = {
 	TEXT: "Text",
@@ -45,9 +48,11 @@ const updatedAtFormatter = new Intl.DateTimeFormat("en-GB", {
 
 export default function TriviaCardsTable({
 	triviaCards,
+	isLoading = false,
 	isDeleting = false,
 	onEdit,
 	onDelete,
+	onRowClick,
 	onPreview,
 }: TriviaCardsTableProps) {
 	const [promptSearch, setPromptSearch] = useState("");
@@ -112,13 +117,46 @@ export default function TriviaCardsTable({
 						</tr>
 					</thead>
 					<tbody>
-						{paginatedTriviaCards.length ? (
+						{isLoading ? (
+							Array.from({ length: SKELETON_ROW_COUNT }, (_, index) => (
+								<tr key={`skeleton-${index}`}>
+									<td className="whitespace-nowrap">
+										<div className="skeleton h-4 w-10" />
+									</td>
+									<td className="min-w-48 sm:min-w-64">
+										<div className="grid gap-2">
+											<div className="skeleton h-4 w-full" />
+											<div className="skeleton h-4 w-3/4" />
+										</div>
+									</td>
+									<td className="whitespace-nowrap">
+										<div className="skeleton h-6 w-16" />
+									</td>
+									<td className="whitespace-nowrap">
+										<div className="skeleton h-6 w-20" />
+									</td>
+									<td className="whitespace-nowrap">
+										<div className="skeleton h-4 w-8" />
+									</td>
+									<td className="whitespace-nowrap">
+										<div className="skeleton h-4 w-28" />
+									</td>
+									<td>
+										<div className="flex justify-end gap-2">
+											<div className="skeleton h-8 w-8" />
+											<div className="skeleton h-8 w-8" />
+											<div className="skeleton h-8 w-8" />
+										</div>
+									</td>
+								</tr>
+							))
+						) : paginatedTriviaCards.length ? (
 							paginatedTriviaCards.map((triviaCard) => (
 								<tr
 									key={triviaCard.id}
 									className="cursor-pointer hover:bg-base-200/70"
 									onClick={() => {
-										onPreview(triviaCard);
+										onRowClick(triviaCard);
 									}}
 								>
 									<td className="whitespace-nowrap font-medium">
@@ -217,7 +255,7 @@ export default function TriviaCardsTable({
 				<div className="join self-start sm:self-auto">
 					<button
 						className="btn btn-sm join-item"
-						disabled={currentPage === 1}
+						disabled={isLoading || currentPage === 1}
 						onClick={() => {
 							setPage((currentPage) => Math.max(1, currentPage - 1));
 						}}
@@ -229,6 +267,7 @@ export default function TriviaCardsTable({
 						<button
 							key={pageNumber}
 							className={`btn btn-sm join-item ${pageNumber === currentPage ? "btn-active" : ""}`}
+							disabled={isLoading}
 							onClick={() => {
 								setPage(pageNumber);
 							}}
@@ -239,7 +278,7 @@ export default function TriviaCardsTable({
 					))}
 					<button
 						className="btn btn-sm join-item"
-						disabled={currentPage === totalPages}
+						disabled={isLoading || currentPage === totalPages}
 						onClick={() => {
 							setPage((currentPage) => Math.min(totalPages, currentPage + 1));
 						}}
