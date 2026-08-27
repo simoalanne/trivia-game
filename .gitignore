@@ -31,6 +31,3 @@ apps/backend/generated/prisma
 # local app env files
 apps/backend/.env
 apps/frontend/.env
-
-# I'm not going to commit some MD skill files which apparently should live here
-.agents
