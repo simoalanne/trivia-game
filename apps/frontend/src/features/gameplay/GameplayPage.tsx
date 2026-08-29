@@ -1,5 +1,6 @@
 "use client";
 
+import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
 	type Dispatch,
@@ -36,6 +37,20 @@ const normalizeGameCode = (value: string | null) => {
 	return normalizedValue || null;
 };
 
+const hasPlayerJoinErrorCode = (
+	error: unknown,
+	code: "PLAYER_NAME_TAKEN" | "GAME_FULL",
+) =>
+	typeof error === "object" &&
+	error !== null &&
+	"status" in error &&
+	error.status === 409 &&
+	"body" in error &&
+	typeof error.body === "object" &&
+	error.body !== null &&
+	"code" in error.body &&
+	error.body.code === code;
+
 const resolveInviteRouteState = async ({
 	api,
 	gameCode,
@@ -47,13 +62,13 @@ const resolveInviteRouteState = async ({
 	router: ReturnType<typeof useRouter>;
 	setRouteState: Dispatch<SetStateAction<GameplayRouteState>>;
 }) => {
-	const gameVerification = await api.gameplay.verifyGame.$tryFetch({
+	const gameVerification = await api.client.gameplay.verifyGame.fetchResponse({
 		gameCode,
 	});
 
 	if (
-		!gameVerification.success ||
-		gameVerification.data.gameState === "FINISHED"
+		gameVerification.status !== 200 ||
+		gameVerification.body.gameState === "FINISHED"
 	) {
 		router.replace("/lobby");
 		return;
@@ -77,16 +92,16 @@ export default function GameplayPage() {
 		kind: "loading",
 	});
 	const [playerName, setPlayerName] = useState("");
-	const joinGame = api.gameplay.join.useMutation();
+	const joinGame = useMutation(api.tq.gameplay.join.mutationOptions());
 
 	let errorMessage: string | null = null;
 
 	if (joinGame.error) {
-		if (joinGame.error.code === "PLAYER_NAME_TAKEN") {
+		if (hasPlayerJoinErrorCode(joinGame.error, "PLAYER_NAME_TAKEN")) {
 			errorMessage =
 				"This player name is already taken in this game. Please pick another name.";
 		}
-		if (joinGame.error.code === "GAME_FULL") {
+		if (hasPlayerJoinErrorCode(joinGame.error, "GAME_FULL")) {
 			errorMessage = "This game is full and cannot accept new players.";
 		}
 		errorMessage ??= "An unexpected error occurred. Please try again.";
@@ -100,13 +115,13 @@ export default function GameplayPage() {
 
 			if (savedSession) {
 				const verification =
-					await api.gameplay.verifyGame.$tryFetch(savedSession);
+					await api.client.gameplay.verifyGame.fetchResponse(savedSession);
 
 				if (isCancelled) {
 					return;
 				}
 
-				if (verification.success) {
+				if (verification.status === 200) {
 					if (inviteGameCode) {
 						router.replace("/gameplay");
 					}
@@ -118,7 +133,7 @@ export default function GameplayPage() {
 					return;
 				}
 
-				if (verification.error.status === 404) {
+				if (verification.status === 404) {
 					await clearGameSessionCookie();
 					if (inviteGameCode) {
 						await resolveInviteRouteState({
@@ -219,7 +234,7 @@ export default function GameplayPage() {
 											onSuccess: async (session) => {
 												await saveGameSessionCookie({
 													gameCode: routeState.gameCode,
-													playerId: session.playerId,
+													playerId: session.body.playerId,
 												});
 												router.replace("/gameplay");
 											},

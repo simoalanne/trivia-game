@@ -5,6 +5,7 @@ import {
 	gameplayTurnTimeoutSecondsMax,
 	gameplayTurnTimeoutSecondsMin,
 } from "@packages/contracts";
+import { useMutation } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
@@ -16,8 +17,11 @@ import {
 	saveGameSessionCookie,
 } from "@/lib/gameSessionCookie";
 
+const getErrorMessage = (error: unknown) =>
+	error instanceof Error ? error.message : "An unexpected error occurred.";
+
 export default function LobbyPage() {
-	const api = useApiClient();
+	const { client, tq } = useApiClient();
 	const router = useRouter();
 	const [playerName, setPlayerName] = useState("");
 	const [turnDurationSeconds, setTurnDurationSeconds] = useState(
@@ -26,10 +30,10 @@ export default function LobbyPage() {
 	const [resumeSession, setResumeSession] = useState<GameSessionCookie | null>(
 		null,
 	);
-	const [isCheckingSavedSession, setIsCheckingSavedSession] = useState(true);
+	const [, setIsCheckingSavedSession] = useState(true);
 	const [isLeavingSavedSession, setIsLeavingSavedSession] = useState(false);
 
-	const createGame = api.gameplay.create.useMutation();
+	const createGame = useMutation(tq.gameplay.create.mutationOptions());
 	const isSubmitting = createGame.isPending || isLeavingSavedSession;
 
 	useEffect(() => {
@@ -46,13 +50,14 @@ export default function LobbyPage() {
 				return;
 			}
 
-			const result = await api.gameplay.verifyGame.$tryFetch(savedSession);
+			const result =
+				await client.gameplay.verifyGame.fetchResponse(savedSession);
 
 			if (isCancelled) {
 				return;
 			}
 
-			if (result.success) {
+			if (result.status === 200) {
 				setResumeSession(savedSession);
 				setIsCheckingSavedSession(false);
 				return;
@@ -68,7 +73,7 @@ export default function LobbyPage() {
 		return () => {
 			isCancelled = true;
 		};
-	}, [api]);
+	}, [client]);
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -86,8 +91,8 @@ export default function LobbyPage() {
 			{
 				onSuccess: async (session) => {
 					await saveGameSessionCookie({
-						gameCode: session.gameCode.toLowerCase(),
-						playerId: session.playerId,
+						gameCode: session.body.gameCode.toLowerCase(),
+						playerId: session.body.playerId,
 					});
 					router.push("/gameplay");
 				},
@@ -103,7 +108,7 @@ export default function LobbyPage() {
 		setIsLeavingSavedSession(true);
 
 		try {
-			await api.gameplay.leave.$fetch(resumeSession);
+			await client.gameplay.leave.fetch(resumeSession);
 
 			await clearGameSessionCookie();
 			setResumeSession(null);
@@ -213,7 +218,7 @@ export default function LobbyPage() {
 
 								{createGame.error ? (
 									<p className="text-error font-semibold">
-										{createGame.error.message}
+										{getErrorMessage(createGame.error)}
 									</p>
 								) : null}
 

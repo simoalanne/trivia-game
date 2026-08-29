@@ -1,5 +1,5 @@
+import { router } from "@rest-rpc/core";
 import z from "zod";
-import { defineContractTree } from "./initContracts.ts";
 import { questionCardAnswerModeSchema } from "./questionsCrud.ts";
 
 export const gameplayTurnTimeoutSecondsMin = 0;
@@ -134,6 +134,25 @@ const gameplayServerMessageSchema = z.union([
 	}),
 ]);
 
+const gameplayNotFoundErrorSchema = z.object({
+	message: z.string(),
+});
+
+const gameplayJoinErrorSchema = z.discriminatedUnion("code", [
+	z.object({
+		code: z
+			.literal("PLAYER_NAME_TAKEN")
+			.describe(
+				"The player name is already taken in this game. Names are case-insensitive and must be unique.",
+			),
+	}),
+	z.object({
+		code: z
+			.literal("GAME_FULL")
+			.describe("The game is full and cannot accept new players."),
+	}),
+]);
+
 export type GameplayClientMessage = z.infer<typeof gameplayClientMessageSchema>;
 export type GameplayServerMessage = z.infer<typeof gameplayServerMessageSchema>;
 export type GameplayState = z.infer<typeof gamestateSchema>;
@@ -150,21 +169,19 @@ export type PlayersUpdateMessage = Extract<
 	{ type: "playersUpdate" }
 >;
 
-export default defineContractTree({
+export default router({
 	gameplay: {
 		create: {
 			path: "/gameplay/create",
 			method: "POST",
-			request: {
-				body: z.object({
-					playerName: z.string().trim().min(1).max(20),
-					turnDurationSeconds: z
-						.int()
-						.min(gameplayTurnTimeoutSecondsMin)
-						.max(gameplayTurnTimeoutSecondsMax)
-						.default(gameplayTurnTimeoutSecondsDefault),
-				}),
-			},
+			body: z.object({
+				playerName: z.string().trim().min(1).max(20),
+				turnDurationSeconds: z
+					.int()
+					.min(gameplayTurnTimeoutSecondsMin)
+					.max(gameplayTurnTimeoutSecondsMax)
+					.default(gameplayTurnTimeoutSecondsDefault),
+			}),
 			response: z.object({
 				gameCode: z.string(),
 				playerId: z.string(),
@@ -173,66 +190,54 @@ export default defineContractTree({
 		join: {
 			path: "/gameplay/join",
 			method: "POST",
-			request: {
-				body: z.object({
-					gameCode: z.string().min(1).trim(),
-					playerName: z.string().trim().min(1).max(20),
-				}),
-			},
-			response: z.object({
-				playerId: z.string(),
+			body: z.object({
+				gameCode: z.string().min(1).trim(),
+				playerName: z.string().trim().min(1).max(20),
 			}),
-			errors: [
-				z.object({
-					code: z
-						.literal("PLAYER_NAME_TAKEN")
-						.describe(
-							"The player name is already taken in this game. Names are case-insensitive and must be unique.",
-						),
+			responses: {
+				201: z.object({
+					playerId: z.string(),
 				}),
-				z.object({
-					code: z
-						.literal("GAME_FULL")
-						.describe("The game is full and cannot accept new players."),
-				}),
-			],
+				404: gameplayNotFoundErrorSchema,
+				409: gameplayJoinErrorSchema,
+			},
 		},
 		leave: {
 			path: "/gameplay/leave",
 			method: "POST",
-			request: {
-				body: z.object({
-					gameCode: z.string().min(1).trim(),
-					playerId: z.string(),
-				}),
-			},
-			response: z.object({
-				ok: z.literal(true),
+			body: z.object({
+				gameCode: z.string().min(1).trim(),
+				playerId: z.string(),
 			}),
+			responses: {
+				200: z.object({
+					ok: z.literal(true),
+				}),
+				404: gameplayNotFoundErrorSchema,
+			},
 		},
 		verifyGame: {
 			path: "/gameplay/verify-game",
 			method: "GET",
-			request: {
-				query: z.object({
-					gameCode: z.string().min(1).trim(),
-					playerId: z.string().optional(),
-				}),
-			},
-			response: z.object({
-				gameState: z.enum(["NOT_STARTED", "IN_PROGRESS", "FINISHED"]),
+			query: z.object({
+				gameCode: z.string().min(1).trim(),
+				playerId: z.string().optional(),
 			}),
+			responses: {
+				200: z.object({
+					gameState: z.enum(["NOT_STARTED", "IN_PROGRESS", "FINISHED"]),
+				}),
+				404: gameplayNotFoundErrorSchema,
+			},
 		},
 		play: {
 			path: "/gameplay/play",
 			method: "GET",
-			options: { mode: "websocket" },
-			request: {
-				query: z.object({
-					gameCode: z.string().min(1).trim(),
-					playerId: z.string(),
-				}),
-			},
+			mode: "webSocket",
+			query: z.object({
+				gameCode: z.string().min(1).trim(),
+				playerId: z.string(),
+			}),
 			messages: {
 				client: gameplayClientMessageSchema,
 				server: gameplayServerMessageSchema,

@@ -1,6 +1,7 @@
 "use client";
 
 import type { QuestionCard } from "@packages/contracts";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
 import QuestionCardModal from "./QuestionCardModal";
@@ -10,22 +11,34 @@ import TriviaCardsTable from "./TriviaCardsTable";
 type OpenModal = "editor" | "preview" | null;
 
 export default function ManageQuestionsListPage() {
-	const api = useApiClient();
-	const questions = api.questionsCrud.list.useQuery();
+	const { tq } = useApiClient();
+	const queryClient = useQueryClient();
+	const questions = useQuery(tq.questionsCrud.list.queryOptions());
 	const [selectedQuestion, setSelectedQuestion] = useState<QuestionCard | null>(
 		null,
 	);
 	const [openModal, setOpenModal] = useState<OpenModal>(null);
-	const deleteQuestion = api.questionsCrud.delete.useMutation({
-		onSuccess: (deletedQuestion) => {
-			api.questionsCrud.list.setData(
-				(current) =>
-					current?.filter((question) => question.id !== deletedQuestion.id) ??
-					[],
-			);
-			api.questionsCrud.getById.clear({ id: deletedQuestion.id });
-		},
-	});
+	const deleteQuestion = useMutation(
+		tq.questionsCrud.delete.mutationOptions({
+			onSuccess: (deletedQuestion) => {
+				queryClient.setQueryData(tq.questionsCrud.list.getKey(), (current) =>
+					current
+						? {
+								...current,
+								body: current.body.filter(
+									(question) => question.id !== deletedQuestion.body.id,
+								),
+							}
+						: current,
+				);
+				queryClient.removeQueries({
+					queryKey: tq.questionsCrud.getById.getKey({
+						id: deletedQuestion.body.id,
+					}),
+				});
+			},
+		}),
+	);
 
 	const handleDelete = (question: QuestionCard) => {
 		if (
@@ -72,15 +85,17 @@ export default function ManageQuestionsListPage() {
 					</button>
 				</div>
 
-				{questions.error ? (
+				{questions.error && (
 					<p className="text-error font-semibold">{questions.error.message}</p>
-				) : null}
+				)}
 
-				{deleteQuestion.error ? (
+				{deleteQuestion.error && (
 					<p className="text-error font-semibold">
-						{deleteQuestion.error.message}
+						{deleteQuestion.error instanceof Error
+							? deleteQuestion.error.message
+							: deleteQuestion.error.body.message}
 					</p>
-				) : null}
+				)}
 
 				<TriviaCardsTable
 					onEdit={(question) => {
@@ -92,7 +107,7 @@ export default function ManageQuestionsListPage() {
 					onDelete={handleDelete}
 					onPreview={handlePreview}
 					onRowClick={handlePreview}
-					triviaCards={questions.data ?? []}
+					triviaCards={questions.data?.body ?? []}
 				/>
 			</section>
 			<QuestionCardModal

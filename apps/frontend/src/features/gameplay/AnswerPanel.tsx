@@ -45,7 +45,6 @@ export function AnswerPanel({
 			? `${card.answerMode}:${selectedEntry.text}`
 			: "empty";
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: Reset answer controls when the selected prompt changes.
 	useEffect(() => {
 		setSelectedChip(null);
 		setTextAnswer("");

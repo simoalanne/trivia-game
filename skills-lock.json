@@ -11,7 +11,7 @@
 			"source": "rest-rpc/rest-rpc",
 			"sourceType": "github",
 			"skillPath": "skills/rest-rpc/SKILL.md",
-			"computedHash": "4fa457edf9072ba1e29b9389c5560db085c16b7fce707609cad67fcf4cdd68d1"
+			"computedHash": "22b92fca0a9da27d660ef25f679895d8b1647fc4c50adb067aa9fcfbb0e418c3"
 		}
 	}
 }

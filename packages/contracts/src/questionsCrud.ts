@@ -1,5 +1,5 @@
+import { customBody, router } from "@rest-rpc/core";
 import z from "zod";
-import { defineContractTree } from "./initContracts.ts";
 
 const uniqueTrimmedStrings = (items: string[]) =>
 	new Set(items.map((item) => item.trim().toLowerCase())).size === items.length;
@@ -113,7 +113,11 @@ export type QuestionCardAnswerMode = z.infer<
 	typeof questionCardAnswerModeSchema
 >;
 
-export default defineContractTree({
+const notFoundErrorSchema = z.object({
+	message: z.string(),
+});
+
+export default router({
 	questionsCrud: {
 		list: {
 			path: "/questions",
@@ -123,46 +127,50 @@ export default defineContractTree({
 		getById: {
 			path: "/questions/:id",
 			method: "GET",
-			request: {
-				params: z.object({
-					id: triviaCardIdSchema,
-				}),
+			pathParams: {
+				id: triviaCardIdSchema,
 			},
-			response: questionCardSchema,
+			responses: {
+				200: questionCardSchema,
+				404: notFoundErrorSchema,
+			},
 		},
 		create: {
 			path: "/questions",
 			method: "POST",
-			request: {
-				body: questionCardInputSchema,
-			},
+			body: questionCardInputSchema,
 			response: questionCardSchema,
 		},
 		update: {
 			path: "/questions/:id",
 			method: "PUT",
-			request: {
-				params: z.object({
-					id: triviaCardIdSchema,
-				}),
-				body: questionCardInputSchema,
+			pathParams: {
+				id: triviaCardIdSchema,
 			},
-			response: questionCardSchema,
+			body: questionCardInputSchema,
+			responses: {
+				200: questionCardSchema,
+				404: notFoundErrorSchema,
+			},
 		},
 		delete: {
 			path: "/questions/:id",
 			method: "DELETE",
-			request: {
-				params: z.object({
-					id: triviaCardIdSchema,
-				}),
+			pathParams: {
+				id: triviaCardIdSchema,
 			},
-			response: questionCardSchema,
+			responses: {
+				200: questionCardSchema,
+				404: notFoundErrorSchema,
+			},
 		},
 		convertImageToQuestionCardDraft: {
 			path: "/questions/convert-image-to-draft",
 			method: "POST",
-			options: { mode: "raw" },
+			body: customBody({
+				contentType: ["image/jpeg", "image/png"],
+				schema: z.instanceof(Uint8Array),
+			}),
 			response: questionCardInputSchema,
 		},
 	},

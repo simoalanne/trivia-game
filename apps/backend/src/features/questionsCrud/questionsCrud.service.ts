@@ -1,6 +1,10 @@
-import type { QuestionCard, QuestionCardInput } from "@packages/contracts";
+import {
+	contracts,
+	type QuestionCard,
+	type QuestionCardInput,
+} from "@packages/contracts";
+import { router } from "@rest-rpc/express";
 import z from "zod";
-import { defineService } from "../../initServer.ts";
 import prisma from "../../prisma.ts";
 import { NotFoundError } from "../../utils/NotFoundError.ts";
 
@@ -278,7 +282,7 @@ const getQuestionCardById = async (id: number) => {
 	return card;
 };
 
-export default defineService("questionsCrud", {
+const questionsCrudService = router(contracts.questionsCrud, {
 	async list() {
 		const cards = await prisma.triviaCard.findMany({
 			orderBy: {
@@ -358,7 +362,9 @@ export default defineService("questionsCrud", {
 		return toQuestionCard(deletedCard);
 	},
 
-	async convertImageToQuestionCardDraft({ rawBody }) {
-		return createQuestionCardDraftFromImage(rawBody);
+	async convertImageToQuestionCardDraft({ body }) {
+		return createQuestionCardDraftFromImage(body.payload);
 	},
 });
+
+export default questionsCrudService;

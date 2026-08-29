@@ -3,7 +3,8 @@ import type {
 	GameplayState,
 	TurnResolvedMessage,
 } from "@packages/contracts";
-import { defineService, throwKnownError } from "../../initServer.ts";
+import { contracts } from "@packages/contracts";
+import { RouteResponseError, router } from "@rest-rpc/express";
 import prismaClient from "../../prisma.ts";
 import { NotFoundError } from "../../utils/NotFoundError.ts";
 
@@ -346,13 +347,19 @@ const addPlayer = (gameSession: GameSession, name: string) => {
 			(player) => player.name.toLowerCase() === name.toLowerCase(),
 		)
 	) {
-		throwKnownError({ code: "PLAYER_NAME_TAKEN" });
+		throw new RouteResponseError(contracts.gameplay.join, {
+			status: 409,
+			body: { code: "PLAYER_NAME_TAKEN" },
+		});
 	}
 
 	const MAX_PLAYERS_IN_GAME = 4;
 
 	if (gameSession.players.length >= MAX_PLAYERS_IN_GAME) {
-		throwKnownError({ code: "GAME_FULL" });
+		throw new RouteResponseError(contracts.gameplay.join, {
+			status: 409,
+			body: { code: "GAME_FULL" },
+		});
 	}
 
 	const player = createPlayer({
@@ -745,7 +752,7 @@ const requireGameSession = (gameCode: string) => {
 	return gameSession;
 };
 
-export default defineService("gameplay", {
+const gameplayService = router(contracts.gameplay, {
 	async create({ playerName, turnDurationSeconds }) {
 		const gameSession = {
 			gameCode: Array.from({ length: 6 }, () =>
@@ -814,7 +821,8 @@ export default defineService("gameplay", {
 		};
 	},
 
-	async play({ gameCode, playerId, socket }) {
+	async play({ gameCode, playerId, context }) {
+		const { socket } = context;
 		const gameSession = getGameSession(gameCode);
 		if (!gameSession) {
 			return socket.close(1008, "Game not found");
@@ -830,17 +838,10 @@ export default defineService("gameplay", {
 
 		socket.onMessage(async (message) => {
 			console.log("Received message from player", playerId, ":", message);
-			if (!message.success) {
-				socket.send({
-					type: "gameError",
-					message: "Invalid message format",
-				});
-				return;
-			}
 
-			switch (message.data.type) {
+			switch (message.type) {
 				case "toggleReady": {
-					setPlayerReady(gameSession, playerId, message.data.state);
+					setPlayerReady(gameSession, playerId, message.state);
 					break;
 				}
 				case "startGame": {
@@ -851,8 +852,8 @@ export default defineService("gameplay", {
 					const turnResolution = submitAnswer(
 						gameSession,
 						playerId,
-						message.data.entryIndex,
-						message.data.answer,
+						message.entryIndex,
+						message.answer,
 					);
 					sendTurnResolved(gameSession, turnResolution);
 					await advanceGame(gameSession);
@@ -869,16 +870,16 @@ export default defineService("gameplay", {
 					return;
 				}
 				case "setOpenedEntry": {
-					setOpenedEntry(gameSession, playerId, message.data.entryIndex);
-					sendOpenedEntryUpdate(gameSession, message.data.entryIndex);
+					setOpenedEntry(gameSession, playerId, message.entryIndex);
+					sendOpenedEntryUpdate(gameSession, message.entryIndex);
 					break;
 				}
 				case "setTurnPaused": {
-					setTurnPaused(gameSession, playerId, message.data.paused);
+					setTurnPaused(gameSession, playerId, message.paused);
 					break;
 				}
 			}
-			if (message.data.type === "setOpenedEntry") {
+			if (message.type === "setOpenedEntry") {
 				return;
 			}
 			sendGameStateUpdate(gameSession);
@@ -906,3 +907,5 @@ export default defineService("gameplay", {
 		});
 	},
 });
+
+export default gameplayService;

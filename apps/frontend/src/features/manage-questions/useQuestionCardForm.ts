@@ -1,6 +1,7 @@
 "use client";
 
 import type { QuestionCard } from "@packages/contracts";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
 import {
@@ -14,9 +15,10 @@ import {
 } from "./questionCardFormUtils";
 
 export function useQuestionCardForm(question?: QuestionCard | null) {
-	const api = useApiClient();
-	const createMutation = api.questionsCrud.create.useMutation();
-	const editMutation = api.questionsCrud.update.useMutation();
+	const { client, tq } = useApiClient();
+	const queryClient = useQueryClient();
+	const createMutation = useMutation(tq.questionsCrud.create.mutationOptions());
+	const editMutation = useMutation(tq.questionsCrud.update.mutationOptions());
 	const initialFormState = useMemo(
 		() =>
 			question
@@ -50,31 +52,35 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 		setSubmitSucceeded(false);
 
 		try {
-			const savedQuestion = question
+			const savedQuestionResponse = question
 				? await editMutation.mutateAsync({
 						...result.data,
 						id: question.id,
 					})
 				: await createMutation.mutateAsync(result.data);
+			const savedQuestion = savedQuestionResponse.body;
 
-			api.questionsCrud.list.setData((current) => {
-				if (!current) {
-					return [savedQuestion];
-				}
-
-				if (question) {
-					return current.map((currentQuestion) =>
-						currentQuestion.id === savedQuestion.id
-							? savedQuestion
-							: currentQuestion,
-					);
-				}
-
-				return [savedQuestion, ...current];
-			});
-			api.questionsCrud.getById.setData(
-				{ id: savedQuestion.id },
-				savedQuestion,
+			queryClient.setQueryData(tq.questionsCrud.list.getKey(), (current) =>
+				current
+					? {
+							...current,
+							body: question
+								? current.body.map((currentQuestion) =>
+										currentQuestion.id === savedQuestion.id
+											? savedQuestion
+											: currentQuestion,
+									)
+								: [savedQuestion, ...current.body],
+						}
+					: current,
+			);
+			queryClient.setQueryData(
+				tq.questionsCrud.getById.getKey({ id: savedQuestion.id }),
+				{
+					body: savedQuestion,
+					headers: new Headers(),
+					status: 200,
+				},
 			);
 			setSubmitSucceeded(true);
 			return savedQuestion;
@@ -97,9 +103,14 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 		setIsScanningImage(true);
 
 		try {
+			const contentType =
+				file.type === "image/png" ? "image/png" : "image/jpeg";
 			const draft =
-				await api.questionsCrud.convertImageToQuestionCardDraft.$fetch({
-					rawBody: file,
+				await client.questionsCrud.convertImageToQuestionCardDraft.fetch({
+					body: {
+						contentType,
+						payload: new Uint8Array(await file.arrayBuffer()),
+					},
 				});
 
 			setFormState(createFormStateFromQuestionInput(draft));

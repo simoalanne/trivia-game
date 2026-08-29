@@ -31,3 +31,5 @@ apps/backend/generated/prisma
 # local app env files
 apps/backend/.env
 apps/frontend/.env
+
+.codex/

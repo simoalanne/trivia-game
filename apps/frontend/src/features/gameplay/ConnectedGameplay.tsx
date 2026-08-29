@@ -35,7 +35,7 @@ const getCurrentTurnPlayer = (gameState: GameplayState | null) =>
 	gameState?.players.find((player) => player.isPlayerTurn) ?? null;
 
 export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
-	const api = useApiClient();
+	const { client } = useApiClient();
 	const router = useRouter();
 	const normalizedGameCode = useMemo(
 		() => session.gameCode.toLowerCase(),
@@ -130,18 +130,10 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 		setOpenedEntryIndex(null);
 		setLeaveGameMessage(null);
 
-		const result = api.gameplay.play.$tryConnect({
+		const socket = client.gameplay.play.openConnection({
 			gameCode: normalizedGameCode,
 			playerId: session.playerId,
 		});
-
-		if (!result.success) {
-			setConnectionState("error");
-			setError(result.error.message ?? "Could not open gameplay socket.");
-			return;
-		}
-
-		const socket = result.data;
 		const unsubscribeOpen = socket.onOpen(() => {
 			setConnectionState("open");
 		});
@@ -160,30 +152,25 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 			setOpenedEntryIndex(null);
 			setError("Gameplay socket encountered an error.");
 		});
-		const unsubscribeMessage = socket.onMessage((result) => {
-			if (!result.success) {
-				setError("Backend sent an unexpected gameplay message.");
-				return;
-			}
-
-			switch (result.data.type) {
+		const unsubscribeMessage = socket.onMessage((message) => {
+			switch (message.type) {
 				case "gameStateUpdate":
-					setGameState(result.data.gameState);
+					setGameState(message.gameState);
 					setError(null);
 					break;
 				case "turnResolved":
-					setAnswerResolution(result.data);
+					setAnswerResolution(message);
 					break;
 				case "playersUpdate":
-					if (result.data.playerId !== session.playerId) {
-						showPlayerPresenceToast(result.data);
+					if (message.playerId !== session.playerId) {
+						showPlayerPresenceToast(message);
 					}
 					break;
 				case "openedEntryUpdate":
-					setOpenedEntryIndex(result.data.entryIndex);
+					setOpenedEntryIndex(message.entryIndex);
 					break;
 				case "gameError":
-					setError(result.data.message);
+					setError(message.message);
 					break;
 			}
 		});
@@ -243,7 +230,7 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 				socket.close(1000, "Leaving gameplay route");
 			}
 		};
-	}, [api, normalizedGameCode, session.playerId, showPlayerPresenceToast]);
+	}, [client, normalizedGameCode, session.playerId, showPlayerPresenceToast]);
 
 	const send = useCallback(
 		(message: GameplayClientMessage) => sendMessage?.(message) ?? false,

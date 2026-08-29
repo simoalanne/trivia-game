@@ -1,8 +1,4 @@
-import type {
-	ContractApiRequest,
-	ContractApiResponse,
-	DotPaths,
-} from "@contract-first-api/core";
+import { router } from "@rest-rpc/core";
 import gameplay from "./gameplay.ts";
 import questionsCrud from "./questionsCrud.ts";
 
@@ -36,20 +32,12 @@ export {
 	triviaCardIdSchema,
 } from "./questionsCrud.ts";
 
-export const contracts = {
-	...gameplay,
-	...questionsCrud,
-};
-
-type AppContracts = typeof contracts;
-type ApiPath = DotPaths<AppContracts>;
-
-export type ApiRequest<Path extends ApiPath> = ContractApiRequest<
-	AppContracts,
-	Path
->;
-
-export type ApiResponse<Path extends ApiPath> = ContractApiResponse<
-	AppContracts,
-	Path
->;
+export const contracts = router(
+	{
+		...gameplay,
+		...questionsCrud,
+	},
+	{
+		pathPrefix: "/api",
+	},
+);

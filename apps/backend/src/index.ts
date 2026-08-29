@@ -1,41 +1,35 @@
 import "dotenv/config";
 import { createServer } from "node:http";
-import { initServer } from "@contract-first-api/express";
-import { createOpenApiDocument } from "@contract-first-api/openapi";
 import { contracts } from "@packages/contracts";
+import { createOpenApiDocument } from "@rest-rpc/core";
+import { registerRoutes } from "@rest-rpc/express";
 import { apiReference } from "@scalar/express-api-reference";
-import type { ErrorRequestHandler } from "express";
 import express from "express";
+import { WebSocketServer } from "ws";
+import z from "zod";
 import gameplayService from "./features/gameplay/gameplay.service.ts";
 import questionsCrudService from "./features/questionsCrud/questionsCrud.service.ts";
 import { NotFoundError } from "./utils/NotFoundError.ts";
 
 const app = express();
 const server = createServer(app);
+const webSocketServer = new WebSocketServer({ noServer: true });
 const port = Number(process.env.PORT ?? 3000);
 
-type RequestContext = Record<string, unknown>;
-
-export const {
-	defineService,
-	defineMiddleware,
-	createRouter,
-	createContractModeMiddleware,
-} = initServer<typeof contracts, RequestContext>();
-
-app.use(
-	createContractModeMiddleware({
-		contracts,
-		nonRaw: express.json(),
-		raw: express.raw({ type: ["image/jpeg", "image/png"], limit: "5mb" }),
-		routePrefix: "/api",
-	}),
-);
+app.use(express.json());
+app.use(express.raw({ type: ["image/jpeg", "image/png"], limit: "5mb" }));
 
 const openApiDocument = createOpenApiDocument(contracts, {
 	info: {
-		title: "Contract First API Project",
+		title: "Trivia Game API",
 		version: "1.0.0",
+	},
+	schemaConverter: (schema) => {
+		try {
+			return z.toJSONSchema(schema as z.ZodType);
+		} catch {
+			return {};
+		}
 	},
 });
 
@@ -45,12 +39,20 @@ app.get("/openapi.json", (_req, res) => {
 
 app.use("/api-docs", apiReference({ url: "/openapi.json" }));
 
-const loggingMiddleware = defineMiddleware(async (req, _, next) => {
-	console.log(
-		`Incoming ${req.contract.method}  request to ${req.contract.path}`,
-	);
+const routes = {
+	gameplay: gameplayService,
+	questionsCrud: questionsCrudService,
+};
+
+const loggingMiddleware = (
+	_req: express.Request,
+	_res: express.Response,
+	next: express.NextFunction,
+	route: { method: string; path: string },
+) => {
+	console.log(`Incoming ${route.method} request to ${route.path}`);
 	next();
-});
+};
 
 app.use((req, res, next) => {
 	res.header("Access-Control-Allow-Origin", "*");
@@ -65,32 +67,23 @@ app.use((req, res, next) => {
 	next();
 });
 
-createRouter({
-	app,
-	server,
-	contracts,
-	services: {
-		gameplay: gameplayService,
-		questionsCrud: questionsCrudService,
+registerRoutes(app, routes, {
+	middleware: [loggingMiddleware],
+	webSocket: {
+		server,
+		webSocketServer,
 	},
-	middlewares: [loggingMiddleware],
-	routePrefix: "/api",
-	createContext: async (_req) => {
-		return {};
+	errorHandlers: {
+		onUnhandledError: ({ error }) => {
+			if (error instanceof NotFoundError) {
+				return {
+					status: 404,
+					body: { message: error.message },
+				};
+			}
+		},
 	},
 });
-
-const errorHandler: ErrorRequestHandler = (error, _req, res, _next) => {
-	if (error instanceof NotFoundError) {
-		res.status(404).json({ message: error.message });
-		return;
-	}
-
-	console.error(error);
-	res.status(500).json({ message: "Internal server error" });
-};
-
-app.use(errorHandler);
 
 server.listen(port, () => {
 	console.log(`Server is running on http://localhost:${port}`);
