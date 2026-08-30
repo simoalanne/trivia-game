@@ -4,7 +4,7 @@ import type {
 	TurnResolvedMessage,
 } from "@packages/contracts";
 import { contracts } from "@packages/contracts";
-import { RouteResponseError, router } from "@rest-rpc/express";
+import { RouteResponseError, router } from "@rest-rpc/hono";
 import prismaClient from "../../prisma.ts";
 import { NotFoundError } from "../../utils/NotFoundError.ts";
 

@@ -1,23 +1,20 @@
 import "dotenv/config";
-import { createServer } from "node:http";
+import { Buffer } from "node:buffer";
 import { contracts } from "@packages/contracts";
 import { createOpenApiDocument } from "@rest-rpc/core";
-import { registerRoutes } from "@rest-rpc/express";
-import { apiReference } from "@scalar/express-api-reference";
-import express from "express";
-import { WebSocketServer } from "ws";
+import type { HonoParseBody } from "@rest-rpc/hono";
+import { registerRoutes } from "@rest-rpc/hono";
+import { apiReference } from "@scalar/hono-api-reference";
+import { Hono } from "hono";
+import { upgradeWebSocket, websocket } from "hono/bun";
+import { cors } from "hono/cors";
 import z from "zod";
 import gameplayService from "./features/gameplay/gameplay.service.ts";
 import questionsCrudService from "./features/questionsCrud/questionsCrud.service.ts";
 import { NotFoundError } from "./utils/NotFoundError.ts";
 
-const app = express();
-const server = createServer(app);
-const webSocketServer = new WebSocketServer({ noServer: true });
+const app = new Hono();
 const port = Number(process.env.PORT ?? 3000);
-
-app.use(express.json());
-app.use(express.raw({ type: ["image/jpeg", "image/png"], limit: "5mb" }));
 
 const openApiDocument = createOpenApiDocument(contracts, {
 	info: {
@@ -33,45 +30,40 @@ const openApiDocument = createOpenApiDocument(contracts, {
 	},
 });
 
-app.get("/openapi.json", (_req, res) => {
-	res.json(openApiDocument);
+app.use(cors());
+
+app.get("/openapi.json", (c) => {
+	return c.json(openApiDocument);
 });
 
 app.use("/api-docs", apiReference({ url: "/openapi.json" }));
+
+app.use("*", async (c, next) => {
+	console.log(`Incoming request: ${c.req.method} ${c.req.url}`);
+	await next();
+});
 
 const routes = {
 	gameplay: gameplayService,
 	questionsCrud: questionsCrudService,
 };
 
-const loggingMiddleware = (
-	_req: express.Request,
-	_res: express.Response,
-	next: express.NextFunction,
-	route: { method: string; path: string },
-) => {
-	console.log(`Incoming ${route.method} request to ${route.path}`);
-	next();
+const imageContentTypes = new Set(["image/jpeg", "image/png"]);
+
+const parseBody: HonoParseBody = async ({ c }) => {
+	const contentType = c.req.header("content-type")?.split(";")[0]?.trim();
+
+	if (contentType && imageContentTypes.has(contentType.toLowerCase())) {
+		return Buffer.from(await c.req.raw.arrayBuffer());
+	}
+
+	return c.req.json();
 };
 
-app.use((req, res, next) => {
-	res.header("Access-Control-Allow-Origin", "*");
-	res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-	res.header(
-		"Access-Control-Allow-Headers",
-		"Origin, X-Requested-With, Content-Type, Accept",
-	);
-	if (req.method === "OPTIONS") {
-		return res.sendStatus(200);
-	}
-	next();
-});
-
 registerRoutes(app, routes, {
-	middleware: [loggingMiddleware],
+	parseBody,
 	webSocket: {
-		server,
-		webSocketServer,
+		upgradeWebSocket,
 	},
 	errorHandlers: {
 		onUnhandledError: ({ error }) => {
@@ -85,6 +77,8 @@ registerRoutes(app, routes, {
 	},
 });
 
-server.listen(port, () => {
-	console.log(`Server is running on http://localhost:${port}`);
-});
+export default {
+	port,
+	fetch: app.fetch,
+	websocket,
+};

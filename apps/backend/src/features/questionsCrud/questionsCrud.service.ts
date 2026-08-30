@@ -3,7 +3,7 @@ import {
 	type QuestionCard,
 	type QuestionCardInput,
 } from "@packages/contracts";
-import { router } from "@rest-rpc/express";
+import { router } from "@rest-rpc/hono";
 import z from "zod";
 import prisma from "../../prisma.ts";
 import { NotFoundError } from "../../utils/NotFoundError.ts";
