@@ -217,11 +217,12 @@ function PanelFooter({
 }) {
 	const isResolved = tone === "correct" || tone === "wrong";
 	const isDisabled = disabled || !canSubmit;
+	const isSubmitDisabled = !isResolved && isDisabled;
 
 	return (
 		<div className="grid">
 			<button
-				aria-disabled={isDisabled}
+				aria-disabled={isSubmitDisabled}
 				className={cn(
 					"btn btn-block",
 					tone === "correct"
@@ -229,10 +230,11 @@ function PanelFooter({
 						: tone === "wrong"
 							? "btn-error"
 							: "btn-primary",
+					isResolved ? "pointer-events-none" : null,
 				)}
-				disabled={!isResolved && isDisabled}
+				disabled={isSubmitDisabled}
 				onClick={() => {
-					if (!isDisabled) {
+					if (!isDisabled && !isResolved) {
 						onSubmit();
 					}
 				}}
