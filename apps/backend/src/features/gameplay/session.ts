@@ -194,7 +194,7 @@ export const disconnectPlayer = (
 	console.log("Player disconnected", playerId);
 };
 
-export const handleClientMessage = (
+const applyClientMessage = (
 	room: GameRoom,
 	playerId: string,
 	connection: PlayerConnection,
@@ -240,3 +240,24 @@ export const handleClientMessage = (
 
 		broadcastState(room);
 	});
+
+/**
+ * Applies a player's message. A failed action is reported back to that
+ * player as an unexpectedError (to help debugging) and keeps them connected.
+ */
+export const handleClientMessage = async (
+	room: GameRoom,
+	playerId: string,
+	connection: PlayerConnection,
+	message: GameplayClientMessage,
+) => {
+	try {
+		await applyClientMessage(room, playerId, connection, message);
+	} catch (error) {
+		console.error(`Gameplay action "${message.type}" failed`, error);
+		connection.send({
+			type: "unexpectedError",
+			message: error instanceof Error ? error.message : String(error),
+		});
+	}
+};

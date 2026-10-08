@@ -129,7 +129,7 @@ const gameplayServerMessageSchema = z.union([
 		entryIndex: z.int().nullable(),
 	}),
 	z.object({
-		type: z.literal("gameError"),
+		type: z.literal("unexpectedError"),
 		message: z.string(),
 	}),
 ]);

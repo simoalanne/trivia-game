@@ -169,7 +169,7 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 				case "openedEntryUpdate":
 					setOpenedEntryIndex(message.entryIndex);
 					break;
-				case "gameError":
+				case "unexpectedError":
 					setError(message.message);
 					break;
 			}
