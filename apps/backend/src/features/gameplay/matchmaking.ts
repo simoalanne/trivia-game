@@ -1,4 +1,4 @@
-import { NotFoundError } from "../../utils/NotFoundError.ts";
+import { ORPCError } from "@orpc/server";
 import { createPlayer } from "./rules/players.ts";
 import { hasPlayer } from "./rules/queries.ts";
 import {
@@ -20,14 +20,14 @@ export const findGame = (gameCode: string) => games.get(gameCode.toLowerCase());
 const requireGame = (gameCode: string) => {
 	const room = findGame(gameCode);
 	if (!room) {
-		throw new NotFoundError("Game not found");
+		throw new ORPCError("NOT_FOUND", { message: "Game not found" });
 	}
 	return room;
 };
 
 const requirePlayer = (room: GameRoom, playerId: string) => {
 	if (!hasPlayer(room.state, playerId)) {
-		throw new NotFoundError("Player not found in game");
+		throw new ORPCError("NOT_FOUND", { message: "Player not found in game" });
 	}
 };
 

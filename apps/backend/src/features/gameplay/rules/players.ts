@@ -1,9 +1,9 @@
+import { ORPCError } from "@orpc/server";
 import type { PlayersUpdateMessage } from "@packages/contracts";
-import {
-	type GamePlayer,
-	type GameRuleContext,
-	type GameSession,
-	JoinRejectedError,
+import type {
+	GamePlayer,
+	GameRuleContext,
+	GameSession,
 } from "../gameplay.types.ts";
 import {
 	getCurrentRoundOrThrow,
@@ -58,10 +58,16 @@ export const addPlayer = (session: GameSession, name: string) => {
 			(player) => player.name.toLowerCase() === name.toLowerCase(),
 		)
 	) {
-		throw new JoinRejectedError("PLAYER_NAME_TAKEN");
+		throw new ORPCError("CONFLICT", {
+			message: "This player name is already taken in this game",
+			data: { reason: "PLAYER_NAME_TAKEN" },
+		});
 	}
 	if (session.players.length >= MAX_PLAYERS_IN_GAME) {
-		throw new JoinRejectedError("GAME_FULL");
+		throw new ORPCError("CONFLICT", {
+			message: "This game is full",
+			data: { reason: "GAME_FULL" },
+		});
 	}
 
 	const player = createPlayer({

@@ -69,10 +69,3 @@ export type GameRuleContext = {
 
 /** Something that happened while applying a rule, announced to every player. */
 export type GameEvent = TurnResolvedMessage | PlayersUpdateMessage;
-
-export class JoinRejectedError extends Error {
-	constructor(readonly code: "PLAYER_NAME_TAKEN" | "GAME_FULL") {
-		super(code);
-		this.name = "JoinRejectedError";
-	}
-}
