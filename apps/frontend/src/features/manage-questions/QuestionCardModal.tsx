@@ -4,6 +4,7 @@ import {
 	MAX_ENTRIES_PER_CARD,
 	MIN_ENTRIES_PER_CARD,
 	type QuestionCard,
+	questionImageContentTypes,
 } from "@packages/contracts";
 import { Plus, TrashIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
@@ -185,7 +186,7 @@ export default function QuestionCardModal({
 										AI-features
 									</legend>
 									<input
-										accept="image/*"
+										accept={questionImageContentTypes.join(",")}
 										className="hidden"
 										onChange={async (event) => {
 											const file = event.target.files?.[0];

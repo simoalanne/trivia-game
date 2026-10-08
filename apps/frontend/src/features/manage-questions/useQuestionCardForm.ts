@@ -1,6 +1,6 @@
 "use client";
 
-import type { QuestionCard } from "@packages/contracts";
+import { type QuestionCard, questionImageSchema } from "@packages/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
@@ -15,10 +15,12 @@ import {
 } from "./questionCardFormUtils";
 
 export function useQuestionCardForm(question?: QuestionCard | null) {
-	const { client, tq } = useApiClient();
+	const { orpc, orpcClient } = useApiClient();
 	const queryClient = useQueryClient();
-	const createMutation = useMutation(tq.questionsCrud.create.mutationOptions());
-	const editMutation = useMutation(tq.questionsCrud.update.mutationOptions());
+	const createMutation = useMutation(
+		orpc.questionsCrud.create.mutationOptions(),
+	);
+	const editMutation = useMutation(orpc.questionsCrud.update.mutationOptions());
 	const initialFormState = useMemo(
 		() =>
 			question
@@ -54,13 +56,13 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 		try {
 			const savedQuestionResponse = question
 				? await editMutation.mutateAsync({
-						...result.data,
-						id: question.id,
+						params: { id: question.id },
+						body: result.data,
 					})
-				: await createMutation.mutateAsync(result.data);
+				: await createMutation.mutateAsync({ body: result.data });
 			const savedQuestion = savedQuestionResponse.body;
 
-			queryClient.setQueryData(tq.questionsCrud.list.getKey(), (current) =>
+			queryClient.setQueryData(orpc.questionsCrud.list.queryKey(), (current) =>
 				current
 					? {
 							...current,
@@ -75,12 +77,10 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 					: current,
 			);
 			queryClient.setQueryData(
-				tq.questionsCrud.getById.getKey({ id: savedQuestion.id }),
-				{
-					body: savedQuestion,
-					headers: new Headers(),
-					status: 200,
-				},
+				orpc.questionsCrud.getById.queryKey({
+					input: { params: { id: savedQuestion.id } },
+				}),
+				{ status: 200, body: savedQuestion },
 			);
 			setSubmitSucceeded(true);
 			return savedQuestion;
@@ -103,17 +103,12 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 		setIsScanningImage(true);
 
 		try {
-			const contentType =
-				file.type === "image/png" ? "image/png" : "image/jpeg";
 			const draft =
-				await client.questionsCrud.convertImageToQuestionCardDraft.fetch({
-					body: {
-						contentType,
-						payload: new Uint8Array(await file.arrayBuffer()),
-					},
+				await orpcClient.questionsCrud.convertImageToQuestionCardDraft({
+					body: { image: questionImageSchema.parse(file) },
 				});
 
-			setFormState(createFormStateFromQuestionInput(draft));
+			setFormState(createFormStateFromQuestionInput(draft.body));
 			setErrors({});
 			setSubmitError(null);
 			setSubmitSucceeded(false);

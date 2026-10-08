@@ -1,8 +1,10 @@
 import "dotenv/config";
-import { Buffer } from "node:buffer";
-import { contracts } from "@packages/contracts";
+import { COMMON_ERROR_STATUS_MAP, OpenAPIGenerator } from "@orpc/openapi";
+import { OpenAPIHandler } from "@orpc/openapi/fetch";
+import { ORPCError, onError } from "@orpc/server";
+import { ZodToJsonSchemaConverter } from "@orpc/zod";
+import { contracts, orpcContract } from "@packages/contracts";
 import { createOpenApiDocument } from "@rest-rpc/core";
-import type { HonoParseBody } from "@rest-rpc/hono";
 import { registerRoutes } from "@rest-rpc/hono";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
@@ -16,7 +18,7 @@ import { NotFoundError } from "./utils/NotFoundError.ts";
 const app = new Hono();
 const port = Number(process.env.PORT ?? 3000);
 
-const openApiDocument = createOpenApiDocument(contracts, {
+const restRpcOpenApiDocument = createOpenApiDocument(contracts, {
 	info: {
 		title: "Trivia Game API",
 		version: "1.0.0",
@@ -29,6 +31,45 @@ const openApiDocument = createOpenApiDocument(contracts, {
 		}
 	},
 });
+
+const orpcOpenApiDocument = await new OpenAPIGenerator({
+	converters: [new ZodToJsonSchemaConverter()],
+}).generate(orpcContract, {
+	version: "3.1.0",
+});
+
+const openApiDocument = {
+	...restRpcOpenApiDocument,
+	paths: {
+		...restRpcOpenApiDocument.paths,
+		...orpcOpenApiDocument.paths,
+	},
+	components: {
+		...restRpcOpenApiDocument.components,
+		...orpcOpenApiDocument.components,
+	},
+};
+
+const questionsCrudHandler = new OpenAPIHandler(
+	{ questionsCrud: questionsCrudService },
+	{
+		interceptors: [
+			onError((error) => {
+				if (
+					error instanceof ORPCError &&
+					error.code in COMMON_ERROR_STATUS_MAP &&
+					COMMON_ERROR_STATUS_MAP[
+						error.code as keyof typeof COMMON_ERROR_STATUS_MAP
+					] < 500
+				) {
+					return;
+				}
+
+				console.error(error);
+			}),
+		],
+	},
+);
 
 app.use(cors());
 
@@ -43,25 +84,23 @@ app.use("*", async (c, next) => {
 	await next();
 });
 
-const routes = {
-	gameplay: gameplayService,
-	questionsCrud: questionsCrudService,
-};
+app.use("/api/questions/*", async (c, next) => {
+	const { matched, response } = await questionsCrudHandler.handle(c.req.raw, {
+		context: {},
+	});
 
-const imageContentTypes = new Set(["image/jpeg", "image/png"]);
-
-const parseBody: HonoParseBody = async ({ c }) => {
-	const contentType = c.req.header("content-type")?.split(";")[0]?.trim();
-
-	if (contentType && imageContentTypes.has(contentType.toLowerCase())) {
-		return Buffer.from(await c.req.raw.arrayBuffer());
+	if (matched) {
+		return c.newResponse(response.body, response);
 	}
 
-	return c.req.json();
+	await next();
+});
+
+const routes = {
+	gameplay: gameplayService,
 };
 
 registerRoutes(app, routes, {
-	parseBody,
 	webSocket: {
 		upgradeWebSocket,
 	},
