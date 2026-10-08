@@ -35,12 +35,6 @@ importers:
       '@packages/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@rest-rpc/core':
-        specifier: 0.1.0-beta.18
-        version: 0.1.0-beta.18
-      '@rest-rpc/hono':
-        specifier: 0.1.0-beta.18
-        version: 0.1.0-beta.18(hono@4.13.5)
       '@scalar/hono-api-reference':
         specifier: 0.12.0
         version: 0.12.0(hono@4.13.5)
@@ -96,12 +90,6 @@ importers:
       '@packages/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
-      '@rest-rpc/core':
-        specifier: 0.1.0-beta.18
-        version: 0.1.0-beta.18
-      '@rest-rpc/tanstack-query':
-        specifier: 0.1.0-beta.18
-        version: 0.1.0-beta.18(@tanstack/query-core@5.102.8)
       '@tanstack/react-query':
         specifier: ^5.102.8
         version: 5.102.8(react@19.2.8)
@@ -166,9 +154,6 @@ importers:
       '@orpc/openapi':
         specifier: 2.0.0-beta.42
         version: 2.0.0-beta.42
-      '@rest-rpc/core':
-        specifier: 0.1.0-beta.18
-        version: 0.1.0-beta.18
       zod:
         specifier: ^4.5.4
         version: 4.5.4
@@ -1441,22 +1426,6 @@ packages:
 
   '@radix-ui/rect@1.1.3':
     resolution: {integrity: sha512-JtyZR+mqgBibTo8xea3B6ZRmzZiM/YeVBtUkas6zMuXjAlfIFIW2FgqeM9eLyvEaYX66vr6DJMK+4U6LV0KhNw==}
-
-  '@rest-rpc/core@0.1.0-beta.18':
-    resolution: {integrity: sha512-nQV4AhbkKTpxuG78/Rsk0OVrVOR7ecNAYfCa24CKTFWUL29MZrImEHTbB2XKxRl4d/3wQdh+WGaUdFz128oDKQ==}
-
-  '@rest-rpc/hono@0.1.0-beta.18':
-    resolution: {integrity: sha512-hZxpYgbeNZC6WXx8AxsF8bYWfI6CN9Ca72OZe9Q9SFFrA/GLCv+pIJExL0p3Gcd2cc+/pdM1loFEGaTB1VfB8g==}
-    peerDependencies:
-      hono: ^4.0.0
-
-  '@rest-rpc/server@0.1.0-beta.18':
-    resolution: {integrity: sha512-W87ZhwFeQuGYvegYgPu2ddH72ZzELfi5UMRYrFlcWy8pcZcBWdEoRXqEML4GwKNSzzTSTlylJEJcZI/H4SkjLw==}
-
-  '@rest-rpc/tanstack-query@0.1.0-beta.18':
-    resolution: {integrity: sha512-7kzb2jDZlCM7lcwKAGZLnKqv+g0+WWuGi4r+3wpu8AKyz4DOiQ0eLgqQN2utMNGqqtvBy6numRh0G9u308MfKQ==}
-    peerDependencies:
-      '@tanstack/query-core': '>=5.86.0 <6.0.0'
 
   '@scalar/client-side-rendering@0.3.10':
     resolution: {integrity: sha512-FlUByzYhsas54zIvsiTJ7UgAZiVUQmErWvrQm+CKTBnIvSmIb5eWowJ4/O0bbkUa8rsOIdmCcX+HtX+EDdf0CA==}
@@ -3889,23 +3858,6 @@ snapshots:
       '@types/react-dom': 19.2.5(@types/react@19.2.18)
 
   '@radix-ui/rect@1.1.3': {}
-
-  '@rest-rpc/core@0.1.0-beta.18': {}
-
-  '@rest-rpc/hono@0.1.0-beta.18(hono@4.13.5)':
-    dependencies:
-      '@rest-rpc/core': 0.1.0-beta.18
-      '@rest-rpc/server': 0.1.0-beta.18
-      hono: 4.13.5
-
-  '@rest-rpc/server@0.1.0-beta.18':
-    dependencies:
-      '@rest-rpc/core': 0.1.0-beta.18
-
-  '@rest-rpc/tanstack-query@0.1.0-beta.18(@tanstack/query-core@5.102.8)':
-    dependencies:
-      '@rest-rpc/core': 0.1.0-beta.18
-      '@tanstack/query-core': 5.102.8
 
   '@scalar/client-side-rendering@0.3.10':
     dependencies:
