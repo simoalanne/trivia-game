@@ -1,4 +1,5 @@
-import { customBody, router } from "@rest-rpc/core";
+import { oc } from "@orpc/contract";
+import { openapi } from "@orpc/openapi";
 import z from "zod";
 
 const uniqueTrimmedStrings = (items: string[]) =>
@@ -113,65 +114,163 @@ export type QuestionCardAnswerMode = z.infer<
 	typeof questionCardAnswerModeSchema
 >;
 
-const notFoundErrorSchema = z.object({
-	message: z.string(),
+export const questionImageContentTypes = ["image/jpeg", "image/png"] as const;
+export const MAX_QUESTION_IMAGE_BYTES = 10 * 1024 * 1024;
+
+export const questionImageSchema = z
+	.file()
+	.min(1, "Image must not be empty")
+	.max(MAX_QUESTION_IMAGE_BYTES, "Image must be 10 MB or smaller")
+	.mime([...questionImageContentTypes]);
+
+const questionCardIdParamsSchema = z.object({
+	id: triviaCardIdSchema,
 });
 
-export default router({
-	questionsCrud: {
-		list: {
-			path: "/questions",
-			method: "GET",
-			response: z.array(questionCardSchema),
-		},
-		getById: {
-			path: "/questions/:id",
-			method: "GET",
-			pathParams: {
-				id: triviaCardIdSchema,
-			},
-			responses: {
-				200: questionCardSchema,
-				404: notFoundErrorSchema,
-			},
-		},
-		create: {
-			path: "/questions",
-			method: "POST",
-			body: questionCardInputSchema,
-			response: questionCardSchema,
-		},
-		update: {
-			path: "/questions/:id",
-			method: "PUT",
-			pathParams: {
-				id: triviaCardIdSchema,
-			},
-			body: questionCardInputSchema,
-			responses: {
-				200: questionCardSchema,
-				404: notFoundErrorSchema,
-			},
-		},
-		delete: {
-			path: "/questions/:id",
-			method: "DELETE",
-			pathParams: {
-				id: triviaCardIdSchema,
-			},
-			responses: {
-				200: questionCardSchema,
-				404: notFoundErrorSchema,
-			},
-		},
-		convertImageToQuestionCardDraft: {
-			path: "/questions/convert-image-to-draft",
-			method: "POST",
-			body: customBody({
-				contentType: ["image/jpeg", "image/png"],
-				schema: z.instanceof(Uint8Array),
-			}),
-			response: questionCardInputSchema,
-		},
+const notFoundError = {
+	NOT_FOUND: {
+		message: "Question not found",
 	},
-});
+} as const;
+
+const questionsCrud = oc.meta(
+	openapi({
+		tags: ["Questions"],
+		inputStructure: "detailed",
+		outputStructure: "detailed",
+	}),
+);
+
+export const questionsCrudContract = {
+	list: questionsCrud
+		.meta(
+			openapi({
+				method: "GET",
+				path: "/questions",
+				operationId: "listQuestionCards",
+				summary: "List question cards",
+				description:
+					"Returns every question card, most recently updated first.",
+				successDescription: "Question cards",
+			}),
+		)
+		.output(
+			z.object({
+				status: z.literal(200),
+				body: z.array(questionCardSchema),
+			}),
+		),
+	getById: questionsCrud
+		.meta(
+			openapi({
+				method: "GET",
+				path: "/questions/{id}",
+				operationId: "getQuestionCard",
+				summary: "Get a question card",
+				successDescription: "The question card",
+			}),
+		)
+		.errors(notFoundError)
+		.input(z.object({ params: questionCardIdParamsSchema }))
+		.output(
+			z.object({
+				status: z.literal(200),
+				body: questionCardSchema,
+			}),
+		),
+	create: questionsCrud
+		.meta(
+			openapi({
+				method: "POST",
+				path: "/questions",
+				operationId: "createQuestionCard",
+				summary: "Create a question card",
+				successStatus: 201,
+				successDescription: "The created question card",
+			}),
+		)
+		.input(z.object({ body: questionCardInputSchema }))
+		.output(
+			z.object({
+				status: z.literal(201),
+				body: questionCardSchema,
+			}),
+		),
+	update: questionsCrud
+		.meta(
+			openapi({
+				method: "PUT",
+				path: "/questions/{id}",
+				operationId: "updateQuestionCard",
+				summary: "Replace a question card",
+				successDescription: "The updated question card",
+			}),
+		)
+		.errors(notFoundError)
+		.input(
+			z.object({
+				params: questionCardIdParamsSchema,
+				body: questionCardInputSchema,
+			}),
+		)
+		.output(
+			z.object({
+				status: z.literal(200),
+				body: questionCardSchema,
+			}),
+		),
+	delete: questionsCrud
+		.meta(
+			openapi({
+				method: "DELETE",
+				path: "/questions/{id}",
+				operationId: "deleteQuestionCard",
+				summary: "Delete a question card",
+				successDescription: "The deleted question card",
+			}),
+		)
+		.errors(notFoundError)
+		.input(z.object({ params: questionCardIdParamsSchema }))
+		.output(
+			z.object({
+				status: z.literal(200),
+				body: questionCardSchema,
+			}),
+		),
+	convertImageToQuestionCardDraft: questionsCrud
+		.meta(
+			openapi({
+				method: "POST",
+				path: "/questions/convert-image-to-draft",
+				operationId: "convertImageToQuestionCardDraft",
+				summary: "Draft a question card from an image",
+				description:
+					"Reads a photo of a physical trivia card and returns an unsaved question card draft. The image is sent as the `image` field of a multipart form.",
+				successDescription: "Question card draft",
+			}),
+		)
+		.errors({
+			UNPROCESSABLE_CONTENT: {
+				message: "Could not read a trivia card from this image",
+			},
+			BAD_GATEWAY: {
+				message: "Image recognition service failed",
+			},
+			GATEWAY_TIMEOUT: {
+				message: "Image recognition service timed out",
+			},
+		})
+		.input(
+			z.object({
+				body: z.object({
+					image: questionImageSchema,
+				}),
+			}),
+		)
+		.output(
+			z.object({
+				status: z.literal(200),
+				body: questionCardInputSchema,
+			}),
+		),
+};

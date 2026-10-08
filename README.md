@@ -4,7 +4,7 @@ Turn-based multiplayer trivia game built as a TypeScript monorepo with:
 
 - `apps/frontend`: Next.js frontend
 - `apps/backend`: Hono + WebSocket backend running on Bun
-- `packages/contracts`: shared rest-rpc API and WebSocket contracts
+- `packages/contracts`: shared oRPC API contract and WebSocket message schemas
 
 ## Features
 

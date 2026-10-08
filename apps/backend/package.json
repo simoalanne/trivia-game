@@ -11,9 +11,11 @@
 		"typecheck": "tsc -p tsconfig.json"
 	},
 	"dependencies": {
+		"@orpc/contract": "2.0.0-beta.42",
+		"@orpc/openapi": "2.0.0-beta.42",
+		"@orpc/server": "2.0.0-beta.42",
+		"@orpc/zod": "2.0.0-beta.42",
 		"@packages/contracts": "workspace:*",
-		"@rest-rpc/core": "0.1.0-beta.18",
-		"@rest-rpc/hono": "0.1.0-beta.18",
 		"@scalar/hono-api-reference": "0.12.0",
 		"hono": "^4.13.5",
 		"zod": "^4.5.4"

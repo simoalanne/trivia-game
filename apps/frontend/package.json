@@ -10,9 +10,11 @@
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.7.0",
+		"@orpc/client": "2.0.0-beta.42",
+		"@orpc/contract": "2.0.0-beta.42",
+		"@orpc/openapi": "2.0.0-beta.42",
+		"@orpc/tanstack-query": "2.0.0-beta.42",
 		"@packages/contracts": "workspace:*",
-		"@rest-rpc/core": "0.1.0-beta.18",
-		"@rest-rpc/tanstack-query": "0.1.0-beta.18",
 		"@tanstack/react-query": "^5.102.8",
 		"clsx": "^2.1.1",
 		"countries-list": "^3.4.1",

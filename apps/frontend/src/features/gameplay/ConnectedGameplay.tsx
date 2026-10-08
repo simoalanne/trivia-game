@@ -35,7 +35,7 @@ const getCurrentTurnPlayer = (gameState: GameplayState | null) =>
 	gameState?.players.find((player) => player.isPlayerTurn) ?? null;
 
 export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
-	const { client } = useApiClient();
+	const { openGameplaySocket } = useApiClient();
 	const router = useRouter();
 	const normalizedGameCode = useMemo(
 		() => session.gameCode.toLowerCase(),
@@ -130,7 +130,7 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 		setOpenedEntryIndex(null);
 		setLeaveGameMessage(null);
 
-		const socket = client.gameplay.play.openConnection({
+		const socket = openGameplaySocket({
 			gameCode: normalizedGameCode,
 			playerId: session.playerId,
 		});
@@ -169,7 +169,7 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 				case "openedEntryUpdate":
 					setOpenedEntryIndex(message.entryIndex);
 					break;
-				case "gameError":
+				case "unexpectedError":
 					setError(message.message);
 					break;
 			}
@@ -230,7 +230,12 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 				socket.close(1000, "Leaving gameplay route");
 			}
 		};
-	}, [client, normalizedGameCode, session.playerId, showPlayerPresenceToast]);
+	}, [
+		openGameplaySocket,
+		normalizedGameCode,
+		session.playerId,
+		showPlayerPresenceToast,
+	]);
 
 	const send = useCallback(
 		(message: GameplayClientMessage) => sendMessage?.(message) ?? false,

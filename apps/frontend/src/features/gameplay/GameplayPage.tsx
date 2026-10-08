@@ -1,5 +1,6 @@
 "use client";
 
+import { isDefinedError, ORPCError, safe } from "@orpc/client";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -37,20 +38,6 @@ const normalizeGameCode = (value: string | null) => {
 	return normalizedValue || null;
 };
 
-const hasPlayerJoinErrorCode = (
-	error: unknown,
-	code: "PLAYER_NAME_TAKEN" | "GAME_FULL",
-) =>
-	typeof error === "object" &&
-	error !== null &&
-	"status" in error &&
-	error.status === 409 &&
-	"body" in error &&
-	typeof error.body === "object" &&
-	error.body !== null &&
-	"code" in error.body &&
-	error.body.code === code;
-
 const resolveInviteRouteState = async ({
 	api,
 	gameCode,
@@ -62,14 +49,14 @@ const resolveInviteRouteState = async ({
 	router: ReturnType<typeof useRouter>;
 	setRouteState: Dispatch<SetStateAction<GameplayRouteState>>;
 }) => {
-	const gameVerification = await api.client.gameplay.verifyGame.fetchResponse({
-		gameCode,
-	});
+	const [error, verification] = await safe(
+		api.orpcClient.gameplay.verifyGame({ query: { gameCode } }),
+	);
+	if (error && !(error instanceof ORPCError)) {
+		throw error;
+	}
 
-	if (
-		gameVerification.status !== 200 ||
-		gameVerification.body.gameState === "FINISHED"
-	) {
+	if (error || verification.body.gameState === "FINISHED") {
 		router.replace("/lobby");
 		return;
 	}
@@ -92,16 +79,20 @@ export default function GameplayPage() {
 		kind: "loading",
 	});
 	const [playerName, setPlayerName] = useState("");
-	const joinGame = useMutation(api.tq.gameplay.join.mutationOptions());
+	const joinGame = useMutation(api.orpc.gameplay.join.mutationOptions());
 
 	let errorMessage: string | null = null;
 
 	if (joinGame.error) {
-		if (hasPlayerJoinErrorCode(joinGame.error, "PLAYER_NAME_TAKEN")) {
+		const joinRejection =
+			isDefinedError(joinGame.error) && joinGame.error.code === "CONFLICT"
+				? joinGame.error.data.reason
+				: null;
+		if (joinRejection === "PLAYER_NAME_TAKEN") {
 			errorMessage =
 				"This player name is already taken in this game. Please pick another name.";
 		}
-		if (hasPlayerJoinErrorCode(joinGame.error, "GAME_FULL")) {
+		if (joinRejection === "GAME_FULL") {
 			errorMessage = "This game is full and cannot accept new players.";
 		}
 		errorMessage ??= "An unexpected error occurred. Please try again.";
@@ -114,14 +105,18 @@ export default function GameplayPage() {
 			const savedSession = await readGameSessionCookie();
 
 			if (savedSession) {
-				const verification =
-					await api.client.gameplay.verifyGame.fetchResponse(savedSession);
+				const [error] = await safe(
+					api.orpcClient.gameplay.verifyGame({ query: savedSession }),
+				);
+				if (error && !(error instanceof ORPCError)) {
+					throw error;
+				}
 
 				if (isCancelled) {
 					return;
 				}
 
-				if (verification.status === 200) {
+				if (!error) {
 					if (inviteGameCode) {
 						router.replace("/gameplay");
 					}
@@ -133,7 +128,7 @@ export default function GameplayPage() {
 					return;
 				}
 
-				if (verification.status === 404) {
+				if (isDefinedError(error) && error.code === "NOT_FOUND") {
 					await clearGameSessionCookie();
 					if (inviteGameCode) {
 						await resolveInviteRouteState({
@@ -227,8 +222,10 @@ export default function GameplayPage() {
 
 									joinGame.mutate(
 										{
-											gameCode: routeState.gameCode,
-											playerName: trimmedPlayerName,
+											body: {
+												gameCode: routeState.gameCode,
+												playerName: trimmedPlayerName,
+											},
 										},
 										{
 											onSuccess: async (session) => {

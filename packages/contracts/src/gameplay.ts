@@ -1,4 +1,5 @@
-import { router } from "@rest-rpc/core";
+import { oc } from "@orpc/contract";
+import { openapi } from "@orpc/openapi";
 import z from "zod";
 import { questionCardAnswerModeSchema } from "./questionsCrud.ts";
 
@@ -59,7 +60,7 @@ export const gamestateSchema = z.object({
 	isTurnPaused: z.boolean(),
 });
 
-const gameplayClientMessageSchema = z.discriminatedUnion("type", [
+export const gameplayClientMessageSchema = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("toggleReady"),
 		state: z.boolean(),
@@ -117,7 +118,7 @@ const playersUpdateMessageSchema = z.object({
 	playerName: z.string(),
 });
 
-const gameplayServerMessageSchema = z.union([
+export const gameplayServerMessageSchema = z.union([
 	z.object({
 		type: z.literal("gameStateUpdate"),
 		gameState: gamestateSchema,
@@ -129,27 +130,8 @@ const gameplayServerMessageSchema = z.union([
 		entryIndex: z.int().nullable(),
 	}),
 	z.object({
-		type: z.literal("gameError"),
+		type: z.literal("unexpectedError"),
 		message: z.string(),
-	}),
-]);
-
-const gameplayNotFoundErrorSchema = z.object({
-	message: z.string(),
-});
-
-const gameplayJoinErrorSchema = z.discriminatedUnion("code", [
-	z.object({
-		code: z
-			.literal("PLAYER_NAME_TAKEN")
-			.describe(
-				"The player name is already taken in this game. Names are case-insensitive and must be unique.",
-			),
-	}),
-	z.object({
-		code: z
-			.literal("GAME_FULL")
-			.describe("The game is full and cannot accept new players."),
 	}),
 ]);
 
@@ -169,79 +151,162 @@ export type PlayersUpdateMessage = Extract<
 	{ type: "playersUpdate" }
 >;
 
-export default router({
-	gameplay: {
-		create: {
-			path: "/gameplay/create",
-			method: "POST",
-			body: z.object({
-				playerName: z.string().trim().min(1).max(20),
-				turnDurationSeconds: z
-					.int()
-					.min(gameplayTurnTimeoutSecondsMin)
-					.max(gameplayTurnTimeoutSecondsMax)
-					.default(gameplayTurnTimeoutSecondsDefault),
+const gameCodeSchema = z.string().min(1).trim();
+const playerNameSchema = z.string().trim().min(1).max(20);
+
+/** Path of the gameplay WebSocket, relative to the API origin. */
+export const gameplaySocketPath = "/api/gameplay/play";
+
+export const gameplaySocketQuerySchema = z.object({
+	gameCode: gameCodeSchema,
+	playerId: z.string(),
+});
+
+const gameNotFoundError = {
+	NOT_FOUND: {
+		message: "Game or player not found",
+	},
+} as const;
+
+const gameplay = oc.meta(
+	openapi({
+		tags: ["Gameplay"],
+		inputStructure: "detailed",
+		outputStructure: "detailed",
+	}),
+);
+
+export const gameplayContract = {
+	create: gameplay
+		.meta(
+			openapi({
+				method: "POST",
+				path: "/gameplay/create",
+				operationId: "createGame",
+				summary: "Create a game",
+				description: "Creates a new game hosted by the given player.",
+				successStatus: 201,
+				successDescription: "The game code and the host's player id",
 			}),
-			response: z.object({
-				gameCode: z.string(),
-				playerId: z.string(),
+		)
+		.input(
+			z.object({
+				body: z.object({
+					playerName: playerNameSchema,
+					turnDurationSeconds: z
+						.int()
+						.min(gameplayTurnTimeoutSecondsMin)
+						.max(gameplayTurnTimeoutSecondsMax)
+						.default(gameplayTurnTimeoutSecondsDefault),
+				}),
 			}),
-		},
-		join: {
-			path: "/gameplay/join",
-			method: "POST",
-			body: z.object({
-				gameCode: z.string().min(1).trim(),
-				playerName: z.string().trim().min(1).max(20),
-			}),
-			responses: {
-				201: z.object({
+		)
+		.output(
+			z.object({
+				status: z.literal(201),
+				body: z.object({
+					gameCode: z.string(),
 					playerId: z.string(),
 				}),
-				404: gameplayNotFoundErrorSchema,
-				409: gameplayJoinErrorSchema,
-			},
-		},
-		leave: {
-			path: "/gameplay/leave",
-			method: "POST",
-			body: z.object({
-				gameCode: z.string().min(1).trim(),
-				playerId: z.string(),
 			}),
-			responses: {
-				200: z.object({
+		),
+	join: gameplay
+		.meta(
+			openapi({
+				method: "POST",
+				path: "/gameplay/join",
+				operationId: "joinGame",
+				summary: "Join a game",
+				successStatus: 201,
+				successDescription: "The joining player's id",
+			}),
+		)
+		.errors({
+			...gameNotFoundError,
+			CONFLICT: {
+				message: "Could not join the game",
+				data: z.object({
+					reason: z.union([
+						z
+							.literal("PLAYER_NAME_TAKEN")
+							.describe(
+								"The player name is already taken in this game. Names are case-insensitive and must be unique.",
+							),
+						z
+							.literal("GAME_FULL")
+							.describe("The game is full and cannot accept new players."),
+					]),
+				}),
+			},
+		})
+		.input(
+			z.object({
+				body: z.object({
+					gameCode: gameCodeSchema,
+					playerName: playerNameSchema,
+				}),
+			}),
+		)
+		.output(
+			z.object({
+				status: z.literal(201),
+				body: z.object({
+					playerId: z.string(),
+				}),
+			}),
+		),
+	leave: gameplay
+		.meta(
+			openapi({
+				method: "POST",
+				path: "/gameplay/leave",
+				operationId: "leaveGame",
+				summary: "Leave a game",
+				successDescription: "The player left the game",
+			}),
+		)
+		.errors(gameNotFoundError)
+		.input(
+			z.object({
+				body: z.object({
+					gameCode: gameCodeSchema,
+					playerId: z.string(),
+				}),
+			}),
+		)
+		.output(
+			z.object({
+				status: z.literal(200),
+				body: z.object({
 					ok: z.literal(true),
 				}),
-				404: gameplayNotFoundErrorSchema,
-			},
-		},
-		verifyGame: {
-			path: "/gameplay/verify-game",
-			method: "GET",
-			query: z.object({
-				gameCode: z.string().min(1).trim(),
-				playerId: z.string().optional(),
 			}),
-			responses: {
-				200: z.object({
+		),
+	verifyGame: gameplay
+		.meta(
+			openapi({
+				method: "GET",
+				path: "/gameplay/verify-game",
+				operationId: "verifyGame",
+				summary: "Check a game and, optionally, a player in it",
+				successDescription: "The game's current state",
+			}),
+		)
+		.errors(gameNotFoundError)
+		.input(
+			z.object({
+				query: z.object({
+					gameCode: gameCodeSchema,
+					playerId: z.string().optional(),
+				}),
+			}),
+		)
+		.output(
+			z.object({
+				status: z.literal(200),
+				body: z.object({
 					gameState: z.enum(["NOT_STARTED", "IN_PROGRESS", "FINISHED"]),
 				}),
-				404: gameplayNotFoundErrorSchema,
-			},
-		},
-		play: {
-			path: "/gameplay/play",
-			method: "GET",
-			mode: "webSocket",
-			query: z.object({
-				gameCode: z.string().min(1).trim(),
-				playerId: z.string(),
 			}),
-			messages: {
-				client: gameplayClientMessageSchema,
-				server: gameplayServerMessageSchema,
-			},
-		},
-	},
-});
+		),
+};

@@ -1,12 +1,16 @@
+import type {
+	InferRouterContractErrorMap,
+	ORPCErrorConstructorMap,
+} from "@orpc/contract";
+import { implement, ORPCError } from "@orpc/server";
 import {
-	contracts,
+	orpcContract,
 	type QuestionCard,
 	type QuestionCardInput,
+	questionCardInputSchema,
 } from "@packages/contracts";
-import { router } from "@rest-rpc/hono";
 import z from "zod";
 import prisma from "../../prisma.ts";
-import { NotFoundError } from "../../utils/NotFoundError.ts";
 
 const ollamaDraftResponseSchema = {
 	type: "object",
@@ -169,20 +173,51 @@ const ollamaResponseToQuestionCardInput = (response: {
 	};
 };
 
-const createQuestionCardDraftFromImage = async (
-	rawBody: unknown,
-): Promise<QuestionCardInput> => {
-	if (!Buffer.isBuffer(rawBody) || rawBody.length === 0) {
-		throw new Error("Image upload body is missing or invalid");
+const ollamaCardContentSchema = z.object({
+	prompt: z.string(),
+	rings: z.array(
+		z.object({
+			outer: z.string(),
+			inner: z.string(),
+		}),
+	),
+});
+
+const parseOllamaCardContent = (content: string) => {
+	try {
+		return ollamaCardContentSchema.safeParse(
+			JSON.parse(
+				content
+					.replace(/```json/i, "")
+					.replace(/```/, "")
+					.trim(),
+			),
+		);
+	} catch (error) {
+		return { success: false as const, error };
 	}
+};
+
+type ConvertImageErrors = ORPCErrorConstructorMap<
+	InferRouterContractErrorMap<
+		typeof orpcContract.questionsCrud.convertImageToQuestionCardDraft
+	>
+>;
+
+const createQuestionCardDraftFromImage = async (
+	image: File,
+	errors: ConvertImageErrors,
+	signal: AbortSignal | undefined,
+): Promise<QuestionCardInput> => {
+	const imageBase64 = Buffer.from(await image.arrayBuffer()).toString("base64");
 
 	const { apiBaseUrl, model, temperature, timeoutMs, numCtx } =
 		getOllamaConfig();
-	const abortController = new AbortController();
-	const timeout = setTimeout(() => abortController.abort(), timeoutMs);
+	const timeoutSignal = AbortSignal.timeout(timeoutMs);
 
+	let response: Response;
 	try {
-		const response = await fetch(`${apiBaseUrl}/chat`, {
+		response = await fetch(`${apiBaseUrl}/chat`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -199,48 +234,56 @@ const createQuestionCardDraftFromImage = async (
 					{
 						role: "user",
 						content: questionCardDraftPrompt,
-						images: [rawBody.toString("base64")],
+						images: [imageBase64],
 					},
 				],
 			}),
-			signal: abortController.signal,
+			// Abort generation when the client disconnects, not only on timeout.
+			signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
 		});
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			throw new Error(
-				`Ollama request failed with ${response.status}: ${errorText || response.statusText}`,
-			);
+	} catch (error) {
+		if (signal?.aborted) {
+			throw new ORPCError("CLIENT_CLOSED_REQUEST", { cause: error });
 		}
 
-		const payload = (await response.json()) as OllamaChatResponse;
-		const content = payload.message?.content?.trim();
-
-		if (!content) {
-			throw new Error("Ollama returned an empty response");
+		if (timeoutSignal.aborted) {
+			throw errors.GATEWAY_TIMEOUT({ cause: error });
 		}
 
-		const jsonContent = JSON.parse(
-			content
-				.replace(/```json/i, "")
-				.replace(/```/, "")
-				.trim(),
-		);
-		const validatedResponse = z
-			.object({
-				prompt: z.string(),
-				rings: z.array(
-					z.object({
-						outer: z.string(),
-						inner: z.string(),
-					}),
-				),
-			})
-			.parse(jsonContent);
-		return ollamaResponseToQuestionCardInput(validatedResponse);
-	} finally {
-		clearTimeout(timeout);
+		throw errors.BAD_GATEWAY({ cause: error });
 	}
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		throw errors.BAD_GATEWAY({
+			cause: new Error(
+				`Ollama request failed with ${response.status}: ${errorText || response.statusText}`,
+			),
+		});
+	}
+
+	const payload = (await response.json()) as OllamaChatResponse;
+	const content = payload.message?.content?.trim();
+
+	if (!content) {
+		throw errors.UNPROCESSABLE_CONTENT({
+			cause: new Error("Ollama returned an empty response"),
+		});
+	}
+
+	const cardContent = parseOllamaCardContent(content);
+	if (!cardContent.success) {
+		throw errors.UNPROCESSABLE_CONTENT({ cause: cardContent.error });
+	}
+
+	const draft = questionCardInputSchema.safeParse(
+		ollamaResponseToQuestionCardInput(cardContent.data),
+	);
+	if (!draft.success) {
+		throw errors.UNPROCESSABLE_CONTENT({ cause: draft.error });
+	}
+
+	return draft.data;
 };
 
 const toQuestionCard = (
@@ -276,95 +319,92 @@ const getQuestionCardById = async (id: number) => {
 	});
 
 	if (!card) {
-		throw new NotFoundError("Question not found");
+		throw new ORPCError("NOT_FOUND", { message: "Question not found" });
 	}
 
 	return card;
 };
 
-const questionsCrudService = router(contracts.questionsCrud, {
-	async list() {
+const toCardData = (card: QuestionCardInput) =>
+	card.answerMode === "CHOICES"
+		? {
+				prompt: card.prompt,
+				answerMode: card.answerMode,
+				choices: card.choices,
+				choicesAreUnique: card.choicesAreUnique,
+				entries: card.entries,
+			}
+		: {
+				prompt: card.prompt,
+				answerMode: card.answerMode,
+				entries: card.entries,
+			};
+
+const os = implement(orpcContract.questionsCrud);
+
+const questionsCrudService = os.router({
+	list: os.list.handler(async () => {
 		const cards = await prisma.triviaCard.findMany({
 			orderBy: {
 				updatedAt: "desc",
 			},
 		});
 
-		return cards.map(toQuestionCard);
-	},
+		return { status: 200, body: cards.map(toQuestionCard) };
+	}),
 
-	async getById({ id }) {
-		const card = await getQuestionCardById(id);
-		return toQuestionCard(card);
-	},
+	getById: os.getById.handler(async ({ input }) => {
+		const card = await getQuestionCardById(input.params.id);
+		return { status: 200, body: toQuestionCard(card) };
+	}),
 
-	async create(card) {
-		const cardData =
-			card.answerMode === "CHOICES"
-				? {
-						prompt: card.prompt,
-						answerMode: card.answerMode,
-						choices: card.choices,
-						choicesAreUnique: card.choicesAreUnique,
-						entries: card.entries,
-					}
-				: {
-						prompt: card.prompt,
-						answerMode: card.answerMode,
-						entries: card.entries,
-					};
+	create: os.create.handler(async ({ input: { body: card } }) => {
 		const createdCard = await prisma.triviaCard.create({
 			data: {
 				difficulty: card.difficulty,
 				tags: card.tags,
-				data: cardData,
+				data: toCardData(card),
 			},
 		});
 
-		return toQuestionCard(createdCard);
-	},
+		return { status: 201, body: toQuestionCard(createdCard) };
+	}),
 
-	async update({ id, ...card }) {
-		const cardData =
-			card.answerMode === "CHOICES"
-				? {
-						prompt: card.prompt,
-						answerMode: card.answerMode,
-						choices: card.choices,
-						choicesAreUnique: card.choicesAreUnique,
-						entries: card.entries,
-					}
-				: {
-						prompt: card.prompt,
-						answerMode: card.answerMode,
-						entries: card.entries,
-					};
+	update: os.update.handler(async ({ input: { params, body: card } }) => {
+		await getQuestionCardById(params.id);
 
 		const updatedCard = await prisma.triviaCard.update({
-			where: { id },
+			where: { id: params.id },
 			data: {
 				difficulty: card.difficulty,
 				tags: card.tags,
-				data: cardData,
+				data: toCardData(card),
 			},
 		});
 
-		return toQuestionCard(updatedCard);
-	},
+		return { status: 200, body: toQuestionCard(updatedCard) };
+	}),
 
-	async delete({ id }) {
-		await getQuestionCardById(id);
+	delete: os.delete.handler(async ({ input }) => {
+		await getQuestionCardById(input.params.id);
 
 		const deletedCard = await prisma.triviaCard.delete({
-			where: { id },
+			where: { id: input.params.id },
 		});
 
-		return toQuestionCard(deletedCard);
-	},
+		return { status: 200, body: toQuestionCard(deletedCard) };
+	}),
 
-	async convertImageToQuestionCardDraft({ body }) {
-		return createQuestionCardDraftFromImage(body.payload);
-	},
+	convertImageToQuestionCardDraft: os.convertImageToQuestionCardDraft.handler(
+		async ({ input, errors, signal }) => {
+			const draft = await createQuestionCardDraftFromImage(
+				input.body.image,
+				errors,
+				signal,
+			);
+			return { status: 200, body: draft };
+		},
+	),
 });
 
 export default questionsCrudService;

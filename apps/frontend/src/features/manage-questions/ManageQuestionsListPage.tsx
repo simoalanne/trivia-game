@@ -11,29 +11,31 @@ import TriviaCardsTable from "./TriviaCardsTable";
 type OpenModal = "editor" | "preview" | null;
 
 export default function ManageQuestionsListPage() {
-	const { tq } = useApiClient();
+	const { orpc } = useApiClient();
 	const queryClient = useQueryClient();
-	const questions = useQuery(tq.questionsCrud.list.queryOptions());
+	const questions = useQuery(orpc.questionsCrud.list.queryOptions());
 	const [selectedQuestion, setSelectedQuestion] = useState<QuestionCard | null>(
 		null,
 	);
 	const [openModal, setOpenModal] = useState<OpenModal>(null);
 	const deleteQuestion = useMutation(
-		tq.questionsCrud.delete.mutationOptions({
+		orpc.questionsCrud.delete.mutationOptions({
 			onSuccess: (deletedQuestion) => {
-				queryClient.setQueryData(tq.questionsCrud.list.getKey(), (current) =>
-					current
-						? {
-								...current,
-								body: current.body.filter(
-									(question) => question.id !== deletedQuestion.body.id,
-								),
-							}
-						: current,
+				queryClient.setQueryData(
+					orpc.questionsCrud.list.queryKey(),
+					(current) =>
+						current
+							? {
+									...current,
+									body: current.body.filter(
+										(question) => question.id !== deletedQuestion.body.id,
+									),
+								}
+							: current,
 				);
 				queryClient.removeQueries({
-					queryKey: tq.questionsCrud.getById.getKey({
-						id: deletedQuestion.body.id,
+					queryKey: orpc.questionsCrud.getById.queryKey({
+						input: { params: { id: deletedQuestion.body.id } },
 					}),
 				});
 			},
@@ -47,7 +49,7 @@ export default function ManageQuestionsListPage() {
 			return;
 		}
 
-		deleteQuestion.mutate({ id: question.id });
+		deleteQuestion.mutate({ params: { id: question.id } });
 	};
 
 	const handlePreview = (question: QuestionCard) => {
@@ -91,9 +93,7 @@ export default function ManageQuestionsListPage() {
 
 				{deleteQuestion.error && (
 					<p className="text-error font-semibold">
-						{deleteQuestion.error instanceof Error
-							? deleteQuestion.error.message
-							: deleteQuestion.error.body.message}
+						{deleteQuestion.error.message}
 					</p>
 				)}
 

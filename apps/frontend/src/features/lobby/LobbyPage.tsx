@@ -1,5 +1,6 @@
 "use client";
 
+import { ORPCError, safe } from "@orpc/client";
 import {
 	gameplayTurnTimeoutSecondsDefault,
 	gameplayTurnTimeoutSecondsMax,
@@ -21,7 +22,7 @@ const getErrorMessage = (error: unknown) =>
 	error instanceof Error ? error.message : "An unexpected error occurred.";
 
 export default function LobbyPage() {
-	const { client, tq } = useApiClient();
+	const { orpc, orpcClient } = useApiClient();
 	const router = useRouter();
 	const [playerName, setPlayerName] = useState("");
 	const [turnDurationSeconds, setTurnDurationSeconds] = useState(
@@ -33,7 +34,7 @@ export default function LobbyPage() {
 	const [, setIsCheckingSavedSession] = useState(true);
 	const [isLeavingSavedSession, setIsLeavingSavedSession] = useState(false);
 
-	const createGame = useMutation(tq.gameplay.create.mutationOptions());
+	const createGame = useMutation(orpc.gameplay.create.mutationOptions());
 	const isSubmitting = createGame.isPending || isLeavingSavedSession;
 
 	useEffect(() => {
@@ -50,14 +51,18 @@ export default function LobbyPage() {
 				return;
 			}
 
-			const result =
-				await client.gameplay.verifyGame.fetchResponse(savedSession);
+			const [error] = await safe(
+				orpcClient.gameplay.verifyGame({ query: savedSession }),
+			);
+			if (error && !(error instanceof ORPCError)) {
+				throw error;
+			}
 
 			if (isCancelled) {
 				return;
 			}
 
-			if (result.status === 200) {
+			if (!error) {
 				setResumeSession(savedSession);
 				setIsCheckingSavedSession(false);
 				return;
@@ -73,7 +78,7 @@ export default function LobbyPage() {
 		return () => {
 			isCancelled = true;
 		};
-	}, [client]);
+	}, [orpcClient]);
 
 	const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -85,8 +90,10 @@ export default function LobbyPage() {
 
 		createGame.mutate(
 			{
-				playerName: trimmedPlayerName,
-				turnDurationSeconds,
+				body: {
+					playerName: trimmedPlayerName,
+					turnDurationSeconds,
+				},
 			},
 			{
 				onSuccess: async (session) => {
@@ -108,7 +115,7 @@ export default function LobbyPage() {
 		setIsLeavingSavedSession(true);
 
 		try {
-			await client.gameplay.leave.fetch(resumeSession);
+			await orpcClient.gameplay.leave({ body: resumeSession });
 
 			await clearGameSessionCookie();
 			setResumeSession(null);

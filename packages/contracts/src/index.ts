@@ -1,6 +1,7 @@
-import { router } from "@rest-rpc/core";
-import gameplay from "./gameplay.ts";
-import questionsCrud from "./questionsCrud.ts";
+import { oc } from "@orpc/contract";
+import { openapi } from "@orpc/openapi";
+import { gameplayContract } from "./gameplay.ts";
+import { questionsCrudContract } from "./questionsCrud.ts";
 
 export type {
 	GameplayClientMessage,
@@ -11,6 +12,10 @@ export type {
 	TurnResolvedMessage,
 } from "./gameplay.ts";
 export {
+	gameplayClientMessageSchema,
+	gameplayServerMessageSchema,
+	gameplaySocketPath,
+	gameplaySocketQuerySchema,
 	gameplayTurnTimeoutSecondsDefault,
 	gameplayTurnTimeoutSecondsMax,
 	gameplayTurnTimeoutSecondsMin,
@@ -23,21 +28,20 @@ export type {
 } from "./questionsCrud.ts";
 export {
 	MAX_ENTRIES_PER_CARD,
+	MAX_QUESTION_IMAGE_BYTES,
 	MAX_TAGS_PER_CARD,
 	MIN_ENTRIES_PER_CARD,
 	questionCardAnswerModeSchema,
 	questionCardInputSchema,
 	questionCardSchema,
+	questionImageContentTypes,
+	questionImageSchema,
+	questionsCrudContract,
 	triviaCardDifficultySchema,
 	triviaCardIdSchema,
 } from "./questionsCrud.ts";
 
-export const contracts = router(
-	{
-		...gameplay,
-		...questionsCrud,
-	},
-	{
-		pathPrefix: "/api",
-	},
-);
+export const orpcContract = oc.meta(openapi({ prefix: "/api" })).router({
+	gameplay: gameplayContract,
+	questionsCrud: questionsCrudContract,
+});
