@@ -3,53 +3,29 @@ import { COMMON_ERROR_STATUS_MAP, OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { ORPCError, onError } from "@orpc/server";
 import { ZodToJsonSchemaConverter } from "@orpc/zod";
-import { contracts, orpcContract } from "@packages/contracts";
-import { createOpenApiDocument } from "@rest-rpc/core";
-import { registerRoutes } from "@rest-rpc/hono";
+import { orpcContract } from "@packages/contracts";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
-import { upgradeWebSocket, websocket } from "hono/bun";
+import { websocket } from "hono/bun";
 import { cors } from "hono/cors";
-import z from "zod";
-import gameplayService from "./features/gameplay/gameplay.service.ts";
 import gameplayRouter from "./features/gameplay/transport/gameplay.router.ts";
+import { registerGameplaySocket } from "./features/gameplay/transport/gameplay.socket.ts";
 import questionsCrudService from "./features/questionsCrud/questionsCrud.service.ts";
-import { NotFoundError } from "./utils/NotFoundError.ts";
 
 const app = new Hono();
 const port = Number(process.env.PORT ?? 3000);
 
-const restRpcOpenApiDocument = createOpenApiDocument(contracts, {
-	info: {
-		title: "Trivia Game API",
-		version: "1.0.0",
-	},
-	schemaConverter: (schema) => {
-		try {
-			return z.toJSONSchema(schema as z.ZodType);
-		} catch {
-			return {};
-		}
-	},
-});
-
-const orpcOpenApiDocument = await new OpenAPIGenerator({
+const openApiDocument = await new OpenAPIGenerator({
 	converters: [new ZodToJsonSchemaConverter()],
 }).generate(orpcContract, {
 	version: "3.1.0",
+	base: {
+		info: {
+			title: "Trivia Game API",
+			version: "1.0.0",
+		},
+	},
 });
-
-const openApiDocument = {
-	...restRpcOpenApiDocument,
-	paths: {
-		...restRpcOpenApiDocument.paths,
-		...orpcOpenApiDocument.paths,
-	},
-	components: {
-		...restRpcOpenApiDocument.components,
-		...orpcOpenApiDocument.components,
-	},
-};
 
 const apiHandler = new OpenAPIHandler(
 	{ gameplay: gameplayRouter, questionsCrud: questionsCrudService },
@@ -97,25 +73,7 @@ app.use("/api/*", async (c, next) => {
 	await next();
 });
 
-const routes = {
-	gameplay: gameplayService,
-};
-
-registerRoutes(app, routes, {
-	webSocket: {
-		upgradeWebSocket,
-	},
-	errorHandlers: {
-		onUnhandledError: ({ error }) => {
-			if (error instanceof NotFoundError) {
-				return {
-					status: 404,
-					body: { message: error.message },
-				};
-			}
-		},
-	},
-});
+registerGameplaySocket(app);
 
 export default {
 	port,

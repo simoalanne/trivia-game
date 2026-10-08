@@ -3,9 +3,8 @@ import type { RouterContractClient } from "@orpc/contract";
 import type { JsonifiedClient } from "@orpc/openapi";
 import { OpenAPILink } from "@orpc/openapi/fetch";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import { contracts, orpcContract } from "@packages/contracts";
-import { initClient } from "@rest-rpc/core";
-import { createTanstackQueryHelpers } from "@rest-rpc/tanstack-query";
+import { orpcContract } from "@packages/contracts";
+import { type GameplaySocketQuery, openGameplaySocket } from "./gameplaySocket";
 
 const getBaseUrl = () => {
 	const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -18,21 +17,6 @@ const getBaseUrl = () => {
 
 export const createApiClients = () => {
 	const baseUrl = getBaseUrl();
-	const client = initClient(contracts, {
-		baseUrl,
-		fetchOptions: {
-			next: { revalidate: 10 },
-		},
-		timeoutMs: 120000,
-		strictStatusCodes: true,
-	});
-
-	const tq = createTanstackQueryHelpers(contracts, {
-		baseUrl,
-		timeoutMs: 120000,
-		strictStatusCodes: true,
-	});
-
 	const orpcLink = new OpenAPILink(orpcContract, {
 		origin: baseUrl,
 		fetch: (url, init) => {
@@ -49,5 +33,10 @@ export const createApiClients = () => {
 		createORPCClient(orpcLink);
 	const orpc = createTanstackQueryUtils(orpcClient);
 
-	return { client, tq, orpcClient, orpc };
+	return {
+		orpcClient,
+		orpc,
+		openGameplaySocket: (query: GameplaySocketQuery) =>
+			openGameplaySocket(baseUrl, query),
+	};
 };

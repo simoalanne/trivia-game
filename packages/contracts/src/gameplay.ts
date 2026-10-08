@@ -1,6 +1,5 @@
 import { oc } from "@orpc/contract";
 import { openapi } from "@orpc/openapi";
-import { router } from "@rest-rpc/core";
 import z from "zod";
 import { questionCardAnswerModeSchema } from "./questionsCrud.ts";
 
@@ -61,7 +60,7 @@ export const gamestateSchema = z.object({
 	isTurnPaused: z.boolean(),
 });
 
-const gameplayClientMessageSchema = z.discriminatedUnion("type", [
+export const gameplayClientMessageSchema = z.discriminatedUnion("type", [
 	z.object({
 		type: z.literal("toggleReady"),
 		state: z.boolean(),
@@ -119,7 +118,7 @@ const playersUpdateMessageSchema = z.object({
 	playerName: z.string(),
 });
 
-const gameplayServerMessageSchema = z.union([
+export const gameplayServerMessageSchema = z.union([
 	z.object({
 		type: z.literal("gameStateUpdate"),
 		gameState: gamestateSchema,
@@ -154,6 +153,14 @@ export type PlayersUpdateMessage = Extract<
 
 const gameCodeSchema = z.string().min(1).trim();
 const playerNameSchema = z.string().trim().min(1).max(20);
+
+/** Path of the gameplay WebSocket, relative to the API origin. */
+export const gameplaySocketPath = "/api/gameplay/play";
+
+export const gameplaySocketQuerySchema = z.object({
+	gameCode: gameCodeSchema,
+	playerId: z.string(),
+});
 
 const gameNotFoundError = {
 	NOT_FOUND: {
@@ -303,21 +310,3 @@ export const gameplayContract = {
 			}),
 		),
 };
-
-export default router({
-	gameplay: {
-		play: {
-			path: "/gameplay/play",
-			method: "GET",
-			mode: "webSocket",
-			query: z.object({
-				gameCode: gameCodeSchema,
-				playerId: z.string(),
-			}),
-			messages: {
-				client: gameplayClientMessageSchema,
-				server: gameplayServerMessageSchema,
-			},
-		},
-	},
-});

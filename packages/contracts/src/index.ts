@@ -1,7 +1,6 @@
 import { oc } from "@orpc/contract";
 import { openapi } from "@orpc/openapi";
-import { router } from "@rest-rpc/core";
-import gameplay, { gameplayContract } from "./gameplay.ts";
+import { gameplayContract } from "./gameplay.ts";
 import { questionsCrudContract } from "./questionsCrud.ts";
 
 export type {
@@ -13,6 +12,10 @@ export type {
 	TurnResolvedMessage,
 } from "./gameplay.ts";
 export {
+	gameplayClientMessageSchema,
+	gameplayServerMessageSchema,
+	gameplaySocketPath,
+	gameplaySocketQuerySchema,
 	gameplayTurnTimeoutSecondsDefault,
 	gameplayTurnTimeoutSecondsMax,
 	gameplayTurnTimeoutSecondsMin,
@@ -37,10 +40,6 @@ export {
 	triviaCardDifficultySchema,
 	triviaCardIdSchema,
 } from "./questionsCrud.ts";
-
-export const contracts = router(gameplay, {
-	pathPrefix: "/api",
-});
 
 export const orpcContract = oc.meta(openapi({ prefix: "/api" })).router({
 	gameplay: gameplayContract,
