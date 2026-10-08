@@ -1,7 +1,7 @@
 import { oc } from "@orpc/contract";
 import { openapi } from "@orpc/openapi";
 import { router } from "@rest-rpc/core";
-import gameplay from "./gameplay.ts";
+import gameplay, { gameplayContract } from "./gameplay.ts";
 import { questionsCrudContract } from "./questionsCrud.ts";
 
 export type {
@@ -43,5 +43,6 @@ export const contracts = router(gameplay, {
 });
 
 export const orpcContract = oc.meta(openapi({ prefix: "/api" })).router({
+	gameplay: gameplayContract,
 	questionsCrud: questionsCrudContract,
 });

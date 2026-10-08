@@ -12,6 +12,7 @@ import { upgradeWebSocket, websocket } from "hono/bun";
 import { cors } from "hono/cors";
 import z from "zod";
 import gameplayService from "./features/gameplay/gameplay.service.ts";
+import gameplayRouter from "./features/gameplay/transport/gameplay.router.ts";
 import questionsCrudService from "./features/questionsCrud/questionsCrud.service.ts";
 import { NotFoundError } from "./utils/NotFoundError.ts";
 
@@ -50,8 +51,8 @@ const openApiDocument = {
 	},
 };
 
-const questionsCrudHandler = new OpenAPIHandler(
-	{ questionsCrud: questionsCrudService },
+const apiHandler = new OpenAPIHandler(
+	{ gameplay: gameplayRouter, questionsCrud: questionsCrudService },
 	{
 		interceptors: [
 			onError((error) => {
@@ -84,8 +85,8 @@ app.use("*", async (c, next) => {
 	await next();
 });
 
-app.use("/api/questions/*", async (c, next) => {
-	const { matched, response } = await questionsCrudHandler.handle(c.req.raw, {
+app.use("/api/*", async (c, next) => {
+	const { matched, response } = await apiHandler.handle(c.req.raw, {
 		context: {},
 	});
 
