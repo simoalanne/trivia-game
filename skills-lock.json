@@ -18,12 +18,6 @@
 			"sourceType": "github",
 			"skillPath": "skills/orpc-openapi/SKILL.md",
 			"computedHash": "3375d89d95a869df9c1bad94363bebca3539a7ae0973a20e7e0089882932ac43"
-		},
-		"rest-rpc": {
-			"source": "rest-rpc/rest-rpc",
-			"sourceType": "github",
-			"skillPath": "skills/rest-rpc/SKILL.md",
-			"computedHash": "22b92fca0a9da27d660ef25f679895d8b1647fc4c50adb067aa9fcfbb0e418c3"
 		}
 	}
 }
