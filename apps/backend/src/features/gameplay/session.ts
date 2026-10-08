@@ -209,7 +209,7 @@ export const handleClientMessage = (
 				setPlayerReady(state, playerId, message.state);
 				break;
 			case "startGame":
-				await startGame(state, ruleContext);
+				await startGame(state, playerId, ruleContext);
 				break;
 			case "submitAnswer":
 				broadcast(

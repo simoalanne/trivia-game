@@ -1,13 +1,17 @@
 import type { GameRuleContext, GameSession } from "../gameplay.types.ts";
-import { getCurrentRoundOrThrow } from "./queries.ts";
+import { getCurrentRoundOrThrow, getPlayerOrThrow } from "./queries.ts";
 import { endTurn, startTurnClock } from "./turns.ts";
 
 const initialTurnTimeoutGraceSeconds = 5;
 
 export const startGame = async (
 	session: GameSession,
+	playerId: string,
 	context: GameRuleContext,
 ) => {
+	if (!getPlayerOrThrow(session, playerId).isHost) {
+		throw new Error("Only the host can start the game");
+	}
 	if (session.gameState !== "NOT_STARTED") {
 		throw new Error("Game has already started");
 	}
