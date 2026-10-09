@@ -11,5 +11,10 @@
 		"verbatimModuleSyntax": true,
 		"types": ["bun"]
 	},
-	"include": ["src/**/*.ts", "src/**/*.d.ts", "prisma/**/*.ts"]
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.d.ts",
+		"prisma/**/*.ts",
+		"vitest.config.ts"
+	]
 }

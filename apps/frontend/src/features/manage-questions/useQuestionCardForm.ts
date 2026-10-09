@@ -1,6 +1,6 @@
 "use client";
 
-import { type QuestionCard, questionImageSchema } from "@packages/contracts";
+import type { QuestionCard } from "@packages/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
@@ -8,14 +8,13 @@ import {
 	changeAnswerMode,
 	createDefaultFormState,
 	createFormStateFromQuestion,
-	createFormStateFromQuestionInput,
 	mapZodErrors,
 	type QuestionCardFormState,
 	validateQuestionCardForm,
 } from "./questionCardFormUtils";
 
 export function useQuestionCardForm(question?: QuestionCard | null) {
-	const { orpc, orpcClient } = useApiClient();
+	const { orpc } = useApiClient();
 	const queryClient = useQueryClient();
 	const createMutation = useMutation(
 		orpc.questionsCrud.create.mutationOptions(),
@@ -32,7 +31,6 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 	const [errors, setErrors] = useState<Record<string, string>>({});
 	const [submitError, setSubmitError] = useState<string | null>(null);
 	const [submitSucceeded, setSubmitSucceeded] = useState(false);
-	const [isScanningImage, setIsScanningImage] = useState(false);
 
 	useEffect(() => {
 		setFormState(initialFormState);
@@ -99,26 +97,6 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 		setSubmitSucceeded(false);
 	}, [initialFormState]);
 
-	const scanImageToDraft = async (file: File) => {
-		setIsScanningImage(true);
-
-		try {
-			const draft =
-				await orpcClient.questionsCrud.convertImageToQuestionCardDraft({
-					body: { image: questionImageSchema.parse(file) },
-				});
-
-			setFormState(createFormStateFromQuestionInput(draft.body));
-			setErrors({});
-			setSubmitError(null);
-			setSubmitSucceeded(false);
-		} catch {
-			// Intentionally swallow AI draft errors for now.
-		} finally {
-			setIsScanningImage(false);
-		}
-	};
-
 	const setAnswerMode = (answerMode: QuestionCardFormState["answerMode"]) => {
 		setFormState((current: QuestionCardFormState) =>
 			changeAnswerMode(current, answerMode),
@@ -133,9 +111,7 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 		errors,
 		setErrors,
 		setAnswerMode,
-		isScanningImage,
 		isSubmitting: createMutation.isPending || editMutation.isPending,
-		scanImageToDraft,
 		submitError,
 		submitSucceeded,
 		onSubmit,

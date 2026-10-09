@@ -21,7 +21,7 @@ There are two modes:
 - **Auto mode**: the agent applies every change directly, deletes included, and
   the user gets a summary of what changed.
 
-Work is split into phases. **Phase 1 is the backend only, plus an eval harness.**
+Work is split into phases. **Phase 1 is the backend only, plus eval tests.**
 Its goal is to find out whether this is viable on local models that fit in 16 GB
 of VRAM. If it only works well on cloud models, we revisit scope before building
 the UI.
@@ -40,7 +40,7 @@ the UI.
 1. Open the Assistant from **Manage questions**. It stays on the same route; the
    exact layout is decided in phase 2. There's an instruction input, a preview
    panel, an **Auto-apply** toggle that is off by default, and a **Reasoning**
-   slider (Off · Low · Medium · High). The slider trades speed for quality:
+   slider (None · Low · Medium · High). The slider trades speed for quality:
    Off is fastest and fine for simple cards, and higher levels help with tricky
    formats or multi-card edits.
 2. Write one instruction, such as:
@@ -124,7 +124,7 @@ you just created harder" won't work. The user has to say which card they mean
 │  /rpc/*  RPCHandler → cardAgent.run({ instruction, autoApply,       │
 │                                      reasoning })                   │
 │                         └→ runCardAgent()                           │
-│  eval/run.ts ──────────────→ runCardAgent()  (no HTTP)              │
+│  cardAgent.test.ts ────────→ runCardAgent()  (no HTTP)              │
 │                                                                     │
 │  runCardAgent: streamText(system + 1 user message, tools,           │
 │                           stopWhen: N steps)                        │
@@ -157,9 +157,9 @@ AGENT_BASE_URL=http://localhost:11434/v1   # Ollama / LM Studio / llama.cpp / Op
 AGENT_MODEL=qwen3.5:9b
 AGENT_API_KEY=                              # optional for local
 AGENT_MAX_STEPS=8
-AGENT_REASONING_DEFAULT=off                 # off | low | medium | high: the slider's starting value, see §3
-AGENT_REASONING_STYLE=ollama                # how the level is sent to this server, see §3
+AGENT_REASONING_DEFAULT=none                # AI SDK reasoning level: the slider's starting value, see §3
 AGENT_TEMPERATURE=0.2
+AGENT_TIMEOUT_MS=180000
 ```
 
 **Target hardware:** RX 9070 (16 GB VRAM) with 16 GB DDR4. The model has to fit
@@ -168,15 +168,25 @@ entirely in VRAM, because spilling into DDR4 makes tool loops far too slow.
 | Candidate | Weights (rough) | VRAM left for KV cache | Realistic context |
 |---|---|---|---|
 | `qwen3.5:9b` at Q4–Q6 | ~6–8 GB | ~8 GB | 16k–32k |
-| Qwen 27B at an aggressive quant (IQ3/Q3) | ~12–13 GB | ~3 GB | ~8k, more with q8_0 KV cache |
+| `qwen3.8:27b` at an aggressive quant (IQ3/Q3) | ~12–13 GB | ~3 GB | ~8k, more with q8_0 KV cache |
+
+The locally installed `qwen3.8:27b-q4_K_M` is 17.7 GB, so it doesn't fit in
+VRAM. Testing the 27B as intended needs an IQ3/Q3 quant.
 
 Without chat history, one action only fills the context with the system prompt,
 one instruction, and that action's tool calls and results. That fits within 8k,
-which is good news for the 27B. The eval harness (§4) decides between the two
+which is good news for the 27B. The eval tests (§4) decide between the two
 models. Switching models is only an env change.
 
 AMD note: run Ollama with ROCm or llama.cpp with Vulkan. Both expose an
 OpenAI-compatible `/v1`, so nothing in the code changes.
+
+**Ollama context length:** Ollama loads models with a 4096-token context by
+default, and its OpenAI-compatible API can't change that per request. A single
+create already uses about 2k tokens per step, so multi-step actions can go past
+4096, and Ollama silently truncates the overflow. Set the context on the server,
+either with `OLLAMA_CONTEXT_LENGTH=16384` or with a Modelfile variant that sets
+`num_ctx`.
 
 ### 2.3 Transport: oRPC RPC, no contract
 
@@ -188,9 +198,10 @@ point in an OpenAPI contract in `packages/contracts`.
   - It's mounted with an `RPCHandler` on `/rpc/*`, next to the existing
     `OpenAPIHandler` on `/api/*`.
   - The file exports `type CardAgentRouter = typeof cardAgentRouter`.
-  - Input: `z.object({ instruction: z.string().trim().min(1).max(2000), autoApply: z.boolean(), reasoning: reasoningLevelSchema.optional() })`.
-    `reasoningLevelSchema` is `z.enum(["off", "low", "medium", "high"])`, and
-    the server default is used when `reasoning` is omitted. The input is simple
+  - Input: `z.object({ instruction: z.string().trim().min(1).max(2000), autoApply: z.boolean(), reasoning: reasoningSchema.optional() })`.
+    `reasoningSchema` lists the AI SDK's own `reasoning` values (`none`,
+    `low`, `medium`, `high` and so on), and the server default is used when
+    `reasoning` is omitted. The input is simple
     without chat, so it can have a real schema.
 - **Frontend (phase 2):** a second client, `RPCLink({ url: `${baseUrl}/rpc` })`,
   typed as `RouterClient<CardAgentRouter>`. The type comes from a type-only
@@ -215,7 +226,7 @@ New feature folder `apps/backend/src/features/cardAgent/`:
   - It calls `streamText` with the system prompt, a single user message, the
     tools built for the current mode, and `stopWhen`.
   - It returns the `streamText` result.
-  - It has no HTTP or oRPC dependency, so the router and the eval harness share
+  - It has no HTTP or oRPC dependency, so the router and the eval tests share
     it.
 - `cardAgent.router.ts` defines the `run` procedure, which streams the result.
 - `cardAgent.tools.ts` holds `createTools({ autoApply })`, which returns six
@@ -226,7 +237,7 @@ New feature folder `apps/backend/src/features/cardAgent/`:
 | `searchCards` | read | `query?`, `tags?`, `difficulty?`, `answerMode?`, `limit ≤ 20`, `offset` | `{ total, items: [{ id, prompt (≤80 chars), difficulty, tags, answerMode, entryCount }] }` |
 | `getCard` | read | `id` | full card, compact JSON |
 | `listTags` | read | none | `[{ tag, count }]` |
-| `createCard` | write | one card (flat schema, see §3) | `{ ok: true, changeId }` or `{ ok: false, errors: [...] }` |
+| `createCard` | write | one card (card kind format, see §3) | `{ ok: true, ids }` or `{ ok: false, errors: [...] }` |
 | `updateCard` | write | `id`, `changes` (only the fields to change) | same |
 | `deleteCard` | write | `ids[]` | same |
 
@@ -272,40 +283,31 @@ The goal is for one card creation to be fast and right the first time on a
    unknown whether tool calling works reliably with reasoning off at all, so
    neither is assumed. The user picks the level per action with the slider, and
    the default is chosen once testing shows how each level behaves.
-   - Levels: `off`, `low`, `medium`, `high`.
-   - `reasoning.ts` holds the mapping from these levels to what the server
-     accepts, selected by `AGENT_REASONING_STYLE`. This is the only
-     provider-specific code.
-   - Possible ways to send it:
-     - Ollama's native `think` flag, or `think: "low" | "medium" | "high"` on
-       models that support levels;
-     - `reasoning_effort` on an OpenAI-compatible API;
-     - Qwen's `/no_think` switch in the prompt;
-     - for models that only have on/off, everything above `off` maps to on.
-   - Phase 1 checks which of these work on the chosen setup.
-   - The UI shows the levels the configured model supports. If the model only
-     has on/off, the slider becomes a toggle.
-   - The eval runs every case at each level, so we can see what each level
-     costs in time and gains in correctness.
+   - Levels are the AI SDK's `reasoning` option as is: `none`, `minimal`,
+     `low`, `medium`, `high` and so on. The provider maps it to the request
+     (`reasoning_effort` on OpenAI-compatible servers, which Ollama accepts).
+     There is no custom mapping code.
+   - A server that ignores `reasoning_effort` uses its own default. Supporting
+     such servers (for example llama.cpp's `enable_thinking`) is left until
+     one is actually used.
+   - The eval tests run once per level, to compare correctness between
+     levels.
 2. **Constrained tool arguments.** Use JSON-schema-constrained decoding for tool
    calls where the server supports it (llama.cpp grammars, Ollama structured
    outputs). Then the arguments always parse, and retries only deal with
    meaning, not syntax.
-3. **Flat card schema for `createCard`.** Small models handle discriminated
-   unions and cross-field rules (`choicesAreUnique`, answers must match choices)
-   poorly.
-   - The tool takes `answerMode` as an enum, with `choices` optional and
-     `.describe()` hints on every field.
-   - The full `questionCardInputSchema` runs on the server, and its errors go
-     back to the model.
-4. **Make the format choice explicit.** The `createCard` description includes a
-   short "pick the answer mode" rule set:
-   - TEXT: free-text answers.
-   - CHOICES: answers come from a fixed list; `choicesAreUnique` when each
-     choice is used once.
-
-   It also has one tiny example per mode. This targets the "valid but not what I
-   meant" failure.
+3. **Flat card schema for the write tools.** Tool input must be one JSON
+   object, which a discriminated union isn't.
+   - `questionCardFlatInputSchema` in contracts is the union with every
+     variant's fields in one object, and the variant-only fields (`choices`,
+     `choicesAreUnique`) optional. It's defined next to the union from the
+     same pieces.
+   - The invariant: a flat card is valid when `questionCardInputSchema`
+     parses it. The write tools do exactly that, and the errors go back to the
+     model. There is no other conversion.
+4. **Make the format choice explicit.** The system prompt shows one JSON
+   example per common card style: true/false, ordering and shared choices
+   (all `CHOICES`), and `TEXT`.
 5. **Retry budget.** A failed validation costs one step. Use about 3 steps for a
    single create, and `AGENT_MAX_STEPS` caps the whole action.
 6. **Temperature around 0.2.**
@@ -317,8 +319,13 @@ history to prune. What's left:
 
 7. **Small, fixed toolset.** Six short tool descriptions, the same in both
    modes. The existing CRUD contracts are not exposed as tools directly.
-8. **Patch updates.** `updateCard` takes only the changed fields, so the model
-   doesn't have to regenerate an entire 10-entry card to fix one word.
+8. **Whole-card updates.** `updateCard` takes `{ id, card }`, where `card` is
+   the same flat schema as `createCard`. This costs more output tokens than a
+   patch, but needs no merge logic. The card is nested on purpose: Qwen writes
+   tool parameters as XML, and with the card's fields as top-level parameters
+   it often wrote `<prompt>` instead of `<parameter=prompt>` right after
+   `id`. Ollama then fails to parse the call and ends the stream without a
+   finish reason (3/10 valid calls, against 10/10 nested).
 9. **Summaries before details.** `searchCards` returns one short line per card
    and a page size of at most 20. The model calls `getCard` only for cards it
    actually needs to change. The full deck is never in context.
@@ -344,40 +351,18 @@ history to prune. What's left:
 3. **Build `runCardAgent`** with the six tools and both modes.
 4. **Add the endpoint:** `cardAgent.run`, mounted with `RPCHandler` on `/rpc/*`,
    plus the exported `CardAgentRouter` type.
-5. **Build the eval harness** in `apps/backend/src/features/cardAgent/eval/`.
-   Each case is one instruction, the same as an action in the UI.
-   - `cases.ts` holds about 15–25 instructions. Each has the expected outcome:
-     tool kind, answer mode, entry count, difficulty and tags where given. Most
-     are single creates, plus some search+update, delete and ambiguous ones.
-   - `run.ts` calls `runCardAgent` directly in review mode, so there are no
-     database writes. Read tools run against the seeded database. Model,
-     reasoning level and other settings are set per run through env vars or CLI
-     flags, so a run over several models and levels (for example
-     `--reasoning off,low,medium`) is easy.
-   - For each case it reports:
-     - pass/fail;
-     - valid on the first try (yes/no);
-     - whether the format matches the expected one;
-     - the number of steps and validation retries;
-     - wall time and time to the first tool call;
-     - input and output tokens.
-   - **Where the time goes.** For each step it records:
-     - time spent reasoning, with the reasoning token count;
-     - time spent generating tool arguments;
-     - time spent running the tool;
-     - whether the step was a retry after a validation error.
-   - **Tool-call failures.** It flags steps where the model didn't produce a
-     usable tool call:
-     - it wrote the card as plain text instead;
-     - it sent malformed arguments;
-     - it stopped without calling a tool.
-
-     These show whether tool calling works at a given reasoning level at all.
-   - It ends with a summary row per model and reasoning level, written to the
-     console and to a JSON file for comparing runs. The full step traces are
-     kept, so a slow or failed case can be inspected afterwards.
-   - `try.ts "<instruction>"` runs one action and prints the stream, for manual
-     poking.
+5. **Write the eval as tests.** `cardAgent.test.ts` runs with vitest
+   (`pnpm --filter backend test`). Each test is one named instruction, the same
+   as an action in the UI, so one case can be run on its own with `-t`.
+   - It calls `runCardAgent` directly in review mode. The tools read an
+     in-memory deck defined in the test file, passed in as the `repo` option,
+     so the tests need no database.
+   - Tests check only the result: the changes made (kind, answer mode, entry
+     count, difficulty, tags, which cards were targeted) and, for off-topic
+     requests, that no tools were called. Speed is checked by hand.
+   - The model and reasoning level come from the `AGENT_*` env vars, so
+     comparing models or levels means running the suite once per setting.
+     `--repeats <n>` reruns every test to catch flaky ones.
 6. **Test and decide.** Run the eval on `qwen3.5:9b` and the 27B quant, with one
    cloud model as a baseline. There's no pass bar set in advance, because it's
    too hard to guess before seeing real numbers. The results should answer:
@@ -387,6 +372,27 @@ history to prune. What's left:
    - Is the quality and wait time acceptable on a local model? If not, we
      revisit scope, for example by going cloud-first, before building the UI.
    - What should the slider's default level be?
+
+#### Phase 1 status
+
+Steps 1–5 are implemented. Step 6 is done for `qwen3.5:9b`. The 27B still
+needs a quant that fits in VRAM.
+
+- Command: `pnpm --filter backend test`, or
+  `AGENT_REASONING_DEFAULT=low pnpm --filter backend test` for another level.
+- Change ids are `new-<n>` for creates and `card-<id>` for updates and deletes.
+  Repeated changes to the same card in one action merge into one record.
+- There's also a `cardAgent.settings` procedure, which returns the model and
+  the default reasoning level for the phase 2 slider.
+- Results on `qwen3.5:9b` through Ollama:
+  - Tool calling works with reasoning off. Speed is acceptable at both off
+    (single creates about 2.5s) and low (about 6s).
+  - Most validation retries came from an answer mode that has
+    since been removed from the game.
+  - With reasoning off, the model sometimes writes free-text answers instead
+    of shared choices for "match to a category" cards such as continents.
+  - Off-topic or nonsense requests are turned down with a short reply and no
+    tool calls.
 
 ### Phase 2: frontend (stateless actions)
 
@@ -418,11 +424,11 @@ history to prune. What's left:
 | 2 | Where the UI lives | Same manage-questions route. Layout is deferred to phase 2, after viability is proven |
 | 3 | Chat vs single actions | v1 is stateless: one instruction is one action, which the user commits before the next. Chat is later work (§6) |
 | 4 | Batch creation | One card per call. Optimize speed and first-try correctness first |
-| 5 | Target models | `qwen3.5:9b` or a 27B Qwen at an aggressive quant, on an RX 9070 (16 GB VRAM). Must fit in VRAM |
+| 5 | Target models | `qwen3.5:9b` or `qwen3.8:27b` at an aggressive quant, on an RX 9070 (16 GB VRAM). Must fit in VRAM |
 | 6 | Deletes in auto mode | Fully automatic, deletes included |
 | 7 | Transport | oRPC RPC with types inferred from the backend router, no contract |
-| 8 | Response time vs quality | User-facing Reasoning slider per action (off · low · medium · high). The server default comes from env and is chosen after testing |
-| 9 | Phase 1 pass bar | None set in advance. The eval records where time goes and whether tool calls work at each level, and the go/no-go call is made from those results |
+| 8 | Response time vs quality | User-facing Reasoning slider per action (the AI SDK's levels, from none to high). The server default comes from env and is chosen after testing |
+| 9 | Phase 1 pass bar | None set in advance. The eval tests check results only; speed was judged by hand |
 
 ### Open questions
 

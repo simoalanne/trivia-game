@@ -39,14 +39,16 @@ const textQuestionCardInputSchema = baseCardSchema.extend({
 	answerMode: z.literal("TEXT"),
 });
 
+const choicesSchema = z
+	.array(nonEmptyTrimmedStringSchema)
+	.min(MIN_ENTRIES_PER_CARD)
+	.max(MAX_ENTRIES_PER_CARD)
+	.refine(uniqueTrimmedStrings, "Choices must be unique");
+
 const choicesQuestionCardInputSchema = baseCardSchema
 	.extend({
 		answerMode: z.literal("CHOICES"),
-		choices: z
-			.array(nonEmptyTrimmedStringSchema)
-			.min(MIN_ENTRIES_PER_CARD)
-			.max(MAX_ENTRIES_PER_CARD)
-			.refine(uniqueTrimmedStrings, "Choices must be unique"),
+		choices: choicesSchema,
 		choicesAreUnique: z.boolean(),
 	})
 	.superRefine((value, context) => {
@@ -87,6 +89,17 @@ export const questionCardInputSchema = z.discriminatedUnion("answerMode", [
 	choicesQuestionCardInputSchema,
 ]);
 
+/**
+ * The same card as one flat object, for JSON Schema consumers that can't take
+ * a union (LLM tool inputs). Variant-only fields are optional. A flat card is
+ * valid when `questionCardInputSchema` parses it.
+ */
+export const questionCardFlatInputSchema = baseCardSchema.extend({
+	answerMode: questionCardAnswerModeSchema,
+	choices: choicesSchema.optional(),
+	choicesAreUnique: z.boolean().optional(),
+});
+
 const baseQuestionCardSchema = z.object({
 	id: z.number().int().positive(),
 	updatedAt: z.string().datetime(),
@@ -103,15 +116,6 @@ export type TriviaCardDifficulty = z.infer<typeof triviaCardDifficultySchema>;
 export type QuestionCardAnswerMode = z.infer<
 	typeof questionCardAnswerModeSchema
 >;
-
-export const questionImageContentTypes = ["image/jpeg", "image/png"] as const;
-export const MAX_QUESTION_IMAGE_BYTES = 10 * 1024 * 1024;
-
-export const questionImageSchema = z
-	.file()
-	.min(1, "Image must not be empty")
-	.max(MAX_QUESTION_IMAGE_BYTES, "Image must be 10 MB or smaller")
-	.mime([...questionImageContentTypes]);
 
 const questionCardIdParamsSchema = z.object({
 	id: triviaCardIdSchema,
@@ -225,42 +229,6 @@ export const questionsCrudContract = {
 			z.object({
 				status: z.literal(200),
 				body: questionCardSchema,
-			}),
-		),
-	convertImageToQuestionCardDraft: questionsCrud
-		.meta(
-			openapi({
-				method: "POST",
-				path: "/questions/convert-image-to-draft",
-				operationId: "convertImageToQuestionCardDraft",
-				summary: "Draft a question card from an image",
-				description:
-					"Reads a photo of a physical trivia card and returns an unsaved question card draft. The image is sent as the `image` field of a multipart form.",
-				successDescription: "Question card draft",
-			}),
-		)
-		.errors({
-			UNPROCESSABLE_CONTENT: {
-				message: "Could not read a trivia card from this image",
-			},
-			BAD_GATEWAY: {
-				message: "Image recognition service failed",
-			},
-			GATEWAY_TIMEOUT: {
-				message: "Image recognition service timed out",
-			},
-		})
-		.input(
-			z.object({
-				body: z.object({
-					image: questionImageSchema,
-				}),
-			}),
-		)
-		.output(
-			z.object({
-				status: z.literal(200),
-				body: questionCardInputSchema,
 			}),
 		),
 };

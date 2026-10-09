@@ -2,12 +2,14 @@ import "dotenv/config";
 import { COMMON_ERROR_STATUS_MAP, OpenAPIGenerator } from "@orpc/openapi";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { ORPCError, onError } from "@orpc/server";
+import { RPCHandler } from "@orpc/server/fetch";
 import { ZodToJsonSchemaConverter } from "@orpc/zod";
 import { orpcContract } from "@packages/contracts";
 import { apiReference } from "@scalar/hono-api-reference";
 import { Hono } from "hono";
 import { websocket } from "hono/bun";
 import { cors } from "hono/cors";
+import cardAgentRouter from "./features/cardAgent/cardAgent.router.ts";
 import gameplayRouter from "./features/gameplay/transport/gameplay.router.ts";
 import { registerGameplaySocket } from "./features/gameplay/transport/gameplay.socket.ts";
 import questionsCrudService from "./features/questionsCrud/questionsCrud.service.ts";
@@ -27,25 +29,28 @@ const openApiDocument = await new OpenAPIGenerator({
 	},
 });
 
+const logServerError = (error: unknown) => {
+	if (
+		error instanceof ORPCError &&
+		error.code in COMMON_ERROR_STATUS_MAP &&
+		COMMON_ERROR_STATUS_MAP[
+			error.code as keyof typeof COMMON_ERROR_STATUS_MAP
+		] < 500
+	) {
+		return;
+	}
+
+	console.error(error);
+};
+
 const apiHandler = new OpenAPIHandler(
 	{ gameplay: gameplayRouter, questionsCrud: questionsCrudService },
-	{
-		interceptors: [
-			onError((error) => {
-				if (
-					error instanceof ORPCError &&
-					error.code in COMMON_ERROR_STATUS_MAP &&
-					COMMON_ERROR_STATUS_MAP[
-						error.code as keyof typeof COMMON_ERROR_STATUS_MAP
-					] < 500
-				) {
-					return;
-				}
+	{ interceptors: [onError(logServerError)] },
+);
 
-				console.error(error);
-			}),
-		],
-	},
+const rpcHandler = new RPCHandler(
+	{ cardAgent: cardAgentRouter },
+	{ interceptors: [onError(logServerError)] },
 );
 
 app.use(cors());
@@ -63,6 +68,19 @@ app.use("*", async (c, next) => {
 
 app.use("/api/*", async (c, next) => {
 	const { matched, response } = await apiHandler.handle(c.req.raw, {
+		context: {},
+	});
+
+	if (matched) {
+		return c.newResponse(response.body, response);
+	}
+
+	await next();
+});
+
+app.use("/rpc/*", async (c, next) => {
+	const { matched, response } = await rpcHandler.handle(c.req.raw, {
+		prefix: "/rpc",
 		context: {},
 	});
 

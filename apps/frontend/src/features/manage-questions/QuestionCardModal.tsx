@@ -4,10 +4,9 @@ import {
 	MAX_ENTRIES_PER_CARD,
 	MIN_ENTRIES_PER_CARD,
 	type QuestionCard,
-	questionImageContentTypes,
 } from "@packages/contracts";
 import { Plus, TrashIcon } from "lucide-react";
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { Modal, TagInput } from "@/components";
 import { cn } from "@/lib/utils";
 import {
@@ -87,15 +86,12 @@ export default function QuestionCardModal({
 		errors,
 		setErrors,
 		setAnswerMode,
-		isScanningImage,
 		isSubmitting,
-		scanImageToDraft,
 		submitError,
 		submitSucceeded,
 		onSubmit,
 		onReset,
 	} = useQuestionCardForm(question);
-	const imageInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
 		if (submitSucceeded) {
@@ -176,47 +172,6 @@ export default function QuestionCardModal({
 											Order items
 										</button>
 									</div>
-								</fieldset>
-							</div>
-
-							<div className="grid min-w-0  max-w-sm gap-4 self-start">
-								<fieldset className="fieldset min-w-0">
-									<legend className="fieldset-legend text-sm font-semibold">
-										AI-features
-									</legend>
-									<input
-										accept={questionImageContentTypes.join(",")}
-										className="hidden"
-										onChange={async (event) => {
-											const file = event.target.files?.[0];
-											event.target.value = "";
-
-											if (!file) {
-												return;
-											}
-
-											await scanImageToDraft(file);
-										}}
-										ref={imageInputRef}
-										type="file"
-									/>
-									<button
-										className="btn btn-sm"
-										disabled={isScanningImage}
-										onClick={() => {
-											imageInputRef.current?.click();
-										}}
-										type="button"
-									>
-										{isScanningImage ? (
-											<>
-												<span className="loading loading-spinner loading-sm" />
-												Scanning...
-											</>
-										) : (
-											"Scan physical card"
-										)}
-									</button>
 								</fieldset>
 							</div>
 						</div>

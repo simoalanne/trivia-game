@@ -42,19 +42,39 @@ Run the backend:
 pnpm --filter backend start
 ```
 
-If you want to draft question cards from uploaded images with a local Ollama
-vision model, set these backend environment variables before starting:
+### Card agent (optional)
+
+The card agent creates, updates and deletes question cards from plain-language
+instructions. It works with any OpenAI-compatible server, including local ones
+(Ollama, LM Studio, llama.cpp). See [docs/CARD_AGENT.md](docs/CARD_AGENT.md).
+
+Set these backend environment variables:
 
 ```bash
-OLLAMA_MODEL=qwen2.5vl:7b
+AGENT_MODEL=qwen3.5:9b
 ```
 
 Optional:
 
 ```bash
-OLLAMA_API_BASE_URL=http://localhost:11434/api
-OLLAMA_TEMPERATURE=0
-OLLAMA_TIMEOUT_MS=120000
+AGENT_BASE_URL=http://localhost:11434/v1   # default: Ollama
+AGENT_API_KEY=
+AGENT_REASONING_DEFAULT=none                # AI SDK reasoning: none | minimal | low | medium | high | ...
+AGENT_MAX_STEPS=8
+AGENT_TEMPERATURE=0.2
+AGENT_TIMEOUT_MS=180000
+```
+
+Ollama loads models with a 4096-token context by default, which multi-step
+actions can exceed. Raise it on the Ollama server, for example
+`OLLAMA_CONTEXT_LENGTH=16384 ollama serve`.
+
+Run the agent tests against the configured model. They use their own
+in-memory cards and need no database:
+
+```bash
+pnpm --filter backend test
+pnpm --filter backend test -t "pick card for continents"   # one case
 ```
 
 Run the frontend:

@@ -28,14 +28,12 @@ export type {
 } from "./questionsCrud.ts";
 export {
 	MAX_ENTRIES_PER_CARD,
-	MAX_QUESTION_IMAGE_BYTES,
 	MAX_TAGS_PER_CARD,
 	MIN_ENTRIES_PER_CARD,
 	questionCardAnswerModeSchema,
+	questionCardFlatInputSchema,
 	questionCardInputSchema,
 	questionCardSchema,
-	questionImageContentTypes,
-	questionImageSchema,
 	questionsCrudContract,
 	triviaCardDifficultySchema,
 	triviaCardIdSchema,
