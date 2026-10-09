@@ -13,12 +13,6 @@ declare global {
 			entries: TriviaEntry[];
 		};
 
-		type CountryTriviaCardData = {
-			prompt: string;
-			answerMode: "COUNTRY";
-			entries: TriviaEntry[];
-		};
-
 		type ChoicesTriviaCardData = {
 			prompt: string;
 			answerMode: "CHOICES";
@@ -27,10 +21,7 @@ declare global {
 			choicesAreUnique: boolean;
 		};
 
-		type TriviaCardData =
-			| TextTriviaCardData
-			| CountryTriviaCardData
-			| ChoicesTriviaCardData;
+		type TriviaCardData = TextTriviaCardData | ChoicesTriviaCardData;
 
 		type LocalizedString = Record<string, string>;
 	}

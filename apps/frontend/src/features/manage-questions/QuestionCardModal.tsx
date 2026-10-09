@@ -8,7 +8,7 @@ import {
 } from "@packages/contracts";
 import { Plus, TrashIcon } from "lucide-react";
 import { useEffect, useRef } from "react";
-import { CountryPicker, Modal, TagInput } from "@/components";
+import { Modal, TagInput } from "@/components";
 import { cn } from "@/lib/utils";
 import {
 	createOrderItemsTemplateFormState,
@@ -25,7 +25,6 @@ type QuestionCardModalProps = {
 const answerModeLabels = {
 	TEXT: "Open ended",
 	CHOICES: "Multiple choice",
-	COUNTRY: "Country",
 } as const;
 
 const difficultyLabels = {
@@ -272,7 +271,6 @@ export default function QuestionCardModal({
 								>
 									<option value="CHOICES">{answerModeLabels.CHOICES}</option>
 									<option value="TEXT">{answerModeLabels.TEXT}</option>
-									<option value="COUNTRY">{answerModeLabels.COUNTRY}</option>
 								</select>
 							</fieldset>
 
@@ -475,35 +473,6 @@ export default function QuestionCardModal({
 															</select>
 														);
 													})()}
-													{errors[`entries.${index}.answer`] ? (
-														<p className="pt-1 text-xs text-error">
-															{errors[`entries.${index}.answer`]}
-														</p>
-													) : null}
-												</>
-											) : formState.answerMode === "COUNTRY" ? (
-												<>
-													<CountryPicker
-														className={cn(
-															"btn-sm",
-															errors[`entries.${index}.answer`] &&
-																"border-error",
-														)}
-														onChange={(value) => {
-															setFormState((current) => ({
-																...current,
-																entries: current.entries.map((currentEntry) =>
-																	currentEntry.id === entry.id
-																		? {
-																				...currentEntry,
-																				answer: value,
-																			}
-																		: currentEntry,
-																),
-															}));
-														}}
-														value={entry.answer}
-													/>
 													{errors[`entries.${index}.answer`] ? (
 														<p className="pt-1 text-xs text-error">
 															{errors[`entries.${index}.answer`]}

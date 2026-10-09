@@ -3,7 +3,6 @@
 import type { GameplayState } from "@packages/contracts";
 import { CheckIcon, XIcon } from "lucide-react";
 import { useEffect, useState } from "react";
-import { CountryPicker } from "@/components/CountryPicker";
 import { Modal } from "@/components/Modal";
 import { cn } from "@/lib/utils";
 
@@ -165,25 +164,16 @@ function AnswerPanelContent({
 				</>
 			) : null}
 
-			{card.answerMode !== "CHOICES" ? (
+			{card.answerMode === "TEXT" ? (
 				<>
-					{card.answerMode === "COUNTRY" ? (
-						<CountryPicker
-							disabled={isBusy}
-							onChange={setTextAnswer}
-							placeholder="Country"
-							value={textAnswer}
-						/>
-					) : (
-						<input
-							className="input w-full"
-							disabled={isBusy}
-							onChange={(event) => setTextAnswer(event.target.value)}
-							placeholder="Your answer"
-							type="text"
-							value={textAnswer}
-						/>
-					)}
+					<input
+						className="input w-full"
+						disabled={isBusy}
+						onChange={(event) => setTextAnswer(event.target.value)}
+						placeholder="Your answer"
+						type="text"
+						value={textAnswer}
+					/>
 					<PanelFooter
 						canSubmit={Boolean(textAnswer.trim())}
 						disabled={isBusy}

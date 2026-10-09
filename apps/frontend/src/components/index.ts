@@ -1,4 +1,3 @@
-export { CountryPicker } from "./CountryPicker";
 export { Modal } from "./Modal";
 export { SidebarLayout } from "./SidebarLayout";
 export { TagInput } from "./TagInput";

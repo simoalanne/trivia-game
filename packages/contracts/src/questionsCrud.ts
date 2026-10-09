@@ -12,11 +12,7 @@ export const MIN_ENTRIES_PER_CARD = 2;
 export const MAX_ENTRIES_PER_CARD = 10;
 
 export const triviaCardDifficultySchema = z.enum(["EASY", "MEDIUM", "HARD"]);
-export const questionCardAnswerModeSchema = z.enum([
-	"TEXT",
-	"CHOICES",
-	"COUNTRY",
-]);
+export const questionCardAnswerModeSchema = z.enum(["TEXT", "CHOICES"]);
 
 export const triviaTagSchema = nonEmptyTrimmedStringSchema;
 export const triviaCardIdSchema = z.coerce.number().int().positive();
@@ -41,10 +37,6 @@ const baseCardSchema = z.object({
 
 const textQuestionCardInputSchema = baseCardSchema.extend({
 	answerMode: z.literal("TEXT"),
-});
-
-const countryQuestionCardInputSchema = baseCardSchema.extend({
-	answerMode: z.literal("COUNTRY"),
 });
 
 const choicesQuestionCardInputSchema = baseCardSchema
@@ -92,7 +84,6 @@ const choicesQuestionCardInputSchema = baseCardSchema
 
 export const questionCardInputSchema = z.discriminatedUnion("answerMode", [
 	textQuestionCardInputSchema,
-	countryQuestionCardInputSchema,
 	choicesQuestionCardInputSchema,
 ]);
 
@@ -103,7 +94,6 @@ const baseQuestionCardSchema = z.object({
 
 export const questionCardSchema = z.discriminatedUnion("answerMode", [
 	textQuestionCardInputSchema.extend(baseQuestionCardSchema.shape),
-	countryQuestionCardInputSchema.extend(baseQuestionCardSchema.shape),
 	choicesQuestionCardInputSchema.extend(baseQuestionCardSchema.shape),
 ]);
 

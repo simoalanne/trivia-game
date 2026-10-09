@@ -96,9 +96,6 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
-      countries-list:
-        specifier: ^3.4.1
-        version: 3.4.1
       lucide-react:
         specifier: ^1.37.0
         version: 1.37.0(react@19.2.8)
@@ -1849,9 +1846,6 @@ packages:
   cookie@2.0.1:
     resolution: {integrity: sha512-yuToqVvRrj6pfDXREyQAAv8SkAEk/8GS3jQRTiUMm66TVtBYmqQeoEjL2Lmq8Rpo6271vH76InTChTitEAm65w==}
     engines: {node: '>=22'}
-
-  countries-list@3.4.1:
-    resolution: {integrity: sha512-sKLGAZD5EAdzQwQ19vOp/9u33MTjmZ0CkdXPYtp/An6cyIlJ/E8TwGf2FcPe1AnzHO+h7nbTfoHyXIi58Hpa+Q==}
 
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
@@ -4248,8 +4242,6 @@ snapshots:
   confbox@0.2.4: {}
 
   cookie@2.0.1: {}
-
-  countries-list@3.4.1: {}
 
   cross-spawn@7.0.6:
     dependencies:

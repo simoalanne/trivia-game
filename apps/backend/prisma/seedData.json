@@ -389,7 +389,7 @@
 		"difficulty": "MEDIUM",
 		"tags": ["Sports", "Football", "FIFA World Cup", "History"],
 		"data": {
-			"prompt": "Order these countries by year of their first FIFA World Cup win (earliest → latest).",
+			"prompt": "Order these nations by year of their first FIFA World Cup win (earliest → latest).",
 			"answerMode": "CHOICES",
 			"choices": ["1", "2", "3", "4", "5"],
 			"choicesAreUnique": true,
@@ -422,39 +422,39 @@
 		"tags": ["Sports", "Football", "National Teams"],
 		"data": {
 			"prompt": "Which nation does this footballer represent?",
-			"answerMode": "COUNTRY",
+			"answerMode": "TEXT",
 			"entries": [
 				{
 					"text": "Wilfried Zaha",
-					"answer": "CI"
+					"answer": "Ivory Coast"
 				},
 				{
 					"text": "Sergej Milinković-Savić",
-					"answer": "RS"
+					"answer": "Serbia"
 				},
 				{
 					"text": "Hakim Ziyech",
-					"answer": "MA"
+					"answer": "Morocco"
 				},
 				{
 					"text": "Josip Iličić",
-					"answer": "SI"
+					"answer": "Slovenia"
 				},
 				{
 					"text": "Takumi Minamino",
-					"answer": "JP"
+					"answer": "Japan"
 				},
 				{
 					"text": "Andrej Kramarić",
-					"answer": "HR"
+					"answer": "Croatia"
 				},
 				{
 					"text": "Quincy Promes",
-					"answer": "NL"
+					"answer": "Netherlands"
 				},
 				{
 					"text": "Matheus Cunha",
-					"answer": "BR"
+					"answer": "Brazil"
 				}
 			]
 		}
@@ -464,39 +464,39 @@
 		"tags": ["Sports", "Tennis", "National Teams"],
 		"data": {
 			"prompt": "Which nation does this tennis player represent?",
-			"answerMode": "COUNTRY",
+			"answerMode": "TEXT",
 			"entries": [
 				{
 					"text": "Alex de Minaur",
-					"answer": "AU"
+					"answer": "Australia"
 				},
 				{
 					"text": "Hubert Hurkacz",
-					"answer": "PL"
+					"answer": "Poland"
 				},
 				{
 					"text": "Dusan Lajovic",
-					"answer": "RS"
+					"answer": "Serbia"
 				},
 				{
 					"text": "Karen Khachanov",
-					"answer": "RU"
+					"answer": "Russia"
 				},
 				{
 					"text": "Pablo Carreño Busta",
-					"answer": "ES"
+					"answer": "Spain"
 				},
 				{
 					"text": "Borna Ćorić",
-					"answer": "HR"
+					"answer": "Croatia"
 				},
 				{
 					"text": "Frances Tiafoe",
-					"answer": "US"
+					"answer": "United States"
 				},
 				{
 					"text": "Yoshihito Nishioka",
-					"answer": "JP"
+					"answer": "Japan"
 				}
 			]
 		}
@@ -506,39 +506,39 @@
 		"tags": ["Sports", "Ice Hockey", "National Teams"],
 		"data": {
 			"prompt": "Which nation does this ice hockey player represent?",
-			"answerMode": "COUNTRY",
+			"answerMode": "TEXT",
 			"entries": [
 				{
 					"text": "Mikko Rantanen",
-					"answer": "FI"
+					"answer": "Finland"
 				},
 				{
 					"text": "Roman Josi",
-					"answer": "CH"
+					"answer": "Switzerland"
 				},
 				{
 					"text": "Elias Pettersson",
-					"answer": "SE"
+					"answer": "Sweden"
 				},
 				{
 					"text": "David Pastrňák",
-					"answer": "CZ"
+					"answer": "Czechia"
 				},
 				{
 					"text": "Leon Draisaitl",
-					"answer": "DE"
+					"answer": "Germany"
 				},
 				{
 					"text": "Mats Zuccarello",
-					"answer": "NO"
+					"answer": "Norway"
 				},
 				{
 					"text": "Mark Stone",
-					"answer": "CA"
+					"answer": "Canada"
 				},
 				{
 					"text": "Kevin Fiala",
-					"answer": "CH"
+					"answer": "Switzerland"
 				}
 			]
 		}
@@ -548,39 +548,39 @@
 		"tags": ["Sports", "Basketball", "National Teams"],
 		"data": {
 			"prompt": "Which nation does this basketball player represent?",
-			"answerMode": "COUNTRY",
+			"answerMode": "TEXT",
 			"entries": [
 				{
 					"text": "Bojan Bogdanović",
-					"answer": "HR"
+					"answer": "Croatia"
 				},
 				{
 					"text": "Patty Mills",
-					"answer": "AU"
+					"answer": "Australia"
 				},
 				{
 					"text": "Tomas Satoransky",
-					"answer": "CZ"
+					"answer": "Czechia"
 				},
 				{
 					"text": "Dennis Schröder",
-					"answer": "DE"
+					"answer": "Germany"
 				},
 				{
 					"text": "Facundo Campazzo",
-					"answer": "AR"
+					"answer": "Argentina"
 				},
 				{
 					"text": "Rudy Gobert",
-					"answer": "FR"
+					"answer": "France"
 				},
 				{
 					"text": "Raul Neto",
-					"answer": "BR"
+					"answer": "Brazil"
 				},
 				{
 					"text": "Sviatoslav Mykhailiuk",
-					"answer": "UA"
+					"answer": "Ukraine"
 				}
 			]
 		}

@@ -26,9 +26,6 @@ const gameplayCardSchema = z.discriminatedUnion("answerMode", [
 		answerMode: z.literal("TEXT"),
 	}),
 	gameplayBaseCardSchema.extend({
-		answerMode: z.literal("COUNTRY"),
-	}),
-	gameplayBaseCardSchema.extend({
 		answerMode: z.literal("CHOICES"),
 		choices: z.array(z.string()),
 	}),

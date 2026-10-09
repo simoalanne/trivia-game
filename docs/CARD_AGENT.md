@@ -44,7 +44,7 @@ the UI.
    Off is fastest and fine for simple cards, and higher levels help with tricky
    formats or multi-card edits.
 2. Write one instruction, such as:
-   - "Create a medium card about Nordic capitals, country answer mode."
+   - "Create a medium card where players name the capital of each Nordic nation."
    - "Make a choices card where you match 5 inventions to their inventors."
    - "Fix the typo in the card about rivers."
    - "Make the hard sports cards medium and add the tag `sports`."
@@ -301,7 +301,6 @@ The goal is for one card creation to be fast and right the first time on a
 4. **Make the format choice explicit.** The `createCard` description includes a
    short "pick the answer mode" rule set:
    - TEXT: free-text answers.
-   - COUNTRY: every answer is a country, given as an alpha-2 code.
    - CHOICES: answers come from a fixed list; `choicesAreUnique` when each
      choice is used once.
 
@@ -454,7 +453,7 @@ records and the preview panel. Chat adds:
   2. The frontend sends the open proposals back with the next message as
      `drafts`.
   3. The server lists them for the model in one line each, for example
-     `d1: create · "Nordic capitals" · COUNTRY · MEDIUM`.
+     `d1: create · "Nordic capitals" · TEXT · MEDIUM`.
   4. `getCard` and `updateCard` accept `d1` the same way as a numeric id.
   5. A refined draft keeps its id and replaces the old version in the preview.
 

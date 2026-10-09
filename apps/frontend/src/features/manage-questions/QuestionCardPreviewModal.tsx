@@ -14,7 +14,6 @@ const toTriviaCardItems = (question: QuestionCard): TriviaCardItem[] =>
 		id: `${question.id}-${index}`,
 		label: entry.text,
 		answer: entry.answer,
-		answerUiHint: question.answerMode === "COUNTRY" ? "country" : undefined,
 	}));
 
 export default function QuestionCardPreviewModal({

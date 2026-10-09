@@ -20,7 +20,6 @@ const SKELETON_ROW_COUNT = 10;
 const answerModeLabels: Record<QuestionCard["answerMode"], string> = {
 	TEXT: "Text",
 	CHOICES: "Choices",
-	COUNTRY: "Country",
 };
 
 const difficultyBadgeClassNames: Record<QuestionCard["difficulty"], string> = {
@@ -38,7 +37,6 @@ const difficultyLabels: Record<QuestionCard["difficulty"], string> = {
 const answerModeBadgeClassNames: Record<QuestionCard["answerMode"], string> = {
 	TEXT: "badge badge-info badge-soft",
 	CHOICES: "badge badge-primary badge-soft",
-	COUNTRY: "badge badge-secondary badge-soft",
 };
 
 const updatedAtFormatter = new Intl.DateTimeFormat("en-GB", {

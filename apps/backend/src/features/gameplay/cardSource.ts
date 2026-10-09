@@ -47,11 +47,6 @@ export const drawCard: DrawCard = async (excludedIds) => {
 				...baseRound,
 				answerMode: "TEXT",
 			};
-		case "COUNTRY":
-			return {
-				...baseRound,
-				answerMode: "COUNTRY",
-			};
 		case "CHOICES":
 			return {
 				...baseRound,

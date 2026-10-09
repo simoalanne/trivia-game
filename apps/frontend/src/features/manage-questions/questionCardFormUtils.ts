@@ -18,7 +18,6 @@ type QuestionCardBaseValues = {
 
 export type QuestionCardFormState =
 	| (QuestionCardBaseValues & { answerMode: "TEXT" })
-	| (QuestionCardBaseValues & { answerMode: "COUNTRY" })
 	| (QuestionCardBaseValues & {
 			answerMode: "CHOICES";
 			choices: string[];

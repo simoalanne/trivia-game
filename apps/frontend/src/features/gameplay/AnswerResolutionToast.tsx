@@ -2,30 +2,10 @@
 
 import type { TurnResolvedMessage } from "@packages/contracts";
 import { CheckIcon, XIcon } from "lucide-react";
-import { formatCountryDisplay } from "@/components/countryDisplay";
 import GameplayMessage from "./GameplayMessage";
-
-type SubmittedResolution = Extract<
-	TurnResolvedMessage,
-	{ resolution: "submitted" }
->;
 
 type AnswerResolutionToastProps = {
 	resolution: TurnResolvedMessage | null;
-};
-
-const normalizeResolvedAnswer = (turnResolution: SubmittedResolution) => {
-	if (turnResolution.answerMode !== "COUNTRY") {
-		return {
-			answer: turnResolution.answer,
-			correctAnswer: turnResolution.correctAnswer,
-		};
-	}
-
-	return {
-		answer: formatCountryDisplay(turnResolution.answer),
-		correctAnswer: formatCountryDisplay(turnResolution.correctAnswer),
-	};
 };
 
 export function AnswerResolutionToast({
@@ -37,10 +17,6 @@ export function AnswerResolutionToast({
 
 	const isCorrect =
 		resolution.resolution === "submitted" && resolution.isCorrect;
-	const normalizedResolution =
-		resolution.resolution === "submitted"
-			? normalizeResolvedAnswer(resolution)
-			: null;
 
 	return (
 		<GameplayMessage
@@ -49,7 +25,7 @@ export function AnswerResolutionToast({
 					<>
 						<strong>{resolution.playerName}</strong>
 						<span> answered: </span>
-						<strong>{normalizedResolution?.answer}</strong>
+						<strong>{resolution.answer}</strong>
 					</>
 				) : (
 					<>
@@ -67,7 +43,7 @@ export function AnswerResolutionToast({
 						{!resolution.isCorrect ? (
 							<p>
 								<span className="font-medium">Correct answer: </span>
-								<strong>{normalizedResolution?.correctAnswer}</strong>
+								<strong>{resolution.correctAnswer}</strong>
 							</p>
 						) : null}
 					</>

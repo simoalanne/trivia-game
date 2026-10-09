@@ -102,8 +102,6 @@ export default function ConnectedGameplay({ session }: ConnectedGameplayProps) {
 			id: String(entryIndex),
 			label: entry.text,
 			answer: entry.answer ?? undefined,
-			answerUiHint:
-				currentCard.answerMode === "COUNTRY" ? ("country" as const) : undefined,
 			disabled: entry.answer !== null || !canAnswer,
 			highlightColor: "blue",
 		})) ?? [];

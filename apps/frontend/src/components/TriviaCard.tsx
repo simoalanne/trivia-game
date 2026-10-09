@@ -1,13 +1,11 @@
 import type { CSSProperties } from "react";
 import { cn } from "@/lib/utils";
-import { formatCountryDisplay } from "./countryDisplay";
 import styles from "./TriviaCard.module.css";
 
 export type TriviaCardItem = {
 	id: string;
 	label: string;
 	answer?: string;
-	answerUiHint?: "country";
 	disabled?: boolean;
 	variant?: "default" | "action";
 };
@@ -122,11 +120,6 @@ export function TriviaCard({
 	concealUnselectedAnswers = false,
 	onCenterClick,
 }: TriviaCardProps) {
-	const formatItemAnswer = (item: TriviaCardItem) =>
-		item.answerUiHint === "country" && item.answer
-			? formatCountryDisplay(item.answer)
-			: item.answer;
-
 	const centerContent = (
 		<>
 			<strong>{prompt}</strong>
@@ -207,10 +200,8 @@ export function TriviaCard({
 					const itemContent = (
 						<>
 							<span className={itemLabelClassName}>{item.label}</span>
-							{formatItemAnswer(item) ? (
-								<span className={itemAnswerClassName}>
-									{formatItemAnswer(item)}
-								</span>
+							{item.answer ? (
+								<span className={itemAnswerClassName}>{item.answer}</span>
 							) : null}
 						</>
 					);

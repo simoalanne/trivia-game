@@ -36,9 +36,6 @@ export type ActiveRound =
 			answerMode: "TEXT";
 	  })
 	| (BaseActiveRound & {
-			answerMode: "COUNTRY";
-	  })
-	| (BaseActiveRound & {
 			answerMode: "CHOICES";
 			choices: string[];
 			choicesAreUnique: boolean;
