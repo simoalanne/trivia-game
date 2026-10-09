@@ -1,9 +1,12 @@
 import { createORPCClient } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
 import type { RouterContractClient } from "@orpc/contract";
 import type { JsonifiedClient } from "@orpc/openapi";
 import { OpenAPILink } from "@orpc/openapi/fetch";
+import type { RouterClient } from "@orpc/server";
 import { createTanstackQueryUtils } from "@orpc/tanstack-query";
 import { orpcContract } from "@packages/contracts";
+import type { CardAgentRouter } from "backend/types";
 import { type GameplaySocketQuery, openGameplaySocket } from "./gameplaySocket";
 
 const getBaseUrl = () => {
@@ -32,10 +35,16 @@ export const createApiClients = () => {
 	const orpcClient: JsonifiedClient<RouterContractClient<typeof orpcContract>> =
 		createORPCClient(orpcLink);
 	const orpc = createTanstackQueryUtils(orpcClient);
+	// The card agent is RPC only, typed from the backend router. It streams for
+	// as long as the model works, so it has no timeout.
+	const cardAgentClient: RouterClient<CardAgentRouter> = createORPCClient(
+		new RPCLink({ origin: baseUrl, url: "/rpc/cardAgent" }),
+	);
 
 	return {
 		orpcClient,
 		orpc,
+		cardAgentClient,
 		openGameplaySocket: (query: GameplaySocketQuery) =>
 			openGameplaySocket(baseUrl, query),
 	};

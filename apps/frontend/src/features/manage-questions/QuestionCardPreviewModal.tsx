@@ -1,17 +1,20 @@
 "use client";
 
-import type { QuestionCard } from "@packages/contracts";
+import type { QuestionCard, QuestionCardInput } from "@packages/contracts";
 import { Modal, TriviaCard, type TriviaCardItem } from "@/components";
 
 type QuestionCardPreviewModalProps = {
 	open: boolean;
-	question: QuestionCard | null;
+	/** A saved card, or an unsaved one such as an assistant proposal. */
+	question: QuestionCard | QuestionCardInput | null;
 	setOpen: (open: boolean) => void;
 };
 
-const toTriviaCardItems = (question: QuestionCard): TriviaCardItem[] =>
+const toTriviaCardItems = (
+	question: QuestionCard | QuestionCardInput,
+): TriviaCardItem[] =>
 	question.entries.map((entry, index) => ({
-		id: `${question.id}-${index}`,
+		id: String(index),
 		label: entry.text,
 		answer: entry.answer,
 	}));
@@ -31,7 +34,11 @@ export default function QuestionCardPreviewModal({
 			setOpen={setOpen}
 			size="lg"
 			mobileSheet={false}
-			title={`Preview Trivia Card #${question.id}`}
+			title={
+				"id" in question
+					? `Preview Trivia Card #${question.id}`
+					: "Preview Trivia Card"
+			}
 		>
 			<div className="px-3 py-2">
 				<TriviaCard

@@ -4,6 +4,7 @@ import type { QuestionCard } from "@packages/contracts";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
+import CardAgentPanel from "./CardAgentPanel";
 import QuestionCardModal from "./QuestionCardModal";
 import QuestionCardPreviewModal from "./QuestionCardPreviewModal";
 import TriviaCardsTable from "./TriviaCardsTable";
@@ -86,6 +87,8 @@ export default function ManageQuestionsListPage() {
 						Create Trivia Card
 					</button>
 				</div>
+
+				<CardAgentPanel />
 
 				{questions.error && (
 					<p className="text-error font-semibold">{questions.error.message}</p>

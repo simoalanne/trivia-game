@@ -1,6 +1,6 @@
 "use client";
 
-import type { QuestionCard } from "@packages/contracts";
+import type { QuestionCard, QuestionCardInput } from "@packages/contracts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useApiClient } from "@/lib/apiClientProvider";
@@ -8,12 +8,20 @@ import {
 	changeAnswerMode,
 	createDefaultFormState,
 	createFormStateFromQuestion,
+	createFormStateFromQuestionInput,
 	mapZodErrors,
 	type QuestionCardFormState,
 	validateQuestionCardForm,
 } from "./questionCardFormUtils";
 
-export function useQuestionCardForm(question?: QuestionCard | null) {
+/**
+ * `draft` prefills the form with unsaved values, such as an assistant
+ * proposal. Saving still creates, or updates `question` when given.
+ */
+export function useQuestionCardForm(
+	question?: QuestionCard | null,
+	draft?: QuestionCardInput | null,
+) {
 	const { orpc } = useApiClient();
 	const queryClient = useQueryClient();
 	const createMutation = useMutation(
@@ -22,10 +30,12 @@ export function useQuestionCardForm(question?: QuestionCard | null) {
 	const editMutation = useMutation(orpc.questionsCrud.update.mutationOptions());
 	const initialFormState = useMemo(
 		() =>
-			question
-				? createFormStateFromQuestion(question)
-				: createDefaultFormState(),
-		[question],
+			draft
+				? createFormStateFromQuestionInput(draft)
+				: question
+					? createFormStateFromQuestion(question)
+					: createDefaultFormState(),
+		[question, draft],
 	);
 	const [formState, setFormState] = useState(initialFormState);
 	const [errors, setErrors] = useState<Record<string, string>>({});

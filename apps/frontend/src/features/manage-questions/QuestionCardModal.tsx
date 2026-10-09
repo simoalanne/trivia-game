@@ -4,6 +4,7 @@ import {
 	MAX_ENTRIES_PER_CARD,
 	MIN_ENTRIES_PER_CARD,
 	type QuestionCard,
+	type QuestionCardInput,
 } from "@packages/contracts";
 import { Plus, TrashIcon } from "lucide-react";
 import { useEffect } from "react";
@@ -18,6 +19,9 @@ import { useQuestionCardForm } from "./useQuestionCardForm";
 type QuestionCardModalProps = {
 	open: boolean;
 	question?: QuestionCard | null;
+	/** Prefills the form with unsaved values, such as an assistant proposal. */
+	draft?: QuestionCardInput | null;
+	onSaved?: () => void;
 	setOpen: (open: boolean) => void;
 };
 
@@ -73,6 +77,8 @@ const getAvailableChoicesForEntry = (
 export default function QuestionCardModal({
 	open,
 	question,
+	draft,
+	onSaved,
 	setOpen,
 }: QuestionCardModalProps) {
 	const mode = question ? "edit" : "create";
@@ -91,13 +97,14 @@ export default function QuestionCardModal({
 		submitSucceeded,
 		onSubmit,
 		onReset,
-	} = useQuestionCardForm(question);
+	} = useQuestionCardForm(question, draft);
 
 	useEffect(() => {
 		if (submitSucceeded) {
+			onSaved?.();
 			setOpen(false);
 		}
-	}, [setOpen, submitSucceeded]);
+	}, [onSaved, setOpen, submitSucceeded]);
 
 	useEffect(() => {
 		if (!open) {
@@ -143,7 +150,7 @@ export default function QuestionCardModal({
 		>
 			<div className="grid gap-6 px-3 pb-2">
 				<div className="grid gap-5">
-					{mode === "create" ? (
+					{mode === "create" && !draft ? (
 						<div className="flex flex-wrap items-start gap-x-6 gap-y-4">
 							<div className="grid min-w-0 w-full max-w-sm gap-4">
 								<fieldset className="fieldset min-w-0">
